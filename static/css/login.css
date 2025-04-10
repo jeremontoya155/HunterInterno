@@ -1,0 +1,184 @@
+/* Estilos globales */
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #e6f5ea, #c7e5d6); /* Gradiente verde claro */
+  color: #1a1a1a;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 400px;
+  background: black; /* Fondo negro mantenido */
+  padding: 40px 30px; /* Espaciado más generoso */
+  border-radius: 20px; /* Bordes más redondeados */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Sombra más sutil */
+  text-align: center;
+  border: 2px solid #a7dfc0; /* Borde verde suave mantenido */
+  animation: fadeIn 0.8s ease-in-out; /* Animación al cargar */
+}
+
+/* Logo */
+.logo-container {
+  margin-bottom: 25px;
+}
+
+.logo-container img {
+  max-width: 10em; /* Tamaño ajustado */
+  max-height: 12em;
+  border: none; /* Sin recuadro negro */
+  border-radius: 15px; /* Esquinas redondeadas */
+  background: transparent; /* Sin fondo adicional */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Sombra ligera */
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.logo-container img:hover {
+  transform: scale(1.03); /* Zoom sutil */
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15); /* Sombra más pronunciada */
+}
+
+/* Etiquetas */
+label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #ffffff; /* Texto blanco para contraste */
+  text-align: left;
+  font-size: 0.9rem; /* Tamaño más pequeño */
+  letter-spacing: 0.5px; /* Espaciado entre letras */
+  transition: color 0.3s ease-in-out; /* Efecto hover */
+}
+
+label:hover {
+  color: #a7dfc0; /* Cambia a verde suave al pasar el mouse */
+}
+
+/* Inputs */
+input {
+  width: 100%;
+  padding: 15px; /* Padding más generoso */
+  margin-bottom: 20px;
+  border-radius: 10px; /* Bordes más redondeados */
+  border: 1px solid #a7dfc0; /* Verde claro */
+  background: #1a1a1a; /* Fondo oscuro para contraste */
+  font-size: 1rem;
+  color: #ffffff; /* Texto blanco */
+  transition: all 0.3s ease-in-out;
+  outline: none;
+  box-sizing: border-box;
+}
+
+input:focus {
+  border-color: #3a8b60; /* Verde más oscuro */
+  box-shadow: 0 0 10px rgba(58, 139, 96, 0.3); /* Brillo sutil */
+  background: #2a2a2a; /* Cambio de fondo al enfocar */
+}
+
+/* Botón */
+button {
+  width: 100%;
+  background: #3a8b60; /* Fondo verde */
+  color: #ffffff;
+  padding: 15px; /* Padding más generoso */
+  border-radius: 10px; /* Bordes más redondeados */
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease-in-out;
+}
+
+button:hover {
+  background: #2a6f4e; /* Verde más oscuro */
+  transform: translateY(-2px); /* Efecto de elevación */
+  box-shadow: 0 4px 10px rgba(58, 139, 96, 0.2);
+}
+
+button:active {
+  transform: translateY(0); /* Regresa al estado original al hacer clic */
+  box-shadow: none;
+}
+
+/* Mensaje de error */
+.error {
+  color: #ff4d4d; /* Rojo suave */
+  margin-bottom: 20px;
+  font-weight: 500;
+  background: rgba(255, 77, 77, 0.1);
+  padding: 12px; /* Padding más generoso */
+  border-radius: 10px; /* Bordes más redondeados */
+  border: 1px solid #ffcccc; /* Borde rojo claro */
+  transition: background 0.3s ease-in-out; /* Efecto hover */
+}
+
+.error:hover {
+  background: rgba(255, 77, 77, 0.2); /* Cambio de fondo al pasar el mouse */
+}
+
+/* Texto adicional */
+p {
+  margin-top: 15px;
+  font-size: 0.9rem;
+  color: #a7dfc0; /* Verde suave */
+  text-align: center;
+  transition: color 0.3s ease-in-out; /* Efecto hover */
+}
+
+p:hover {
+  color: #ffffff; /* Cambia a blanco al pasar el mouse */
+}
+
+p a {
+  color: #3a8b60; /* Verde más oscuro */
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease-in-out;
+}
+
+p a:hover {
+  color: #2a6f4e; /* Verde más intenso */
+}
+
+/* Animación sutil al cargar el formulario */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .form-container {
+    padding: 30px 20px; /* Reducimos el padding */
+  }
+
+  label {
+    font-size: 0.8rem; /* Texto más pequeño */
+  }
+
+  input {
+    font-size: 0.9rem;
+  }
+
+  button {
+    font-size: 0.9rem;
+    padding: 12px; /* Padding más ajustado */
+  }
+
+  p {
+    font-size: 0.8rem;
+  }
+}

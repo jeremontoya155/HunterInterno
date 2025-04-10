@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HUNTER - Gestión de auditoria y Resumen</title>
+    <!-- FontAwesome y Google Fonts (Poppins) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- CSS de la Navbar y Scrollbar -->
+    <link rel="stylesheet" href="/static/css/navbar.css" />
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+    <!-- CSS específico y completo para Vendedores -->
+    <link rel="stylesheet" href="/static/css/vendedores.css" />
+    <!-- Chart.js y Adaptador de Fecha (desde CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <%# Pasar datos iniciales a JS de forma segura %>
+    <script>
+      // Define la variable global ANTES de que se cargue vendedores_manager.js
+      const initialDashboardDataForChart = <%- JSON.stringify(initialDashboard || { chartData: [], totalMensajes: 0 }) %>;
+    </script>
+
+</head>
+<body>
+    <%- include('partials/navbar') %> <%# Asegúrate que esta ruta sea correcta %>
+
+    <div class="vendedor-main-container">
+
+        <!-- ============================================= -->
+        <!--         SECCIÓN DASHBOARD SUPERIOR          -->
+        <!-- ============================================= -->
+        <section class="dashboard-container card-style">
+            <div class="dashboard-header">
+                <h2><i class="fas fa-chart-pie icon-header"></i> Resumen General de Actividad</h2>
+                <form id="date-filter-form" class="date-filter-form">
+                    <label for="dash_start_date">Desde:</label>
+                    <input type="date" id="dash_start_date" name="from" value="<%= typeof initialStartDate !== 'undefined' ? initialStartDate : '' %>" required>
+                    <label for="dash_end_date">Hasta:</label>
+                    <input type="date" id="dash_end_date" name="to" value="<%= typeof initialEndDate !== 'undefined' ? initialEndDate : '' %>" required>
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-filter"></i> Aplicar Fechas</button>
+                </form>
+            </div>
+            <div class="dashboard-content">
+                <div class="dashboard-stats">
+                    <div class="stat-box">
+                        <span class="stat-value" id="total-messages-stat">
+                            <%# Verificar existencia de initialDashboard y totalMensajes %>
+                            <%= (typeof initialDashboard !== 'undefined' && typeof initialDashboard.totalMensajes !== 'undefined') ? initialDashboard.totalMensajes.toLocaleString('es-ES') : '0' %>
+                         </span>
+                        <span class="stat-label">Mensajes Enviados</span>
+                        <i class="fas fa-paper-plane stat-icon"></i>
+                    </div>
+                    <div class="stat-box placeholder"> <span class="stat-value">--</span> <span class="stat-label">Respuestas Totales</span> <i class="fas fa-reply stat-icon"></i> </div>
+                    <div class="stat-box placeholder"> <span class="stat-value">--</span> <span class="stat-label">Tasa de Respuesta</span> <i class="fas fa-percentage stat-icon"></i> </div>
+                </div>
+                <div class="chart-container">
+                     <div id="chart-loading-spinner" class="spinner" style="display: none;"></div>
+                    <canvas id="messagesChart"></canvas>
+                </div>
+            </div>
+            <!-- Mensaje de error para el dashboard -->
+            <div id="dashboard-error" class="alert alert-danger" style="display: none; margin-top: 1rem;" role="alert"></div>
+        </section>
+
+        <!-- ============================================= -->
+        <!--    ENCABEZADO Y FILTRO PARA VENDEDORES      -->
+        <!-- ============================================= -->
+        <div class="vendedor-section-header">
+             <div class="header-title-button">
+                <h2><i class="fas fa-id-card-alt icon-header"></i> Auditoria Individuales</h2>
+                <%# Verificar user y rol antes de mostrar el botón %>
+                <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'auditoria')) { %>
+                    <button class="btn btn-primary btn-add-vendedor" onclick="openVendedorModal()">
+                        <i class="fas fa-user-plus"></i> Agregar Vendedor
+                    </button>
+                <% } %>
+             </div>
+             <div class="seller-filter-container">
+                <i class="fas fa-search filter-icon"></i>
+                <input type="text" id="seller-name-filter" placeholder="Filtrar por nombre...">
+            </div>
+        </div>
+
+        <!-- Mensajes de Feedback Globales -->
+        <% if (typeof success !== 'undefined' && success) { %><div class="alert alert-success global-feedback" role="alert"><%= success %></div><% } %>
+        <%# Mostrar error global solo si existe y NO viene del dashboard AJAX %>
+        <% if (typeof error !== 'undefined' && error && (!req || !req.originalUrl || !req.originalUrl.includes('dashboard-data'))) { %>
+            <div class="alert alert-danger global-feedback" role="alert"><%= error %></div>
+        <% } %>
+
+
+        <!-- Contenedor de Cards de Vendedores -->
+        <div class="vendedor-cards-grid">
+            <%# Verificar que 'vendedores' existe y es un array antes de iterar %>
+            <% if (typeof vendedores !== 'undefined' && vendedores && Array.isArray(vendedores) && vendedores.length > 0) { %>
+                <% vendedores.forEach(vendedor => { %>
+                    <div class="vendedor-card" id="vendedor-card-<%= vendedor.id %>" data-vendedor='<%- JSON.stringify(vendedor) %>'>
+                        <div class="card-header">
+                             <span class="tag tag-estado tag-estado-<%= vendedor.estado %>" title="Estado: <%= vendedor.estado %>"><%= vendedor.estado %></span>
+                            <h3 class="vendedor-nombre"><%= vendedor.nombre %></h3>
+                            <% if (vendedor.manager_asignado) { %><small class="manager"><i class="fas fa-user-tie"></i> Manager: <%= vendedor.manager_asignado %></small><% } %>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-section">
+                                <h4><i class="fab fa-instagram"></i> Cuentas (<%= vendedor.num_cuentas || 0 %>)</h4>
+                                <% if (vendedor.cuentasDetalle && vendedor.cuentasDetalle.length > 0) { %>
+                                    <ul class="account-list custom-scrollbar">
+                                        <% vendedor.cuentasDetalle.forEach(cuenta => { %>
+                                            <li>
+                                                <span class="tag tag-cuenta"><%= cuenta.nombre %></span>
+                                                <span class="account-stats" title="Hoy (Msgs/Rpts) / Histórico Total (Msgs)">
+                                                     (<%= cuenta.mensajesHoy || 0 %> / <%= cuenta.respuestasHoy || 0 %> / <%= (cuenta.mensajesMongoTotal || 0).toLocaleString('es-ES') %>)
+                                                </span>
+                                            </li>
+                                        <% }); %>
+                                    </ul>
+                                <% } else { %><p class="no-data"><small>Sin cuentas asignadas.</small></p><% } %>
+                            </div>
+                            <div class="card-section card-stats">
+                                <div class="stat-item"><label><i class="far fa-clock"></i> Hoy</label><span><%= vendedor.totalMensajesHoy || 0 %> M / <%= vendedor.totalRespuestasHoy || 0 %> R</span></div>
+                                <% if (vendedor.fecha_ingreso) { %><div class="stat-item"><label><i class="far fa-calendar-alt"></i> Ingreso</label><span><%= new Date(vendedor.fecha_ingreso).toLocaleDateString('es-ES') %></span></div><% } %>
+
+                                <div class="stat-item stat-progress">
+                                    <label><i class="fas fa-tasks"></i> Progreso Mes (Msgs)</label>
+                                    <div class="progress-info">
+                                         <span class="progress-numbers" title="Mensajes enviados este mes / Objetivo mensual"><%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %> / <%= (vendedor.objetivo_mensual || 0).toLocaleString('es-ES') || 'N/A' %></span>
+                                         <span class="progress-percentage">(<%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(0) %>%)</span>
+                                    </div>
+                                    <div class="progress-bar-container" title="<%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(1) %>% del objetivo mensual">
+                                        <div class="progress-bar" style="width: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0) %>%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                             <%# Verificar user y rol para sección de Notas %>
+                            <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'auditoria')) { %>
+                                <div class="card-section">
+                                    <h4><i class="far fa-clipboard"></i> Notas</h4>
+                                    <p class="notas custom-scrollbar"><%= vendedor.notas_auditoria || 'Sin notas.' %></p>
+                                </div>
+                            <% } %>
+                        </div>
+                        <div class="card-footer">
+                             <%# Verificar user y rol para botones de acción %>
+                             <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'auditoria')) { %>
+                                <button class="btn btn-sm btn-secondary" onclick="openDesempenoModal('<%= vendedor.id %>')" title="Registrar desempeño diario"><i class="fas fa-calendar-plus"></i> Registrar Hoy</button>
+                                <button class="btn btn-sm btn-warning" onclick="openVendedorModal('<%= vendedor.id %>')" title="Editar perfil"><i class="fas fa-edit"></i> Editar</button>
+                            <% } %>
+                            <a href="/vendedores/<%= vendedor.id %>/historial" class="btn btn-sm btn-info" title="Ver historial"><i class="fas fa-history"></i> Historial</a>
+                        </div>
+                    </div>
+                 <% }); %>
+             <% } else { %>
+                 <p class="no-data-global">No hay vendedores registrados actualmente.</p>
+             <% } %>
+             <p id="no-seller-found-message" class="no-data-global" style="display: none;">No se encontraron vendedores que coincidan con el filtro.</p>
+        </div> <!-- Fin Grid -->
+
+    </div> <!-- Fin vendedor-main-container -->
+
+    <!-- ============================================= -->
+    <!--         MODAL AGREGAR/EDITAR VENDEDOR         -->
+    <!-- ============================================= -->
+    <div id="vendedorModalOverlay" class="modal-overlay">
+         <div class="modal-content" id="vendedorModalContent">
+            <form action="/vendedores" method="POST" id="vendedor-form">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="vendedorModalLabel">Agregar Cliente</h5>
+                    <button type="button" class="modal-close-btn" onclick="closeVendedorModal()" title="Cerrar">×</button>
+                </div>
+                <div class="modal-body custom-scrollbar">
+                    <input type="hidden" id="vendedor_id" name="vendedor_id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="modal_nombre"><i class="fas fa-user fa-fw"></i> Nombre Vendedor*</label>
+                            <input type="text" id="modal_nombre" name="nombre" required>
+                        </div>
+                        <div class="form-group">
+                             <label for="modal_manager_asignado"><i class="fas fa-user-tie fa-fw"></i> Manager Asignado</label>
+                            <input type="text" id="modal_manager_asignado" name="manager_asignado">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal_cuentas_asignadas"><i class="fab fa-instagram fa-fw"></i> Cuentas Instagram (separadas por coma)</label>
+                        <input type="text" id="modal_cuentas_asignadas" name="cuentas_asignadas" placeholder="usuario1, usuario2">
+                    </div>
+                    <div class="form-row">
+                         <div class="form-group">
+                            <label for="modal_porcentaje_cumplimiento"><i class="fas fa-percent fa-fw"></i> % Cumplimiento (Ref.)</label>
+                            <input type="number" id="modal_porcentaje_cumplimiento" name="porcentaje_cumplimiento" min="0" max="100" step="0.01" value="0.00" title="Este es un valor referencial/manual">
+                         </div>
+                         <div class="form-group">
+                             <label for="modal_objetivo_mensual"><i class="fas fa-bullseye fa-fw"></i> Objetivo Mensual (Msgs)</label>
+                            <input type="number" id="modal_objetivo_mensual" name="objetivo_mensual" min="0" step="1" value="0" title="El progreso se calcula con este valor">
+                         </div>
+                    </div>
+                    <div class="form-row">
+                         <div class="form-group">
+                             <label for="modal_fecha_ingreso"><i class="far fa-calendar-alt fa-fw"></i> Fecha Ingreso</label>
+                            <input type="date" id="modal_fecha_ingreso" name="fecha_ingreso">
+                         </div>
+                         <div class="form-group">
+                             <label for="modal_estado"><i class="fas fa-toggle-on fa-fw"></i> Estado</label>
+                            <select id="modal_estado" name="estado">
+                                <option value="activo" selected>Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                                <option value="prueba">En Prueba</option>
+                                <option value="baja">De Baja</option>
+                            </select>
+                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal_notas_auditoria"><i class="far fa-clipboard fa-fw"></i> Notas / Comentarios</label>
+                        <textarea id="modal_notas_auditoria" name="notas_auditoria" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeVendedorModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!--      MODAL REGISTRAR DESEMPEÑO DIARIO         -->
+    <!-- ============================================= -->
+     <div id="desempenoModalOverlay" class="modal-overlay">
+         <div class="modal-content" id="desempenoModalContent">
+            <form id="desempeno-form" onsubmit="submitDesempeno(event)">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="desempenoModalLabel">Registrar Desempeño Diario</h5>
+                     <button type="button" class="modal-close-btn" onclick="closeDesempenoModal()" title="Cerrar">×</button>
+                </div>
+                <div class="modal-body custom-scrollbar">
+                    <input type="hidden" id="desempeno_vendedor_id" name="vendedor_id">
+                    <div class="form-group">
+                        <label for="desempeno_fecha"><i class="far fa-calendar-alt fa-fw"></i> Fecha del Registro</label>
+                        <input type="date" id="desempeno_fecha" name="fecha" value="<%= typeof today !== 'undefined' ? today : new Date().toISOString().slice(0,10) %>" required>
+                    </div>
+                    <hr class="modal-hr">
+                     <label class="accounts-title"><i class="fas fa-tasks"></i> Ingresar Datos por Cuenta:</label>
+                    <div id="desempeno-accounts-container">
+                        <p class="no-data">Seleccione un vendedor para cargar cuentas.</p>
+                    </div>
+                    <div id="desempeno-feedback" class="feedback-message"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeDesempenoModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-check-circle"></i> Guardar Desempeño</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts (Navbar, Lógica Vendedores con Chart.js) -->
+    <script defer src="/static/js/navbar.js"></script>
+    <script defer src="/static/js/vendedores_manager.js"></script> <%# Script Corregido %>
+
+</body>
+</html>

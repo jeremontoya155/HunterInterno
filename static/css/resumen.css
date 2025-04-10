@@ -1,0 +1,247 @@
+/* Estilos base y reset */
+html,
+body {
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-family: 'Poppins', sans-serif;
+  /* font-family: 'Roboto', sans-serif; */
+  background-color: #121212;
+  color: #e0e0e0;
+  margin: 0;
+  padding: 0;
+}
+
+.contenedorBody {
+  width: calc(99% - 59px);
+  margin: 0 auto;
+  max-width: 1200px;
+  padding-left: 59px;
+}
+
+/* Header Styles */
+header {
+  background-color: rgba(29, 53, 87, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #e0e0e0;
+  text-align: center;
+  padding: 1rem;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  margin-bottom: 20px;
+  font-family: 'Poppins', sans-serif;
+}
+
+header h1 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  font-family: 'Poppins', sans-serif;
+}
+
+.accounts-section {
+  margin-top: 15px;
+}
+
+.accounts-section h2 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.accounts-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.account-link {
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background-color: rgba(76, 175, 145, 0.2);
+  color: #4caf91;
+  border: 1px solid rgba(76, 175, 145, 0.3);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-link:hover {
+  background-color: rgba(76, 175, 145, 0.3);
+  transform: translateY(-2px);
+}
+
+.account-link.active {
+  background-color: #4caf91;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(76, 175, 145, 0.3);
+}
+
+.no-accounts {
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+/* Dashboard Container */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Title Metrics Section */
+.titleMetrics {
+  background: rgba(29, 53, 87, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 20px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.titleMetricsContent {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.rowTitle {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+/* Metric Cards */
+.metricCard {
+  background: rgba(76, 175, 145, 0.7);
+  color: white;
+  text-align: center;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(76, 175, 145, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.metricCard h2 {
+  font-size: 18px;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.metricCard p {
+  font-size: 16px;
+  margin: 0;
+}
+
+/* Mensajes Section */
+.mensajes-section {
+  overflow-y: auto;
+  background: rgba(29, 53, 87, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 20px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  margin-top: 20px;
+}
+
+.mensaje-item {
+  background: rgba(76, 175, 145, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  transition: all 0.3s ease;
+}
+
+.mensaje-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.mensaje-destinatario {
+  font-weight: bold;
+  color: #4caf91;
+  font-size: 14px;
+}
+
+.mensaje-fecha {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+}
+
+.mensaje-contenido {
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+/* Hover Effects */
+.metricCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(76, 175, 145, 0.3);
+  background: rgba(76, 175, 145, 0.8);
+}
+
+.mensaje-item:hover {
+  background: rgba(76, 175, 145, 0.3);
+  transform: translateY(-3px);
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  header {
+    font-size: 1.2rem;
+    padding: 0.75rem;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+
+  .rowTitle {
+    grid-template-columns: 1fr;
+  }
+
+  .metricCard {
+    padding: 15px;
+  }
+
+  .metricCard h2 {
+    font-size: 16px;
+  }
+
+  .metricCard p {
+    font-size: 14px;
+  }
+
+  .mensaje-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mensaje-destinatario {
+    margin-bottom: 5px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .rowTitle {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

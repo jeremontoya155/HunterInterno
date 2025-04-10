@@ -1,0 +1,313 @@
+/* Estilo general */
+body {
+    font-family: 'Poppins', sans-serif;
+    /* background-color: #1a1d24; */ /* Fondo oscuro principal */
+     background: linear-gradient(135deg, #1a1d24 0%, #2c3e50 100%); /* Fondo oscuro con gradiente sutil */
+    color: #e0e0e0; /* Texto claro para contraste */
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding-top: 80px; /* Espacio para la navbar si es fija */
+    box-sizing: border-box;
+}
+
+/* Contenedor del formulario */
+.form-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px; /* Espacio arriba/abajo y a los lados */
+}
+
+/* Tarjeta del formulario */
+.form-card {
+    background: #ffffff; /* Fondo blanco para la tarjeta */
+    color: #333; /* Texto oscuro dentro de la tarjeta */
+    border-radius: 25px; /* Bordes más redondeados */
+    padding: 40px 50px; /* Más padding interno */
+    box-shadow: 0px 20px 40px rgba(0, 0, 0, 0.2); /* Sombra más pronunciada y suave */
+    width: 100%;
+    max-width: 650px; /* Ancho máximo mayor */
+    text-align: center;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    /* animation: fadeInScale 0.5s ease-out; */ /* Animación sutil al cargar */
+}
+
+.form-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 25px 50px rgba(0, 0, 0, 0.25);
+}
+
+/* Título */
+h2 {
+    font-size: 28px; /* Más grande */
+    color: #0b6e4f; /* Verde principal */
+    margin-bottom: 10px;
+    font-weight: 700; /* Más grueso */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px; /* Espacio entre icono y texto */
+}
+
+.icon-title {
+    font-size: 24px; /* Tamaño del icono del título */
+}
+
+.subtitle {
+    font-size: 16px;
+    color: #667;
+    margin-bottom: 35px;
+    font-weight: 400;
+}
+
+
+/* Formulario */
+.nicho-form {
+    display: flex;
+    flex-direction: column;
+    gap: 25px; /* Mayor espacio entre grupos */
+    text-align: left; /* Alineación izquierda para labels e inputs */
+}
+
+/* Grupos de formulario */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Espacio entre label e input */
+}
+
+/* Filas para elementos lado a lado */
+.form-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap; /* Para que se ajusten en pantallas pequeñas */
+}
+
+.form-group.half-width {
+    flex: 1; /* Ocupan el espacio disponible */
+    min-width: 200px; /* Ancho mínimo antes de envolver */
+}
+
+
+/* Etiquetas del formulario */
+label {
+    font-weight: 600; /* Más grueso */
+    color: #334155; /* Un gris azulado oscuro */
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Espacio entre icono y texto */
+}
+
+label i {
+    color: #0b6e4f; /* Iconos en verde */
+    font-size: 1.1em; /* Ligeramente más grandes */
+    width: 20px; /* Ancho fijo para alinear */
+    text-align: center;
+}
+
+/* Inputs y textareas */
+input[type="text"],
+input[type="number"],
+textarea {
+    width: 100%;
+    padding: 15px 20px; /* Padding más generoso */
+    border: 1px solid #cbd5e1; /* Borde sutil gris claro */
+    border-radius: 12px; /* Bordes redondeados */
+    font-size: 16px;
+    background-color: #f8fafc; /* Fondo muy claro, casi blanco */
+    color: #1e293b; /* Texto oscuro */
+    transition: all 0.3s ease-in-out;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif; /* Asegurar la fuente */
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #94a3b8; /* Placeholder más claro */
+}
+
+input:focus,
+textarea:focus {
+    outline: none;
+    border-color: #0b6e4f; /* Borde verde al enfocar */
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(11, 110, 79, 0.15); /* Resplandor suave verde */
+}
+
+textarea {
+    resize: vertical; /* Permitir redimensionar solo verticalmente */
+    min-height: 80px; /* Altura mínima */
+}
+
+/* Estilo personalizado para carga de archivos */
+.file-upload-wrapper {
+    margin-top: 10px;
+}
+
+.file-input-hidden {
+    display: none; /* Ocultar el input real */
+}
+
+.file-upload-label {
+    display: inline-flex; /* Para alinear icono y texto */
+    align-items: center;
+    gap: 10px;
+    padding: 12px 25px;
+    background-color: #e7f3ef; /* Fondo verde muy claro */
+    color: #0b6e4f; /* Texto verde */
+    border: 2px dashed #a3d1c3; /* Borde discontinuo verde claro */
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.file-upload-label i {
+    font-size: 1.3em;
+}
+
+.file-upload-label:hover {
+    background-color: #d1e7dd; /* Fondo ligeramente más oscuro al pasar el ratón */
+    border-color: #0b6e4f; /* Borde sólido al pasar el ratón */
+    color: #075e40;
+}
+
+.file-name {
+    display: block; /* Para que aparezca debajo del botón */
+    margin-top: 10px;
+    font-size: 14px;
+    color: #556; /* Color para el nombre del archivo */
+    font-style: italic;
+    word-break: break-all; /* Evitar que nombres largos rompan el layout */
+}
+
+/* Botón de enviar */
+.submit-button {
+    background: linear-gradient(135deg, #0b6e4f 0%, #088054 100%); /* Gradiente para el botón */
+    color: white;
+    padding: 18px; /* Padding más grande */
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 17px; /* Fuente más grande */
+    font-weight: 600; /* Más grueso */
+    transition: all 0.3s ease-in-out;
+    width: 100%;
+    margin-top: 20px; /* Mayor margen superior */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0px 8px 15px rgba(11, 110, 79, 0.2); /* Sombra inicial */
+}
+
+.submit-button i {
+    font-size: 1.1em;
+}
+
+.submit-button:hover {
+    background: linear-gradient(135deg, #088054 0%, #0b6e4f 100%); /* Invertir gradiente al pasar */
+    transform: translateY(-3px) scale(1.02); /* Efecto de elevación y escala */
+    box-shadow: 0px 12px 20px rgba(11, 110, 79, 0.3); /* Sombra más intensa */
+}
+
+.submit-button:active {
+    transform: translateY(-1px) scale(1); /* Efecto al hacer clic */
+    box-shadow: 0px 5px 10px rgba(11, 110, 79, 0.25);
+}
+
+/* Animaciones Sutiles */
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ------------------------- */
+/* Responsive Design */
+/* ------------------------- */
+
+/* Pantallas pequeñas (móviles) */
+@media screen and (max-width: 768px) {
+    .form-card {
+        padding: 30px 25px; /* Menos padding en móviles */
+        border-radius: 20px;
+    }
+
+    h2 {
+        font-size: 24px;
+    }
+    
+    .subtitle {
+        font-size: 15px;
+        margin-bottom: 25px;
+    }
+
+    .form-row {
+        flex-direction: column; /* Apilar elementos de la fila */
+        gap: 25px; /* Mantener el espacio vertical */
+    }
+
+    .form-group.half-width {
+        min-width: 100%; /* Ocupar todo el ancho en la columna */
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+        padding: 14px 18px;
+        font-size: 15px;
+    }
+
+    .submit-button {
+        padding: 16px;
+        font-size: 16px;
+    }
+
+    .file-upload-label {
+        padding: 12px 20px;
+        width: 100%; /* Hacer el botón de archivo full-width */
+        justify-content: center;
+    }
+    
+     .file-name {
+        text-align: center; /* Centrar nombre de archivo */
+    }
+}
+
+@media screen and (max-width: 480px) {
+    body {
+        padding-top: 60px; /* Menos espacio para navbar más pequeña */
+    }
+
+    .form-container {
+        padding: 20px 10px; /* Aún menos padding lateral */
+    }
+    
+    .form-card {
+        padding: 25px 20px; /* Menos padding interno */
+        border-radius: 15px;
+    }
+
+    h2 {
+        font-size: 22px;
+    }
+    
+    .subtitle {
+        font-size: 14px;
+    }
+
+    .nicho-form {
+        gap: 20px; /* Menos espacio entre campos */
+    }
+}

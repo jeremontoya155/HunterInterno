@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flujos</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/css/index.css">
+  <link rel="stylesheet" href="/static/css/scrollbar.css">
+  <link rel="stylesheet" href="/static/css/navbar.css">
+  <script src="/static/js/index.js"></script>
+  <script src="/static/js/navbar.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.15.5/js/jsplumb.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.15.5/css/jsplumbtoolkit-defaults.min.css">
+  <style>
+    .node {
+      width: 150px;
+      height: 80px;
+      color: white;
+      text-align: center;
+      line-height: 80px;
+      position: absolute;
+      cursor: move;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .node.start {
+      background-color: #4CAF50; /* Verde para nodos de inicio */
+    }
+    .node.action {
+      background-color: #2196F3; /* Azul para nodos de acción */
+    }
+    .node.decision {
+      background-color: #FF9800; /* Naranja para nodos de decisión */
+    }
+    .node.end {
+      background-color: #F44336; /* Rojo para nodos de fin */
+    }
+    .node .delete-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      display: none;
+    }
+    .node:hover .delete-btn {
+      display: block;
+    }
+    #canvas {
+      width: 100%;
+      height: 600px;
+      border: 2px dashed #ccc;
+      position: relative;
+      overflow: auto;
+    }
+    .node-menu {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .node-option {
+      padding: 10px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .node-option.active {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .jtk-connector {
+      z-index: -1; /* Asegura que las conexiones estén detrás de los nodos */
+    }
+  </style>
+</head>
+<body>
+  <%- include('partials/navbar') %>
+
+  <div class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">Crear Flujo</h1>
+    <div class="mb-4">
+      <input type="text" id="nombreFlujo" placeholder="Nombre del flujo" class="border p-2 rounded">
+      <button id="guardarFlujo" class="bg-blue-500 text-white p-2 rounded">Guardar Flujo</button>
+      <button id="cargarFlujos" class="bg-green-500 text-white p-2 rounded">Cargar Flujos</button>
+    </div>
+
+    <!-- Contenedor para mostrar la lista de flujos -->
+    <div id="listaFlujos" class="mb-4"></div>
+
+    <!-- Menú de selección de nodos -->
+    <div class="node-menu">
+      <div class="node-option" data-type="start">Inicio</div>
+      <div class="node-option" data-type="action">Acción</div>
+      <div class="node-option" data-type="decision">Decisión</div>
+      <div class="node-option" data-type="end">Fin</div>
+    </div>
+
+    <!-- Canvas para el diagrama -->
+    <div id="canvas"></div>
+  </div>
+
+  <script>
+    // Inicializar jsPlumb
+    const jsPlumbInstance = jsPlumb.getInstance();
+
+    // Array para almacenar los nodos del diagrama
+    let nodes = [];
+    let selectedNodeType = 'start'; // Tipo de nodo seleccionado por defecto
+
+    // Seleccionar tipo de nodo
+    document.querySelectorAll('.node-option').forEach((option) => {
+      option.addEventListener('click', () => {
+        selectedNodeType = option.getAttribute('data-type');
+        document.querySelectorAll('.node-option').forEach((opt) => opt.classList.remove('active'));
+        option.classList.add('active');
+      });
+    });
+
+    // Función para crear un nodo
+    // Función para crear un nodo
+function createNode(x, y, type) {
+  const node = document.createElement('div');
+  node.classList.add('node', type);
+  node.setAttribute('data-type', type);
+  node.innerHTML = `
+    <span class="node-label">${type.toUpperCase()}</span>
+    <button class="delete-btn">×</button>
+  `;
+  node.style.position = 'absolute'; // Asegurar que el nodo use posición absoluta
+  node.style.left = `${x}px`; // Usar la coordenada x
+  node.style.top = `${y}px`; // Usar la coordenada y
+  document.getElementById('canvas').appendChild(node);
+
+  // Hacer el nodo arrastrable con Interact.js
+  interact(node).draggable({
+    onmove: function (event) {
+      const target = event.target;
+      const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+      const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+      target.style.transform = `translate(${x}px, ${y}px)`;
+      target.setAttribute('data-x', x);
+      target.setAttribute('data-y', y);
+
+      // Actualizar las conexiones de jsPlumb
+      jsPlumbInstance.repaintEverything();
+    },
+  });
+
+  // Hacer el nodo conectable con jsPlumb
+  jsPlumbInstance.addEndpoint(node, {
+    anchors: ['Top', 'Bottom', 'Left', 'Right'],
+    endpoint: 'Dot',
+    paintStyle: { fill: '#4CAF50' },
+    isSource: true,
+    isTarget: true,
+  });
+
+  // Guardar el nodo en el array
+  const nodeId = nodes.length + 1;
+  nodes.push({ id: nodeId, type, x, y, label: type.toUpperCase() });
+
+  // Editar el nombre del nodo al hacer doble clic
+  const nodeLabel = node.querySelector('.node-label');
+  nodeLabel.addEventListener('dblclick', () => {
+    const newLabel = prompt('Ingresa el nuevo nombre del nodo:', nodeLabel.textContent);
+    if (newLabel) {
+      nodeLabel.textContent = newLabel;
+      nodes.find((n) => n.id === nodeId).label = newLabel;
+    }
+  });
+
+  // Eliminar el nodo al hacer clic en el botón de eliminar
+  const deleteBtn = node.querySelector('.delete-btn');
+  deleteBtn.addEventListener('click', () => {
+    if (confirm('¿Estás seguro de que quieres eliminar este nodo?')) {
+      node.remove();
+      jsPlumbInstance.removeAllEndpoints(node);
+      nodes = nodes.filter((n) => n.id !== nodeId);
+    }
+  });
+}
+    // Evento para agregar un nodo al hacer clic en el menú de selección
+    document.querySelectorAll('.node-option').forEach((option) => {
+      option.addEventListener('click', () => {
+        const canvas = document.getElementById('canvas');
+        const rect = canvas.getBoundingClientRect();
+        const x = rect.width / 2 - 75; // Centrar el nodo en el canvas
+        const y = rect.height / 2 - 40;
+        createNode(x, y, selectedNodeType);
+      });
+    });
+
+    // Evento para guardar el flujo
+    document.getElementById('guardarFlujo').addEventListener('click', async () => {
+      const nombreFlujo = document.getElementById('nombreFlujo').value;
+      if (!nombreFlujo) {
+        alert('Por favor, ingresa un nombre para el flujo.');
+        return;
+      }
+
+      const flujoData = {
+        nombre: nombreFlujo,
+        nodes: nodes, // Enviar los nodos al servidor
+      };
+
+      try {
+        const response = await fetch('/flujo/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(flujoData),
+        });
+
+        if (response.ok) {
+          alert('Flujo guardado correctamente.');
+          nodes = []; // Reiniciar el array de nodos
+          document.getElementById('canvas').innerHTML = ''; // Limpiar el canvas
+          jsPlumbInstance.reset(); // Reiniciar jsPlumb
+        } else {
+          alert('Error al guardar el flujo.');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar el flujo.');
+      }
+    });
+
+    // Evento para cargar los flujos guardados
+    document.getElementById('cargarFlujos').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/flujo/list');
+        const data = await response.json();
+
+        const listaFlujos = document.getElementById('listaFlujos');
+        listaFlujos.innerHTML = '<h2 class="text-xl font-bold mb-2">Flujos Guardados</h2>';
+
+        if (data.flujos.length > 0) {
+          data.flujos.forEach((flujo) => {
+            const flujoItem = document.createElement('div');
+            flujoItem.className = 'bg-gray-100 p-2 rounded mb-2';
+            flujoItem.innerHTML = `
+              <p class="font-bold">${flujo.nombre}</p>
+              <button onclick="cargarFlujo('${flujo.nombre}')" class="bg-blue-500 text-white p-1 rounded">Cargar</button>
+            `;
+            listaFlujos.appendChild(flujoItem);
+          });
+        } else {
+          listaFlujos.innerHTML = '<p>No hay flujos guardados.</p>';
+        }
+      } catch (error) {
+        console.error('Error al cargar los flujos:', error);
+        alert('Error al cargar los flujos.');
+      }
+    });
+
+    // Función para cargar un flujo específico
+    // Función para cargar un flujo específico
+// Función para cargar un flujo específico
+window.cargarFlujo = async (nombre) => {
+  try {
+    const response = await fetch(`/flujo/load?nombre=${nombre}`);
+    const data = await response.json();
+
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    // Limpiar el canvas actual
+    document.getElementById('canvas').innerHTML = '';
+    jsPlumbInstance.reset();
+    nodes = [];
+
+    // Cargar los nodos del flujo
+    if (Array.isArray(data)) { // Verificar si data es un array
+      data.forEach((node) => {
+        createNode(node.x, node.y, node.type); // Usar las coordenadas x e y
+      });
+    } else {
+      console.error('Formato de flujo no válido:', data);
+      alert('El flujo no tiene un formato válido.');
+    }
+
+    alert(`Flujo "${nombre}" cargado correctamente.`);
+  } catch (error) {
+    console.error('Error al cargar el flujo:', error);
+    alert('Error al cargar el flujo.');
+  }
+};
+
+</script>
+</body>
+</html>

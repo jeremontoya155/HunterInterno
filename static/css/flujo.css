@@ -1,0 +1,57 @@
+/* Contenedor principal para que ocupe toda la pantalla */
+.flujo-main-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    background: #e7f0eb; /* Color de fondo similar al estilo anterior */
+    position: relative;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Barra lateral flotante para las herramientas */
+.toolbar {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 10px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 10;
+}
+
+.toolbar button {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: white;
+    background: none;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.toolbar button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+}
+
+.guardar-btn {
+    margin-top: 10px;
+    background: green;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+/* Área de diagramación del flujo */
+.drawflow {
+    width: 100%;
+    height: 100vh;
+    background: white;
+    border-left: 2px solid #ccc;
+}

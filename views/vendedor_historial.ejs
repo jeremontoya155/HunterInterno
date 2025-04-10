@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial - <%= vendedor.nombre %></title>
+     <!-- Tus CSS (Poppins, FontAwesome, Navbar, Scrollbar) -->
+    <link rel="stylesheet" href="/static/css/navbar.css" />
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+    <link rel="stylesheet" href="/static/css/vendedores.css" /> <%# Reutiliza o crea uno nuevo %>
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+     <!-- Opcional: Chart.js si añades gráficos -->
+     <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+     <style>
+        .historial-container { max-width: 1000px; margin: 1rem auto; padding: 1.5rem; }
+        .historial-header { margin-bottom: 2rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;}
+        .historial-header h1 { color: var(--color-accent-hover); }
+        .fecha-grupo { margin-bottom: 1.5rem; }
+        .fecha-grupo h3 { font-size: 1.1rem; color: var(--color-text-secondary); margin-bottom: 0.5rem; }
+        .historial-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .historial-table th, .historial-table td { padding: 0.6rem 0.8rem; border: 1px solid var(--color-border); text-align: center; }
+        .historial-table th { background-color: var(--color-background-light); }
+        .historial-table .cuenta-col { text-align: left; }
+     </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <div class="historial-container">
+        <div class="historial-header">
+            <h1>Historial de Desempeño</h1>
+            <h2><%= vendedor.nombre %></h2>
+            <a href="/vendedores" class="btn btn-sm btn-secondary mt-2"><i class="fas fa-arrow-left"></i> Volver a Vendedores</a>
+        </div>
+
+        <% if (historial && historial.length > 0) { %>
+            <% historial.forEach(grupo => { %>
+                <div class="fecha-grupo">
+                    <h3><%= new Date(grupo.fecha + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></h3>
+                    <table class="historial-table">
+                        <thead>
+                            <tr>
+                                <th class="cuenta-col">Cuenta Instagram</th>
+                                <th>Mensajes Enviados</th>
+                                <th>Respuestas Recibidas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% grupo.entradas.forEach(item => { %>
+                                <tr>
+                                    <td class="cuenta-col"><%= item.insta_username %></td>
+                                    <td><%= item.mensajes_enviados %></td>
+                                    <td><%= item.respuestas_recibidas %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <p>No hay registros de desempeño diario para este vendedor.</p>
+        <% } %>
+
+         <!-- Aquí podrías poner un contenedor para gráficos si usas Chart.js -->
+         <!-- <canvas id="historialChart"></canvas> -->
+    </div>
+
+     <script defer src="/static/js/navbar.js"></script>
+     <!-- Script opcional para gráficos -->
+     <!-- <script defer src="/static/js/historial_charts.js"></script> -->
+
+</body>
+</html>

@@ -1,0 +1,56 @@
+<div class="sidebar collapsed" id="mySidebar">
+  <span class="togglebtn" onclick="toggleNav()">
+    <i class="fas fa-bars" id="toggle"></i>
+  </span>
+
+  <div class="sidebar-container">
+    <div class="logo-container">
+      <img src="/static/images/Logo.png" alt="Logo" class="logo-small" />
+      <img src="/static/images/Hunter.png" alt="Hunter" class="logo-large" />
+    </div>
+
+    <div class="menu">
+      <div class="nav-links">
+    
+        <a href="/onboarding">
+          <i class="fas fa-info-circle"></i>
+          <span>On Boarding</span>
+        </a>
+     
+
+
+        <%# --- ENLACE A VENDEDORES (Visible para Admin, Auditoria, CRO) --- %>
+        <% if (user && (user.role === 'admin' || user.role === 'auditoria' || user.role === 'cro')) { %>
+          <a href="/vendedores">
+            <i class="fas fa-briefcase"></i> <!-- Icono para Vendedores -->
+            <span>Vendedores</span>
+          </a>
+        <% } %>
+        <%# --- FIN ENLACE VENDEDORES --- %>
+<%# --- ENLACE A AUDITORÍA PATRIMONIO (Visible para Admin y Auditoría) --- %>
+        <% if (user && (user.role === 'admin' || user.role === 'auditoria')) { %>
+          <a href="/auditoria/patrimonio">
+            <i class="fas fa-shield-alt"></i> <!-- Icono para Auditoría -->
+            <span>Auditoría Patrimonio</span>
+          </a>
+        <% } %>
+        <%# --- FIN ENLACE AUDITORÍA --- %>
+
+        <%# Enlace a Leads (Solo Admin - Mantenido como estaba) %>
+        <% if (user && user.role === 'admin') { %> <%# Cambiado de user.username a user.role %>
+          <a href="/leads">
+            <i class="fas fa-star"></i> <!-- Cambié el icono a star para "Leads" -->
+            <span>Leads</span>
+          </a>
+        <% } %>
+
+        <a href="/logout" class="logout-link"> <!-- Añadí una clase por si quieres estilizarlo diferente -->
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout (<%= user ? user.username : 'Usuario' %>)</span> <!-- Muestra username si está logueado -->
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+<script></script>

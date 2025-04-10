@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard de <%= username %></title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <link rel="stylesheet" href="/static/css/resumen.css" />
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+    <link rel="stylesheet" href="/static/css/navbar.css" />
+    <script src="/static/js/navbar.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <div class="contenedorBody">
+        <header>
+            <div class="header-content">
+                <h1>Dashboard - <%= username %></h1>
+
+                <section class="accounts-section">
+                    <h2>Cuentas Asociadas:</h2>
+                    <div class="accounts-list">
+                        <% if (userAccounts && userAccounts.length > 0) { %> 
+                            <% userAccounts.forEach(function(ac) { %>
+                                <a href="/resumen?account=<%= ac.insta_username %>"
+                                   class="account-link <%= selectedAccount === ac.insta_username ? 'active' : '' %>">
+                                    <i class="fas fa-user-circle"></i> <%= ac.insta_username %>
+                                </a>
+                            <% }); %>
+                            <a href="/resumen" class="account-link <%= !selectedAccount ? 'active' : '' %>">
+                                Todas las Cuentas
+                            </a>
+                        <% } else { %>
+                            <p class="no-accounts">No hay cuentas asociadas.</p>
+                        <% } %>
+                    </div>
+                </section>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+
+            <!-- 📌 TARJETAS DE MÉTRICAS -->
+            <section class="titleMetrics">
+                <div class="titleMetricsContent">
+                    <div class="rowTitle">
+                        <div class="metricCard">
+                            <h2>Total de Mensajes Enviados</h2>
+                            <p id="totalMensajes"><%= total_mensajes_enviados %></p>
+                        </div>
+                        <div class="metricCard">
+                            <h2>Total de Me Gusta</h2>
+                            <p id="totalLikes"><%= total_likes %></p>
+                        </div>
+                        <div class="metricCard">
+                            <h2>Fecha del Último Mensaje</h2>
+                            <p id="fechaUltimoMensaje"><%= fechaUltimoMensaje %></p>
+                        </div>
+                        <div class="metricCard">
+                            <h2>Destinatario del Último Mensaje</h2>
+                            <p id="destinatarioUltimo"><%= destinatarioUltimo %></p>
+                        </div>
+                    </div>
+                    <div class="MetricUltimoMensaje">
+                        <div class="metricCard">
+                            <h2>Último Mensaje</h2>
+                            <p id="ultimoMensaje"><%= ultimoMensaje %></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 📌 TARJETAS DE CANTIDAD DE MENSAJES POR TIPO -->
+            <section class="tipoMensajes">
+                <div class="metricCard">
+                    <h2>Mensajes de Comunicación</h2>
+                    <p id="mensajesComunicacion"><%= mensajesPorTipo.comunicacion %></p>
+                </div>
+                <div class="metricCard">
+                    <h2>Mensajes de Venta</h2>
+                    <p id="mensajesVenta"><%= mensajesPorTipo.venta %></p>
+                </div>
+                <div class="metricCard">
+                    <h2>Mensajes Imperativos</h2>
+                    <p id="mensajesImperativos"><%= mensajesPorTipo.imperativo %></p>
+                </div>
+            </section>
+
+            <!-- 📌 Selector de Rango de Fechas -->
+            <section class="selector-fechas">
+                <label for="fromDate">Desde:</label>
+                <input type="date" id="fromDate" value="<%= fromDate %>">
+                <label for="toDate">Hasta:</label>
+                <input type="date" id="toDate" value="<%= toDate %>">
+                <button id="btnFiltrar">Filtrar</button>
+            </section>
+
+            <!-- 📌 GRÁFICO: MENSAJES + ME GUSTA -->
+            <section class="grafico-mensajes">
+                <h2>Mensajes y Me Gusta por Día</h2>
+                <canvas id="graficoMensajes"></canvas>
+            </section>
+
+            <!-- 📌 LISTADO DE MENSAJES -->
+            <section class="mensajes-section">
+                <h2>Mensajes Enviados</h2>
+                <div id="mensajesSend">
+                    <% if (ultimos_mensajes && ultimos_mensajes.length > 0) { %> 
+                        <% const mensajesLimitados = ultimos_mensajes.slice(0, 10); %>
+                        <% mensajesLimitados.forEach(function(mensaje) { %>
+                            <div class="mensaje-item">
+                                <div class="mensaje-header">
+                                    <span class="mensaje-destinatario"><%= mensaje.destinatario %></span>
+                                    <span class="mensaje-fecha"><%= mensaje.fecha %></span>
+                                </div>
+                                <div class="mensaje-contenido"><%= mensaje.mensaje %></div>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <p>No hay mensajes disponibles.</p>
+                    <% } %>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <!-- 📌 CHART.JS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const ctx = document.getElementById("graficoMensajes").getContext("2d");
+            let chart;
+
+            async function cargarDatosGrafico(from, to) {
+                try {
+                    const response = await fetch(`/resumen/data?from=${from}&to=${to}`);
+                    const { datosGrafico } = await response.json();
+
+                    const fechas = datosGrafico.map(d => d.fecha);
+                    const mensajes = datosGrafico.map(d => d.mensajes);
+                    const likes = datosGrafico.map(d => d.likes);
+
+                    if (chart) chart.destroy();
+
+                    chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: fechas,
+                            datasets: [
+                                {
+                                    label: 'Mensajes Enviados',
+                                    data: mensajes,
+                                    borderColor: 'blue',
+                                    backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                                    fill: true,
+                                    tension: 0.3
+                                },
+                                {
+                                    label: 'Me Gusta',
+                                    data: likes,
+                                    borderColor: 'green',
+                                    backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                                    fill: true,
+                                    tension: 0.3
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { position: 'top' }
+                            },
+                            scales: {
+                                x: {
+                                    title: { display: true, text: "Fecha" }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    title: { display: true, text: "Cantidad" }
+                                }
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error al cargar los datos del gráfico:", error);
+                }
+            }
+
+            const fromInput = document.getElementById("fromDate");
+            const toInput = document.getElementById("toDate");
+            const btnFiltrar = document.getElementById("btnFiltrar");
+
+            function aplicarFiltro() {
+                const from = fromInput.value;
+                const to = toInput.value;
+                if (from && to) {
+                    cargarDatosGrafico(from, to);
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('from', from);
+                    url.searchParams.set('to', to);
+                    window.location.href = url.toString(); // Refresca toda la vista con los nuevos datos
+                }
+            }
+
+            btnFiltrar.addEventListener("click", aplicarFiltro);
+            cargarDatosGrafico(fromInput.value, toInput.value);
+        });
+    </script>
+</body>
+</html>

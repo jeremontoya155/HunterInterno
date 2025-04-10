@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HUNTER - Bienvenida y Primeros Pasos</title>
+
+    <!-- Google Fonts (Poppins recomendado para un look moderno) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" /> <!-- Versión más reciente -->
+
+    <!-- Estilos -->
+    <link rel="stylesheet" href="/static/css/navbar.css" /> <!-- Asegúrate que esta ruta es correcta -->
+    <link rel="stylesheet" href="/static/css/onboarding.css" /> <!-- NUEVOS estilos -->
+    <link rel="stylesheet" href="/static/css/scrollbar.css" /> <!-- Tu scrollbar -->
+
+    <script defer src="/static/js/navbar.js"></script> <!-- Tu JS de navbar -->
+    
+    <!-- Script para el cambio de idioma -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos en español
+            const spanishElements = {
+                title: "HUNTER - Bienvenida y Primeros Pasos",
+                mainHeading: "Bienvenido a <span class='highlight'>HUNTER</span>: Tu Asistente Secreto para Cazar Éxito en Instagram",
+                step1Title: "Inicia Sesión y Desbloquea el Poder",
+                step1Intro: "Para comenzar tu cacería de resultados, sigue estos pasos:",
+                step1List: [
+                    "<strong>Accede a Instagram:</strong> Introduce tus credenciales de forma segura.",
+                    "<strong>Mensajes Personalizados:</strong> Sube tu archivo con mensajes irresistibles.",
+                    "<strong>Preguntas Clave:</strong> Define las preguntas que activarán tu estrategia.",
+                    "<strong>Lista de Objetivos:</strong> Carga tu archivo con las cuentas a contactar.",
+                    "<strong>¡Inicia Sesión!:</strong> Presiona el botón y deja que HUNTER haga su magia."
+                ],
+                step2Title: "Explora tu Centro de Mando: El Dashboard",
+                step2Intro: "Una vez dentro, el <strong>DASHBOARD</strong> será tu torre de control:",
+                step2List: [
+                    "<strong>Métricas Clave:</strong> Visualiza mensajes enviados y rendimiento al instante.",
+                    "<strong>Estadísticas Precisas:</strong> Entiende qué funciona y optimiza tu enfoque.",
+                    "<strong>Actividad y Crecimiento:</strong> Observa el impacto directo en tu perfil."
+                ],
+                step3Title: "Navega con Agilidad: Panel Lateral",
+                step3Intro: "El panel lateral izquierdo es tu arsenal de herramientas:",
+                step3List: [
+                    "<strong>Dashboard:</strong> Tu vista principal, siempre accesible.",
+                    "<strong>Perfil y Análisis:</strong> Profundiza en el crecimiento y la interacción.",
+                    "<strong>Configuración:</strong> Personaliza HUNTER a tu medida."
+                ],
+                footerHeading: "¡El Futuro de tu <span class='highlight'>Éxito</span> Comienza Ahora!",
+                footerP1: "Diseñamos HUNTER con pasión para potenciar tu estrategia en Instagram.",
+                footerP2: "Toma el control, activa tu asistente y prepárate para conquistar tus objetivos.",
+                footerCta: "<i class='fas fa-fighter-jet'></i> Tus metas son nuestro blanco <i class='fas fa-fighter-jet'></i>"
+            };
+            
+            // Elementos en inglés
+            const englishElements = {
+                title: "HUNTER - Welcome and First Steps",
+                mainHeading: "Welcome to <span class='highlight'>HUNTER</span>: Your Assistant to Hunt Success on Instagram",
+                step1Title: "Log In and Unlock the Power",
+                step1Intro: "To start your results hunt, follow these steps:",
+                step1List: [
+                    "<strong>Access Instagram:</strong> Enter your credentials securely.",
+                    "<strong>Customized Messages:</strong> Upload your file with irresistible messages.",
+                    "<strong>Key Questions:</strong> Define the questions that will activate your strategy.",
+                    "<strong>Target List:</strong> Load your file with accounts to contact.",
+                    "<strong>Log In!</strong> Press the button and let HUNTER work its magic."
+                ],
+                step2Title: "Explore your Command Center: The Dashboard",
+                step2Intro: "Once inside, the <strong>DASHBOARD</strong> will be your control tower:",
+                step2List: [
+                    "<strong>Key Metrics:</strong> Visualize sent messages and performance instantly.",
+                    "<strong>Precise Statistics:</strong> Understand what works and optimize your approach.",
+                    "<strong>Activity and Growth:</strong> Observe the direct impact on your profile."
+                ],
+                step3Title: "Navigate with Agility: Side Panel",
+                step3Intro: "The left side panel is your toolkit arsenal:",
+                step3List: [
+                    "<strong>Dashboard:</strong> Your main view, always accessible.",
+                    "<strong>Profile and Analysis:</strong> Dive deep into growth and interaction.",
+                    "<strong>Settings:</strong> Customize HUNTER to your measure."
+                ],
+                footerHeading: "The Future of your <span class='highlight'>Success</span> Starts Now!",
+                footerP1: "We designed HUNTER with passion to boost your Instagram strategy.",
+                footerP2: "Take control, activate your assistant and get ready to conquer your goals.",
+                footerCta: "<i class='fas fa-fighter-jet'></i> Your goals are our target <i class='fas fa-fighter-jet'></i>"
+            };
+            
+            // Función para cambiar el idioma
+            window.changeLanguage = function(lang) {
+                const elements = lang === 'es' ? spanishElements : englishElements;
+                
+                // Cambiar el título del documento
+                document.title = elements.title;
+                document.documentElement.setAttribute('lang', lang);
+                
+                // Cambiar contenido principal
+                document.getElementById('main-heading').innerHTML = elements.mainHeading;
+                document.getElementById('step1-title').textContent = elements.step1Title;
+                document.getElementById('step1-intro').textContent = elements.step1Intro;
+                
+                // Listas
+                const step1ListItems = document.querySelectorAll('#step1-list li');
+                elements.step1List.forEach((item, index) => {
+                    if (step1ListItems[index]) {
+                        step1ListItems[index].innerHTML = `<i class="fas fa-check-circle"></i> ${item}`;
+                    }
+                });
+                
+                document.getElementById('step2-title').textContent = elements.step2Title;
+                document.getElementById('step2-intro').innerHTML = elements.step2Intro;
+                
+                const step2ListItems = document.querySelectorAll('#step2-list li');
+                elements.step2List.forEach((item, index) => {
+                    if (step2ListItems[index]) {
+                        step2ListItems[index].innerHTML = `<i class="fas ${index === 0 ? 'fa-chart-line' : index === 1 ? 'fa-bullseye' : 'fa-user-astronaut'}"></i> ${item}`;
+                    }
+                });
+                
+                document.getElementById('step3-title').textContent = elements.step3Title;
+                document.getElementById('step3-intro').textContent = elements.step3Intro;
+                
+                const step3ListItems = document.querySelectorAll('#step3-list li');
+                elements.step3List.forEach((item, index) => {
+                    if (step3ListItems[index]) {
+                        step3ListItems[index].innerHTML = `<i class="fas ${index === 0 ? 'fa-columns' : index === 1 ? 'fa-user-chart' : 'fa-cogs'}"></i> ${item}`;
+                    }
+                });
+                
+                // Footer
+                document.getElementById('footer-heading').innerHTML = elements.footerHeading;
+                document.getElementById('footer-p1').textContent = elements.footerP1;
+                document.getElementById('footer-p2').textContent = elements.footerP2;
+                document.getElementById('footer-cta').innerHTML = elements.footerCta;
+                
+                // Actualizar botones de idioma
+                document.getElementById('btn-es').style.opacity = lang === 'es' ? '1' : '0.6';
+                document.getElementById('btn-en').style.opacity = lang === 'en' ? '1' : '0.6';
+                
+                // Guardar preferencia de idioma
+                localStorage.setItem('preferredLanguage', lang);
+            };
+            
+            // Cargar idioma preferido del usuario si existe
+            const savedLanguage = localStorage.getItem('preferredLanguage');
+            if (savedLanguage) {
+                window.changeLanguage(savedLanguage);
+            }
+        });
+    </script>
+</head>
+<body>
+    <%- include('partials/navbar') %> <!-- Incluye tu Navbar -->
+
+    <!-- Selector de idioma con banderas -->
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 10px; background-color: rgba(255, 255, 255, 0.8); padding: 5px 10px; border-radius: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+        <button id="btn-es" onclick="changeLanguage('es')" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; opacity: 1; transition: all 0.3s ease;">
+            <span style="font-size: 20px; margin-right: 5px;">SP</span>
+        </button>
+        <div style="width: 1px; background-color: #ccc;"></div>
+        <button id="btn-en" onclick="changeLanguage('en')" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; opacity: 0.6; transition: all 0.3s ease;">
+            <span style="font-size: 20px; margin-right: 5px;">EN</span>
+        </button>
+    </div>
+
+    <div class="onboarding-background"> <!-- Cambiado para claridad -->
+      <div class="onboarding-container"> <!-- Contenedor principal -->
+
+        <!-- Header -->
+        <header>
+          <h1 id="main-heading">
+            Bienvenido a <span class="highlight">HUNTER</span>: Tu Asistente para Cazar Éxito en Instagram
+          </h1>
+        </header>
+
+        <!-- Main Content -->
+        <main class="onboarding-content">
+
+          <!-- Paso 1 -->
+          <section class="onboarding-step fade-in">
+            <div class="step-header">
+              <div class="step-number">1</div>
+              <h2 id="step1-title" class="step-title">Inicia Sesión y Desbloquea el Poder</h2>
+              <span class="step-icon"><i class="fas fa-rocket"></i></span> <!-- Icono más dinámico -->
+            </div>
+            <div class="step-body">
+              <p id="step1-intro" class="step-intro">Para comenzar tu cacería de resultados, sigue estos pasos:</p>
+              <ol id="step1-list" class="step-list">
+                <li><i class="fas fa-check-circle"></i> <strong>Accede a Instagram:</strong> Introduce tus credenciales de forma segura.</li>
+                <li><i class="fas fa-check-circle"></i> <strong>Mensajes Personalizados:</strong> Sube tu archivo con mensajes irresistibles.</li>
+                <li><i class="fas fa-check-circle"></i> <strong>Preguntas Clave:</strong> Define las preguntas que activarán tu estrategia.</li>
+                <li><i class="fas fa-check-circle"></i> <strong>Lista de Objetivos:</strong> Carga tu archivo con las cuentas a contactar.</li>
+                <li><i class="fas fa-check-circle"></i> <strong>¡Inicia Sesión!:</strong> Presiona el botón y deja que HUNTER haga su magia.</li>
+              </ol>
+            </div>
+          </section>
+
+          <!-- Paso 2 -->
+          <section class="onboarding-step fade-in" style="animation-delay: 0.2s;"> <!-- Delay para animación escalonada -->
+            <div class="step-header">
+              <div class="step-number">2</div>
+              <h2 id="step2-title" class="step-title">Explora tu Centro de Mando: El Dashboard</h2>
+              <span class="step-icon"><i class="fas fa-tachometer-alt"></i></span> <!-- Icono Dashboard -->
+            </div>
+            <div class="step-body">
+              <p id="step2-intro" class="step-intro">Una vez dentro, el <strong>DASHBOARD</strong> será tu torre de control:</p>
+              <ul id="step2-list" class="feature-list">
+                <li><i class="fas fa-chart-line"></i> <strong>Métricas Clave:</strong> Visualiza mensajes enviados y rendimiento al instante.</li>
+                <li><i class="fas fa-bullseye"></i> <strong>Estadísticas Precisas:</strong> Entiende qué funciona y optimiza tu enfoque.</li>
+                <li><i class="fas fa-user-astronaut"></i> <!-- Icono temático --> <strong>Actividad y Crecimiento:</strong> Observa el impacto directo en tu perfil.</li>
+              </ul>
+            </div>
+          </section>
+
+          <!-- Paso 3 -->
+          <section class="onboarding-step fade-in" style="animation-delay: 0.4s;"> <!-- Mayor Delay -->
+            <div class="step-header">
+              <div class="step-number">3</div>
+              <h2 id="step3-title" class="step-title">Navega con Agilidad: Panel Lateral</h2>
+              <span class="step-icon"><i class="fas fa-compass-drafting"></i></span> <!-- Icono más técnico -->
+            </div>
+            <div class="step-body">
+              <p id="step3-intro" class="step-intro">El panel lateral izquierdo es tu arsenal de herramientas:</p>
+              <ul id="step3-list" class="feature-list">
+                <li><i class="fas fa-columns"></i> <strong>Dashboard:</strong> Tu vista principal, siempre accesible.</li>
+                <li><i class="fas fa-user-chart"></i> <!-- Icono más específico --> <strong>Perfil y Análisis:</strong> Profundiza en el crecimiento y la interacción.</li>
+                <li><i class="fas fa-cogs"></i> <strong>Configuración:</strong> Personaliza HUNTER a tu medida.</li>
+              </ul>
+            </div>
+          </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="onboarding-footer fade-in" style="animation-delay: 0.6s;">
+          <h2 id="footer-heading">¡El Futuro de tu <span class="highlight">Éxito</span> Comienza Ahora!</h2>
+          <p id="footer-p1">
+            Diseñamos HUNTER con pasión para potenciar tu estrategia en Instagram.
+          </p>
+          <p id="footer-p2">
+            Toma el control, activa tu asistente y prepárate para conquistar tus objetivos.
+          </p>
+          <p id="footer-cta" class="cta-footer">
+            <i class="fas fa-fighter-jet"></i> ¡Vamos a cazar esos resultados juntos! <i class="fas fa-fighter-jet"></i>
+          </p>
+        </footer>
+
+      </div> <!-- Fin .onboarding-container -->
+    </div> <!-- Fin .onboarding-background -->
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!-- Modal para Agregar/Editar Vendedor -->
+<!-- Clases de ejemplo, ajusta si no usas Bootstrap -->
+<div class="modal fade" id="vendedorModal" tabindex="-1" aria-labelledby="vendedorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form action="/vendedores" method="POST" id="vendedor-form">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="vendedorModalLabel">Agregar Vendedor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="vendedor_id" name="vendedor_id">
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="modal_nombre" class="form-label">Nombre Vendedor</label>
+                            <input type="text" class="form-control" id="modal_nombre" name="nombre" required>
+                        </div>
+                        <div class="col-md-6">
+                             <label for="modal_manager_asignado" class="form-label">Manager Asignado</label>
+                            <input type="text" class="form-control" id="modal_manager_asignado" name="manager_asignado">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modal_cuentas_asignadas" class="form-label">Cuentas Instagram (separadas por coma)</label>
+                        <input type="text" class="form-control" id="modal_cuentas_asignadas" name="cuentas_asignadas" placeholder="usuario1, usuario2">
+                    </div>
+
+                    <div class="row mb-3">
+                         <div class="col-md-6">
+                            <label for="modal_porcentaje_cumplimiento" class="form-label">% Cumplimiento</label>
+                            <input type="number" class="form-control" id="modal_porcentaje_cumplimiento" name="porcentaje_cumplimiento" min="0" max="100" step="0.01" value="0.00">
+                         </div>
+                         <div class="col-md-6">
+                             <label for="modal_objetivo_mensual" class="form-label">Objetivo Mensual</label>
+                            <input type="number" class="form-control" id="modal_objetivo_mensual" name="objetivo_mensual" min="0" step="1" value="0">
+                         </div>
+                    </div>
+
+                    <div class="row mb-3">
+                         <div class="col-md-6">
+                             <label for="modal_fecha_ingreso" class="form-label">Fecha Ingreso</label>
+                            <input type="date" class="form-control" id="modal_fecha_ingreso" name="fecha_ingreso">
+                         </div>
+                         <div class="col-md-6">
+                             <label for="modal_estado" class="form-label">Estado</label>
+                            <select id="modal_estado" name="estado" class="form-select">
+                                <option value="activo" selected>Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                                <option value="prueba">En Prueba</option>
+                                <option value="baja">De Baja</option>
+                            </select>
+                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modal_notas_auditoria" class="form-label">Notas Auditoría</label>
+                        <textarea class="form-control" id="modal_notas_auditoria" name="notas_auditoria" rows="3"></textarea>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

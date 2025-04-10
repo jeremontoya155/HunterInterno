@@ -1,0 +1,30 @@
+<!-- Modal para Registrar Desempeño Diario -->
+<div class="modal fade" id="desempenoModal" tabindex="-1" aria-labelledby="desempenoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <%# Usaremos un form que se enviará con JS (AJAX) %>
+            <form id="desempeno-form" onsubmit="submitDesempeno(event)">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="desempenoModalLabel">Registrar Desempeño Diario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="desempeno_vendedor_id" name="vendedor_id">
+                    <div class="mb-3">
+                        <label for="desempeno_fecha" class="form-label">Fecha</label>
+                        <input type="date" class="form-control" id="desempeno_fecha" name="fecha" value="<%= today %>" required>
+                    </div>
+                    <div id="desempeno-accounts-container">
+                        <!-- Aquí se generarán los inputs para cada cuenta con JS -->
+                        <p><small>Cargando cuentas...</small></p>
+                    </div>
+                    <div id="desempeno-feedback" class="mt-3"></div> <!-- Para mensajes de éxito/error -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Desempeño</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

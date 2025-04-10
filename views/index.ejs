@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <title>Instagram Bot - Agregar Cuenta</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="stylesheet" href="/static/css/scrollbar.css">
+    <link rel="stylesheet" href="/static/css/navbar.css">
+    <script src="/static/js/index.js"></script>
+    <script src="/static/js/navbar.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <div 
+    class="login-container" 
+    data-tooltip-target="tooltip-login" 
+    data-tooltip-placement="right"
+  >
+    <div class="avatar-wrapper">
+      <div class="avatar"></div>
+    </div>
+  
+    <% if (messages && messages.length > 0) { %>
+      <% messages.forEach(function(item) { %>
+        <div class="alert alert-<%= item.category %>"><%= item.message %></div>
+      <% }); %>
+    <% } %>
+  
+    <!-- Formulario para agregar una cuenta de Instagram -->
+    <form id="addAccountForm">
+      <div class="form-group">
+        <input
+          type="text"
+          name="insta_username"
+          placeholder="Instagram Username"
+          required
+        />
+        <i class="fas fa-user"></i>
+      </div>
+  
+      <div class="form-group">
+        <input
+          type="password"
+          name="insta_password"
+          placeholder="Instagram Password"
+          required
+        />
+        <i class="fas fa-lock"></i>
+      </div>
+  
+      <button type="submit" id="submitBtn">Agregar Cuenta</button>
+    </form>
+  </div>
+  
+  <!-- Tooltip content -->
+  <div id="tooltip-login" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700">
+    Cargue aqui sus usarios para ver sus avances!
+    <div class="tooltip-arrow" data-popper-arrow></div>
+  </div>
+
+    <script>
+      // Se intercepta el submit para enviar una petición PUT vía fetch
+      const addAccountForm = document.getElementById('addAccountForm');
+      addAccountForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(addAccountForm);
+        const data = {
+          insta_username: formData.get('insta_username'),
+          insta_password: formData.get('insta_password')
+        };
+
+        try {
+          const response = await fetch('/account', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+          });
+          if (response.ok) {
+            const result = await response.json();
+            alert('Cuenta actualizada correctamente');
+            // Aquí puedes actualizar el DOM o redirigir, según necesites
+          } else {
+            alert('Error al actualizar la cuenta');
+          }
+        } catch (error) {
+          console.error('Error en la solicitud:', error);
+          alert('Error en la solicitud');
+        }
+      });
+
+       // Inicializar tooltips de Flowbite
+       const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-tooltip-target]'));
+      tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new Tooltip(tooltipTriggerEl, {
+          placement: 'top', // Posición del tooltip
+          trigger: 'hover', // Mostrar al pasar el mouse
+        });
+      });
+    </script>
+   
+  </body>
+</html>

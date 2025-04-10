@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Nichos</title>
+    <link rel="stylesheet" href="/static/css/nichos.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #28a745;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Lista de Nichos</h2>
+
+       
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Ubicación</th>
+                    <th>Tipo de Personas</th>
+                    <th>Edad Mínima</th>
+                    <th>Edad Máxima</th>
+                    <th>Mensaje</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% nichos.forEach(nicho => { %>
+                    <tr>
+                        <td><%= nicho.id %></td>
+                        <td><%= nicho.ubicacion %></td>
+                        <td><%= nicho.tipo_personas %></td>
+                        <td><%= nicho.edad_min %></td>
+                        <td><%= nicho.edad_max %></td>
+                        <td><%= nicho.mensaje %></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
