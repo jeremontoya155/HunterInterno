@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auditoria actividades</title>
+    <!-- FontAwesome y Google Fonts (Poppins) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- CSS de la Navbar y Scrollbar -->
+    <link rel="stylesheet" href="/static/css/navbar.css" />
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+    <!-- CSS específico y completo para Vendedores -->
+    <link rel="stylesheet" href="/static/css/vendedores.css" />
+    <!-- Chart.js y Adaptador de Fecha (desde CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <%# Pasar datos iniciales a JS de forma segura %>
+    <script>
+      // Define la variable global ANTES de que se cargue vendedores_manager.js
+      const initialDashboardDataForChart = <%- JSON.stringify(initialDashboard || { chartData: [], totalMensajes: 0 }) %>;
+    </script>
+
+</head>
+<body>
+    <%- include('partials/navbar') %> <%# Asegúrate que esta ruta sea correcta %>
+
+    <div class="vendedor-main-container">
+
+        <!-- ============================================= -->
+        <!--         SECCIÓN DASHBOARD SUPERIOR          -->
+        <!-- ============================================= -->
+        <section class="dashboard-container card-style">
+            <div class="dashboard-header">
+                <h2><i class="fas fa-chart-pie icon-header"></i> Resumen General de Actividad</h2>
+                <form id="date-filter-form" class="date-filter-form">
+                    <label for="dash_start_date">Desde:</label>
+                    <input type="date" id="dash_start_date" name="from" value="<%= typeof initialStartDate !== 'undefined' ? initialStartDate : '' %>" required>
+                    <label for="dash_end_date">Hasta:</label>
+                    <input type="date" id="dash_end_date" name="to" value="<%= typeof initialEndDate !== 'undefined' ? initialEndDate : '' %>" required>
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-filter"></i> Aplicar Fechas</button>
+                </form>
+            </div>
+            <div class="dashboard-content">
+                <div class="dashboard-stats">
+                    <div class="stat-box">
+                        <span class="stat-value" id="total-messages-stat">
+                            <%# Verificar existencia de initialDashboard y totalMensajes %>
+                            <%= (typeof initialDashboard !== 'undefined' && typeof initialDashboard.totalMensajes !== 'undefined') ? initialDashboard.totalMensajes.toLocaleString('es-ES') : '0' %>
+                         </span>
+                        <span class="stat-label">Mensajes Enviados</span>
+                        <i class="fas fa-paper-plane stat-icon"></i>
+                    </div>
+                    <div class="stat-box placeholder"> <span class="stat-value">--</span> <span class="stat-label">Respuestas Totales</span> <i class="fas fa-reply stat-icon"></i> </div>
+                    <div class="stat-box placeholder"> <span class="stat-value">--</span> <span class="stat-label">Tasa de Respuesta</span> <i class="fas fa-percentage stat-icon"></i> </div>
+                </div>
+                <div class="chart-container">
+                     <div id="chart-loading-spinner" class="spinner" style="display: none;"></div>
+                    <canvas id="messagesChart"></canvas>
+                </div>
+            </div>
+            <!-- Mensaje de error para el dashboard -->
+            <div id="dashboard-error" class="alert alert-danger" style="display: none; margin-top: 1rem;" role="alert"></div>
+        </section>
+
+
+    <!-- Scripts (Navbar, Lógica Vendedores con Chart.js) -->
+    <script defer src="/static/js/navbar.js"></script>
+    <script defer src="/static/js/vendedores_manager.js"></script> <%# Script Corregido %>
+
+</body>
+</html>

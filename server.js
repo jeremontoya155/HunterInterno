@@ -4,10 +4,43 @@ const { Pool } = require('pg');
 const nichosController = require('./controllers/nichosController');
 
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/' }); // Configure the destination folder for uploads
+const fs = require('fs'); // Necesario para operaciones de archivo como verificar existencia
 
+// Asegúrate de que el directorio 'uploads/' exista
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)){
+    fs.mkdirSync(uploadDir);
+}
 
+// Configuración de Multer (puedes personalizar storage si quieres más control sobre nombres/rutas)
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); // Directorio donde se guardarán los archivos
+  },
+  filename: function (req, file, cb) {
+    // Generar un nombre único para evitar colisiones y problemas de seguridad
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const extension = path.extname(file.originalname); // Obtener extensión original
+    cb(null, file.fieldname + '-' + uniqueSuffix + extension); // Ej: csvFile-1678886400000-123456789.csv
+  }
+});
 
+// Filtro para aceptar solo archivos CSV
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype === 'text/csv' || file.originalname.toLowerCase().endsWith('.csv')) {
+    cb(null, true); // Aceptar archivo
+  } else {
+    cb(new Error('Solo se permiten archivos CSV.'), false); // Rechazar archivo
+  }
+};
+
+const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 } // Límite de 10MB (ajusta según necesites)
+});
+
+// ... resto de tu configuración de express, pool, session, etc. ...
 
 const session = require('express-session');
 // Importa MongoClient para conectarte a MongoDB
@@ -691,11 +724,332 @@ app.get('/vendedores/:id/historial', isAuthenticated, async (req, res) => {
   }
 });
 
+app.get('/crecimiento', isAuthenticated, async (req, res) => {
+  // Define fechas por defecto para el dashboard inicial (ej: último mes)
+  const defaultEndDate = new Date();
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultEndDate.getDate() - 29); // 30 días incluyendo hoy
+  const initialStartDate = defaultStartDate.toISOString().slice(0, 10);
+  const initialEndDate = defaultEndDate.toISOString().slice(0, 10);
+  const hoy = new Date().toISOString().slice(0, 10); // Definir 'hoy' aquí
+
+  try {
+      // 1. Obtener datos del dashboard inicial
+      // Se llama a getDashboardData ANTES de cualquier posible error en las queries de vendedor
+      const initialDashboardData = await getDashboardData(initialStartDate, initialEndDate);
+
+      // 2. Obtener datos de vendedores
+      const sqlQueryVendedores = `
+          SELECT v.*,
+                 COALESCE(jsonb_array_length(v.cuentas_asignadas), 0) as num_cuentas
+          FROM vendedores v ORDER BY v.nombre ASC
+      `;
+      // console.log('DEBUG: Query Vendedores SQL:', sqlQueryVendedores);
+      const vendedoresResult = await pool.query(sqlQueryVendedores);
+      const vendedores = vendedoresResult.rows;
+      const vendedorIds = vendedores.map(v => v.id);
+
+      // 3. Calcular fechas y desempeño MENSUAL
+      const nowForMonth = new Date(); // Usar una nueva instancia por claridad
+      const year = nowForMonth.getFullYear();
+      const month = nowForMonth.getMonth();
+      const firstDayOfMonth = new Date(year, month, 1).toISOString().slice(0, 10);
+      const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().slice(0, 10);
+
+      let desempenoMesMap = {};
+      if (vendedorIds.length > 0) {
+          const sqlQueryMes = `
+              SELECT
+                  vendedor_id,
+                  SUM(mensajes_enviados) as total_mensajes_mes,
+                  SUM(respuestas_recibidas) as total_respuestas_mes
+              FROM vendedor_desempeno_diario
+              WHERE vendedor_id = ANY($1::int[]) AND fecha >= $2 AND fecha <= $3
+              GROUP BY vendedor_id;
+          `;
+          const desempenoMesResult = await pool.query(sqlQueryMes, [vendedorIds, firstDayOfMonth, lastDayOfMonth]);
+          desempenoMesResult.rows.forEach(item => {
+               desempenoMesMap[item.vendedor_id] = {
+                   mensajes: parseInt(item.total_mensajes_mes, 10) || 0,
+                   respuestas: parseInt(item.total_respuestas_mes, 10) || 0
+               };
+          });
+      }
+
+      // 4. Obtener desempeño de HOY
+      const sqlQueryHoy = `
+          SELECT vendedor_id, insta_username, mensajes_enviados, respuestas_recibidas
+          FROM vendedor_desempeno_diario
+          WHERE fecha = $1
+      `;
+      const desempenoHoyResult = await pool.query(sqlQueryHoy, [hoy]);
+      const desempenoHoyMap = desempenoHoyResult.rows.reduce((map, item) => {
+           if (!map[item.vendedor_id]) map[item.vendedor_id] = {};
+           map[item.vendedor_id][item.insta_username.toLowerCase()] = {
+               mensajes: item.mensajes_enviados,
+               respuestas: item.respuestas_recibidas
+           };
+           return map;
+       }, {});
+
+      // 5. Obtener totales de MongoDB
+      let allAssignedUsernames = [];
+       vendedores.forEach(v => {
+          if (v.cuentas_asignadas && Array.isArray(v.cuentas_asignadas)) {
+               allAssignedUsernames.push(...v.cuentas_asignadas);
+           }
+       });
+      allAssignedUsernames = [...new Set(allAssignedUsernames.map(u => u.toLowerCase()))];
+      let mongoMessageCounts = {};
+      if (allAssignedUsernames.length > 0) {
+          const client = new MongoClient(mongoUri, { useUnifiedTopology: true });
+           try {
+               await client.connect();
+               const db = client.db(mongoDbName);
+               const collection = db.collection('historial_acciones');
+               const pipeline = [
+                  { $match: { username: { $in: allAssignedUsernames }, accion: { $regex: /mensaje/i } } },
+                  { $group: { _id: { $toLower: "$username" }, count: { $sum: 1 } } },
+                  { $project: { _id: 0, username: "$_id", count: 1 } }
+               ];
+               const results = await collection.aggregate(pipeline).toArray();
+               results.forEach(item => { mongoMessageCounts[item.username] = item.count; });
+            } finally { await client.close(); }
+      }
+
+      // 6. Combinar datos para la vista
+      const vendedoresParaVista = vendedores.map(vendedor => {
+           let cuentasConDatos = [];
+           let totalMensajesHoy = 0;
+           let totalRespuestasHoy = 0;
+           let totalMensajesMongo = 0;
+           if (vendedor.cuentas_asignadas && Array.isArray(vendedor.cuentas_asignadas)) {
+              cuentasConDatos = vendedor.cuentas_asignadas.map(cuenta => {
+                  const cuentaLower = cuenta.toLowerCase();
+                  const desempenoCuentaHoy = desempenoHoyMap[vendedor.id]?.[cuentaLower] || { mensajes: 0, respuestas: 0 };
+                  const mensajesMongo = mongoMessageCounts[cuentaLower] || 0;
+                  totalMensajesHoy += desempenoCuentaHoy.mensajes;
+                  totalRespuestasHoy += desempenoCuentaHoy.respuestas;
+                  totalMensajesMongo += mensajesMongo;
+                  return { nombre: cuenta, mensajesHoy: desempenoCuentaHoy.mensajes, respuestasHoy: desempenoCuentaHoy.respuestas, mensajesMongoTotal: mensajesMongo };
+              });
+          }
+
+           const objetivoMensual = vendedor.objetivo_mensual || 0;
+           const mensajesEsteMes = desempenoMesMap[vendedor.id]?.mensajes || 0;
+           let progresoMensualPct = 0;
+           if (objetivoMensual > 0) {
+               progresoMensualPct = Math.min(100, Math.max(0, (mensajesEsteMes / objetivoMensual) * 100));
+           }
+           return {
+               ...vendedor,
+               num_cuentas: vendedor.num_cuentas || 0,
+               cuentasDetalle: cuentasConDatos,
+               totalMensajesHoy, totalRespuestasHoy, totalMensajesMongo,
+               total_mensajes_mes: mensajesEsteMes,
+               progreso_mensajes_mes_pct: progresoMensualPct,
+           };
+      });
+
+      // 7. Renderizar vista pasando TODAS las variables necesarias
+      res.render('crecimiento', {
+          vendedores: vendedoresParaVista,
+          user: req.session.user,
+          success: req.query.success,
+          // Pasar el error específico del dashboard si existe, sino el query param
+          error: initialDashboardData.error ? `Error al cargar datos del dashboard: ${initialDashboardData.error}` : req.query.error,
+          today: hoy,
+          initialDashboard: initialDashboardData, // Objeto { totalMensajes, chartData, error }
+          initialStartDate: initialStartDate,     // String YYYY-MM-DD
+          initialEndDate: initialEndDate          // String YYYY-MM-DD
+      });
+
+  } catch (error) {
+      // Captura errores de las queries de vendedor o cualquier otro error inesperado
+      console.error("Error severo en GET /vendedores:", error);
+      res.status(500).render('error', {
+           message: 'Error al cargar la página de vendedores',
+           error: error, // Pasar el error para depuración (si error.ejs lo maneja)
+           user: req.session.user
+         });
+  }
+});
+// --- NUEVO ENDPOINT: GET /vendedores/dashboard-data (para AJAX) ---
+app.get('/crecimiento/dashboard-data', isAuthenticated, async (req, res) => {
+  const { from, to } = req.query;
+
+  // Validar fechas (básico)
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!from || !to || !dateRegex.test(from) || !dateRegex.test(to)) {
+      return res.status(400).json({ error: 'Fechas inválidas o faltantes (YYYY-MM-DD)' });
+  }
+
+  const dashboardData = await getDashboardData(from, to);
+
+  if (dashboardData.error) {
+      return res.status(500).json({ error: `Error al obtener datos del dashboard: ${dashboardData.error}` });
+  }
+
+  res.json(dashboardData); // Devuelve { totalMensajes, chartData }
+});
 
 
 app.get('/onboarding', isAuthenticated, (req, res) => {
   res.render('onboarding');
 });
+
+  
+
+// --- Rutas de Auditoría - Trackeo ---
+
+// GET /auditoria/trackeo - Muestra el formulario y el historial
+app.get('/auditoria/trackeo', isAuthenticated, async (req, res) => {
+  // Verificar Rol (opcional pero recomendado para secciones de auditoría)
+  const userRole = req.session.user.role;
+  if (userRole !== 'admin' && userRole !== 'auditoria') {
+      return res.status(403).render('error', { message: 'Acceso Denegado', error: { status: 403 }, user: req.session.user });
+  }
+
+  try {
+      // Consultar historial de uploads, uniendo con la tabla de usuarios para obtener el nombre
+      const query = `
+          SELECT t.*, u.username as uploaded_by_username
+          FROM tracking_uploads t
+          LEFT JOIN users u ON t.uploaded_by_user_id = u.id
+          ORDER BY t.uploaded_at DESC;
+      `;
+      const result = await pool.query(query);
+      const uploads = result.rows;
+
+      res.render('auditoria_trackeo', {
+          user: req.session.user,
+          uploads: uploads,
+          success: req.query.success,
+          error: req.query.error
+      });
+
+  } catch (error) {
+      console.error("Error en GET /auditoria/trackeo:", error);
+      res.status(500).render('error', { message: 'Error al cargar la página de trackeo', error, user: req.session.user });
+  }
+});
+
+// POST /auditoria/trackeo - Maneja la subida del archivo CSV
+app.post('/auditoria/trackeo', isAuthenticated, upload.single('csvFile'), async (req, res) => {
+  // Verificar Rol (opcional)
+  const userRole = req.session.user.role;
+   if (userRole !== 'admin' && userRole !== 'auditoria') {
+       // Si multer ya guardó el archivo, deberíamos borrarlo
+       if (req.file) fs.unlinkSync(req.file.path);
+       return res.status(403).redirect('/auditoria/trackeo?error=Acción no permitida');
+   }
+
+  // Verificar si Multer encontró un error (ej. tipo de archivo incorrecto)
+  if (!req.file) {
+      // Si no hay req.file, puede ser porque el filtro lo rechazó o no se envió archivo
+      return res.redirect('/auditoria/trackeo?error=' + (req.multerError || 'No se subió ningún archivo o el tipo no es CSV.'));
+  }
+
+  const { tipo_nicho } = req.body;
+  const userId = req.session.user.id;
+
+  if (!tipo_nicho) {
+      // Borrar el archivo subido si falta el tipo de nicho
+      fs.unlinkSync(req.file.path);
+      return res.redirect('/auditoria/trackeo?error=El Tipo de Nicho es obligatorio.');
+  }
+
+  try {
+      const { originalname, filename: saved_filename, path: filepath, mimetype, size } = req.file;
+
+      const insertQuery = `
+          INSERT INTO tracking_uploads
+              (original_filename, saved_filename, filepath, mimetype, size, tipo_nicho, uploaded_by_user_id)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          RETURNING id;
+      `;
+      await pool.query(insertQuery, [
+          originalname, saved_filename, filepath, mimetype, size, tipo_nicho.trim(), userId
+      ]);
+
+      res.redirect('/auditoria/trackeo?success=Archivo subido y registrado correctamente.');
+
+  } catch (dbError) {
+      console.error("Error al guardar registro en BD:", dbError);
+      // Intentar borrar el archivo físico si falló la inserción en BD
+      try {
+          fs.unlinkSync(req.file.path);
+      } catch (unlinkErr) {
+          console.error("Error al borrar archivo después de fallo de BD:", unlinkErr);
+          // Considerar loggear esto de forma más robusta
+      }
+      res.redirect('/auditoria/trackeo?error=Error al guardar la información en la base de datos.');
+  }
+});
+
+// GET /auditoria/trackeo/download/:id - Permite descargar un archivo específico
+app.get('/auditoria/trackeo/download/:id', isAuthenticated, async (req, res) => {
+  // Puedes añadir verificación de rol si solo ciertos usuarios pueden descargar
+  const { id } = req.params;
+
+  try {
+      const result = await pool.query('SELECT filepath, original_filename FROM tracking_uploads WHERE id = $1', [id]);
+
+      if (result.rows.length === 0) {
+          return res.status(404).send('Archivo no encontrado.');
+      }
+
+      const fileInfo = result.rows[0];
+      const filePath = path.resolve(fileInfo.filepath); // Usar path.resolve por seguridad
+
+      // Verificar que el archivo exista en el servidor antes de intentar descargarlo
+      if (!fs.existsSync(filePath)) {
+          console.error(`Error: Archivo no encontrado en el sistema de archivos: ${filePath} (Registro ID: ${id})`);
+           // Opcional: Marcar este registro en la BD como 'no encontrado' o 'inválido'
+          return res.status(404).send('Error: El archivo asociado a este registro no se encuentra en el servidor.');
+      }
+
+      // res.download() maneja los headers Content-Disposition y Content-Type
+      res.download(filePath, fileInfo.original_filename, (err) => {
+          if (err) {
+              // Manejo de errores específicos de res.download
+              console.error(`Error al intentar descargar ${filePath}:`, err);
+              if (!res.headersSent) {
+                  // Si aún no se han enviado headers, podemos enviar un error 500
+                   res.status(500).send('Error al procesar la descarga del archivo.');
+              }
+              // Si los headers ya se enviaron, el error es más difícil de manejar limpiamente.
+              // Node.js podría cerrar la conexión. El log es importante aquí.
+          }
+      });
+
+  } catch (error) {
+      console.error("Error en GET /auditoria/trackeo/download/:id:", error);
+      res.status(500).send('Error interno del servidor al intentar descargar el archivo.');
+  }
+});
+
+
+// Middleware para manejar errores específicos de Multer (como tamaño de archivo excedido)
+// Debe ir DESPUÉS de las rutas que usan `upload`
+app.use((err, req, res, next) => {
+if (err instanceof multer.MulterError) {
+  // Un error de Multer ocurrió (ej. límite de tamaño)
+  console.error("MulterError:", err);
+  // Redirige a la página anterior (si es posible) o a la página de trackeo con un mensaje de error
+  const redirectUrl = req.headers.referer || '/auditoria/trackeo';
+  return res.redirect(`${redirectUrl}?error=Error al subir archivo: ${err.message}`);
+} else if (err) {
+  // Otro tipo de error (ej. filtro de archivo)
+   console.error("File Upload Error:", err);
+   const redirectUrl = req.headers.referer || '/auditoria/trackeo';
+   return res.redirect(`${redirectUrl}?error=${err.message || 'Error desconocido al subir el archivo.'}`);
+}
+// Si no es un error de subida, pasa al siguiente middleware de errores
+next(err);
+});
+
+// ... resto de tus rutas y app.listen ...
 
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {

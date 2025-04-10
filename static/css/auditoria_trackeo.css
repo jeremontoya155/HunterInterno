@@ -1,0 +1,532 @@
+/* static/css/auditoria_trackeo.css - VERSIÓN MEJORADA "10/10" */
+
+/* -------------------------------------- */
+/* --- Variables y Configuración Base --- */
+/* -------------------------------------- */
+/* Asume que las variables :root están definidas globalmente */
+/* (Si no, copia la sección :root de onboarding.css aquí) */
+
+body {
+    font-family: var(--font-primary, 'Poppins', sans-serif);
+    background-color: var(--color-background-dark, #0a0a10);
+    color: var(--color-text-primary, #e5e7eb);
+    line-height: var(--line-height-base, 1.7);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Scrollbar Consistente */
+  body::-webkit-scrollbar { width: 8px; }
+  body::-webkit-scrollbar-track { background: var(--color-background-medium, #111827); }
+  body::-webkit-scrollbar-thumb { background-color: var(--color-accent, #4caf91); border-radius: 10px; border: 2px solid var(--color-background-medium, #111827); }
+  body::-webkit-scrollbar-thumb:hover { background-color: var(--color-accent-hover, #5cdb95); }
+  
+  /* ------------------------------- */
+  /* --- Layout y Contenedor --- */
+  /* ------------------------------- */
+  @keyframes fadeInPage { /* Animación sutil de entrada */
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .trackeo-page-container {
+    width: 100%;
+    min-height: calc(100vh - 60px); /* Ajustar a altura navbar */
+    /* Fondo más dinámico */
+    background: var(--color-background-dark, #0a0a10)
+                radial-gradient(ellipse at 70% 30%, rgba(76, 175, 145, 0.12), transparent 60%),
+                radial-gradient(ellipse at 30% 80%, rgba(92, 219, 149, 0.08), transparent 70%);
+    padding: calc(var(--spacing-unit, 1rem) * 3) calc(var(--spacing-unit, 1rem) * 1.5);
+    padding-top: calc(var(--spacing-unit, 1rem) * 2.5); /* Espacio post-navbar */
+    animation: fadeInPage 0.6s ease-out forwards; /* Aplicar animación */
+  }
+  
+  .trackeo-content-wrapper {
+    max-width: 1280px; /* Un poco más ancho */
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing-unit, 1rem) * 3.5); /* Más espacio entre secciones */
+  }
+  
+  /* ------------------------------- */
+  /* --- Título Principal y Alertas --- */
+  /* ------------------------------- */
+  .page-main-title {
+    font-size: clamp(2rem, 5vw, 2.8rem); /* Más grande */
+    font-weight: 700;
+    color: var(--color-text-primary, #e5e7eb);
+    text-align: center;
+    margin-bottom: calc(var(--spacing-unit, 1rem) * 1.5);
+    text-shadow: 0 3px 8px rgba(0, 0, 0, 0.6); /* Sombra más profunda */
+    letter-spacing: 1px; /* Más espaciado */
+  }
+  
+  .page-main-title .highlight {
+    color: var(--color-highlight, #4caf91);
+    display: inline-block; /* Para efectos si se añaden */
+  }
+  
+  /* Alertas Refinadas */
+  .alert {
+    border-radius: var(--border-radius-medium, 8px);
+    padding: calc(var(--spacing-unit, 1rem) * 1.2) calc(var(--spacing-unit, 1rem) * 1.8);
+    margin-bottom: calc(var(--spacing-unit, 1rem) * 2.5);
+    border: 1px solid transparent;
+    font-size: 1rem; /* Ligeramente más grande */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* Sombra más notoria */
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing-unit, 1rem) * 1.2);
+    background-blend-mode: overlay; /* Mezcla fondo */
+  }
+  .alert::before { font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 1.4em; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+  
+  .alert-success {
+    color: #d1fae5; /* Verde muy claro */
+    background-color: rgba(16, 185, 129, 0.2); /* Fondo verde (emerald-500 de Tailwind con alpha) */
+    border-color: rgba(16, 185, 129, 0.5);
+    /* background-image: linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%, transparent); */
+    /* background-size: 40px 40px; */ /* Textura sutil opcional */
+  }
+  .alert-success::before { content: "\f058"; color: #6ee7b7; } /* Verde claro */
+  
+  .alert-danger {
+    color: #fee2e2; /* Rojo muy claro */
+    background-color: rgba(239, 68, 68, 0.15); /* Fondo rojo (red-500 de Tailwind con alpha) */
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+  .alert-danger::before { content: "\f071"; color: #f87171; } /* Rojo claro */
+  
+  /* ------------------------------- */
+  /* --- Contenedores de Sección --- */
+  /* ------------------------------- */
+  .upload-form-container,
+  .history-container {
+    /* Fondo más complejo con ruido sutil */
+    background-color: var(--color-background-medium, #111827);
+    background-image: linear-gradient(150deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05)),
+                      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%239ca3af' fill-opacity='0.03' d='M1 3h1v1H1V3zm2-2h1v1H3V1z'%3E%3C/path%3E%3C/svg%3E"); /* Ruido SVG */
+    border-radius: var(--border-radius-large, 16px);
+    padding: calc(var(--spacing-unit, 1rem) * 3) calc(var(--spacing-unit, 1rem) * 3.5); /* Más padding */
+    border: 1px solid var(--color-border, rgba(76, 175, 145, 0.25)); /* Borde más notorio */
+    /* Sombra más elaborada */
+    box-shadow: 0 1px 2px rgba(76, 175, 145, 0.1), /* Sombra color acento */
+                0 4px 8px rgba(0, 0, 0, 0.3),    /* Sombra oscura cercana */
+                0 15px 30px rgba(0, 0, 0, 0.4); /* Sombra oscura lejana */
+    transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1),
+                box-shadow 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+    overflow: hidden; /* Para contener efectos internos */
+    position: relative; /* Para pseudo-elementos si se usan */
+  }
+  
+  .upload-form-container:hover,
+  .history-container:hover {
+    transform: translateY(-8px) scale(1.01); /* Efecto hover más pronunciado */
+    box-shadow: 0 2px 4px rgba(76, 175, 145, 0.15),
+                0 8px 16px rgba(0, 0, 0, 0.4),
+                0 25px 50px rgba(0, 0, 0, 0.5);
+  }
+  
+  /* Línea decorativa superior */
+  .upload-form-container::before,
+  .history-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, var(--color-accent, #4caf91), transparent);
+      opacity: 0.6;
+      border-radius: 16px 16px 0 0; /* Solo arriba */
+  }
+  
+  .section-title {
+    font-size: clamp(1.5rem, 4vw, 1.9rem); /* Ligeramente más grande */
+    font-weight: 600;
+    color: var(--color-accent-hover, #5cdb95);
+    margin-bottom: calc(var(--spacing-unit, 1rem) * 2.5);
+    padding-bottom: calc(var(--spacing-unit, 1rem) * 1.2);
+    border-bottom: 1px solid var(--color-border, rgba(76, 175, 145, 0.3));
+    letter-spacing: 0.8px;
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing-unit, 1rem) * 1);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  /* Icono del título con estilo */
+  .section-title i.fa-fw,
+  .section-title::before /* Usando ::before con FontAwesome content */ {
+      font-size: 1.2em; /* Más grande */
+      opacity: 0.9;
+      color: var(--color-accent, #4caf91);
+      text-shadow: 0 0 5px rgba(76, 175, 145, 0.5); /* Glow */
+  }
+  /* Iconos específicos para cada sección (requiere añadirlos en el EJS o usar ::before) */
+  /* Ejemplo: Si añades <i class="fas fa-upload fa-fw"></i> en el EJS */
+  /* Ya está cubierto por .section-title i.fa-fw */
+  
+  /* Ejemplo usando ::before si NO tienes icono en EJS */
+  .upload-form-container > .section-title::before {
+      /* (ya definido en el css anterior, mantenerlo) */
+  }
+  .history-container > .section-title::before {
+      /* (ya definido en el css anterior, mantenerlo) */
+  }
+  
+  /* ------------------------------- */
+  /* --- Formulario de Subida --- */
+  /* ------------------------------- */
+  .upload-form { /* Añadido contenedor del form si es necesario */
+      display: flex;
+      flex-direction: column;
+      gap: calc(var(--spacing-unit, 1rem) * 1.8); /* Espacio entre campos */
+  }
+  
+  .upload-form .form-group { /* Contenedor para label+input */
+      position: relative; /* Para posibles pseudo-elementos */
+  }
+  
+  .upload-form label {
+    display: block;
+    font-weight: 500;
+    color: var(--color-text-secondary, #9ca3af);
+    margin-bottom: calc(var(--spacing-unit, 1rem) * 0.6);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px; /* Más espaciado */
+  }
+  .upload-form label .text-danger { /* Asterisco requerido */
+      color: #f87171;
+      margin-left: 3px;
+      font-weight: 700;
+  }
+  
+  .upload-form .form-control {
+    width: 100%;
+    padding: calc(var(--spacing-unit, 1rem) * 0.9) calc(var(--spacing-unit, 1rem) * 1.4); /* Más padding */
+    background-color: rgba(0, 0, 0, 0.25); /* Ligeramente más oscuro */
+    border: 1px solid transparent; /* Borde inicial transparente */
+    border-bottom-color: var(--color-border, rgba(76, 175, 145, 0.3)); /* Solo borde inferior visible */
+    border-radius: var(--border-radius-medium, 8px);
+    color: var(--color-text-primary, #e5e7eb);
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+  }
+  .upload-form .form-control::placeholder { color: rgba(156, 163, 175, 0.6); }
+  
+  .upload-form .form-control:focus {
+    outline: none;
+    background-color: rgba(0, 0, 0, 0.35);
+    border-color: var(--color-accent, #4caf91); /* Borde completo al enfocar */
+    box-shadow: 0 0 10px rgba(76, 175, 145, 0.3), /* Glow exterior */
+                inset 0 1px 3px rgba(0,0,0,0.3); /* Sombra interior sutil */
+  }
+  
+  /* Input File Mejorado */
+  .upload-form input[type="file"].form-control {
+      padding: calc(var(--spacing-unit, 1rem) * 0.6) calc(var(--spacing-unit, 1rem) * 1.2);
+      cursor: pointer;
+  }
+  .upload-form input[type="file"]::file-selector-button {
+    margin-right: calc(var(--spacing-unit, 1rem) * 1.2);
+    padding: calc(var(--spacing-unit, 1rem) * 0.7) calc(var(--spacing-unit, 1rem) * 1.2);
+    background: linear-gradient(145deg, var(--color-accent, #4caf91), var(--color-accent-hover, #5cdb95));
+    border: none;
+    border-radius: var(--border-radius-small, 4px);
+    color: var(--color-background-dark, #0a0a10);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .upload-form input[type="file"]::file-selector-button:hover {
+    /* El gradiente ya maneja el hover visualmente, podemos añadir un transform */
+     transform: scale(1.05);
+     filter: brightness(1.1);
+  }
+  .upload-form input[type="file"]:hover { /* Hover sobre toda la zona */
+      border-bottom-color: var(--color-accent-hover, #5cdb95);
+  }
+  
+  .upload-form .form-text {
+    font-size: 0.88rem; /* Un poco más grande */
+    color: var(--color-text-secondary, #9ca3af);
+    margin-top: calc(var(--spacing-unit, 1rem) * 0.6);
+    opacity: 0.9;
+  }
+  
+  /* Botón Submit Excelente */
+  .upload-form .btn-submit {
+    padding: calc(var(--spacing-unit, 1rem) * 1) calc(var(--spacing-unit, 1rem) * 2.5); /* Más padding */
+    background: linear-gradient(145deg, var(--color-accent, #4caf91), var(--color-accent-hover, #5cdb95));
+    color: var(--color-background-dark, #0a0a10);
+    border: none;
+    border-radius: var(--border-radius-medium, 8px);
+    font-weight: 700; /* Más grueso */
+    font-size: 1.05rem;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), /* Efecto rebote */
+                box-shadow 0.3s ease, filter 0.3s ease;
+    box-shadow: 0 5px 12px rgba(76, 175, 145, 0.35), /* Sombra más fuerte */
+                0 1px 2px rgba(0,0,0,0.1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center; /* Centra si es full-width */
+    gap: calc(var(--spacing-unit, 1rem) * 0.8);
+    margin-top: calc(var(--spacing-unit, 1rem) * 1.5);
+    align-self: flex-start; /* Alinea a la izquierda por defecto */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .upload-form .btn-submit i { font-size: 1.1em; }
+  
+  .upload-form .btn-submit:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 8px 18px rgba(76, 175, 145, 0.5),
+                0 2px 4px rgba(0,0,0,0.15);
+    filter: brightness(1.1);
+  }
+  .upload-form .btn-submit:active {
+    transform: translateY(-1px) scale(0.98);
+    box-shadow: 0 3px 8px rgba(76, 175, 145, 0.4);
+    filter: brightness(0.95);
+  }
+  
+  /* ------------------------------- */
+  /* --- Tabla Historial --- */
+  /* ------------------------------- */
+  .history-table-wrapper {
+    overflow-x: auto;
+    /* Aplicar scrollbar personalizado */
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-accent) rgba(255, 255, 255, 0.08);
+    border-radius: var(--border-radius-medium, 8px); /* Redondear contenedor scroll */
+    border: 1px solid rgba(255,255,255,0.05); /* Borde sutil al wrapper */
+    margin-top: calc(var(--spacing-unit, 1rem) * 0.5);
+  }
+  .history-table-wrapper::-webkit-scrollbar { width: 8px; height: 8px; }
+  .history-table-wrapper::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 4px; }
+  .history-table-wrapper::-webkit-scrollbar-thumb { background-color: var(--color-accent); border-radius: 4px; border: 1px solid var(--color-background-light); }
+  .history-table-wrapper::-webkit-scrollbar-thumb:hover { background-color: var(--color-accent-hover); }
+  .history-table-wrapper::-webkit-scrollbar-corner { background: transparent; }
+  
+  .history-table {
+    width: 100%;
+    min-width: 1000px; /* Ancho mínimo para scroll */
+    border-collapse: collapse; /* Más limpio */
+    font-size: 0.95rem;
+  }
+  
+  /* Cabecera Sticky Refinada */
+  .history-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    /* Fondo cristalino */
+    background-color: rgba(17, 24, 39, 0.7); /* color-background-medium con alpha y más oscuro */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 2px solid var(--color-accent, #4caf91); /* Línea inferior fuerte */
+  }
+  
+  .history-table th {
+    padding: calc(var(--spacing-unit, 1rem) * 1.1) calc(var(--spacing-unit, 1rem) * 1.4); /* Más padding */
+    text-align: left;
+    font-weight: 600;
+    color: var(--color-accent-hover, #5cdb95);
+    text-transform: uppercase;
+    letter-spacing: 1px; /* Más espaciado */
+    white-space: nowrap;
+    font-size: 0.85rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+  /* Icono opcional en headers */
+  .history-table th i { margin-right: 6px; opacity: 0.7; }
+  
+  .history-table tbody tr {
+    border-bottom: 1px solid var(--color-border, rgba(76, 175, 145, 0.1)); /* Borde fila más sutil */
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  .history-table tbody tr:last-child { border-bottom: none; }
+  
+  .history-table tbody tr:hover {
+    background-color: rgba(76, 175, 145, 0.1); /* Verde más notorio al pasar */
+    transform: scale(1.005); /* Ligero zoom */
+    box-shadow: 0 0 15px rgba(76, 175, 145, 0.2); /* Glow en hover */
+    position: relative; /* Para que el shadow funcione bien */
+    z-index: 1;
+  }
+  
+  .history-table td {
+    padding: calc(var(--spacing-unit, 1rem) * 1) calc(var(--spacing-unit, 1rem) * 1.4);
+    vertical-align: middle;
+    color: var(--color-text-primary, #e5e7eb);
+    line-height: 1.5; /* Mejor lectura */
+  }
+  
+  /* Estilos Columnas Específicas */
+  .history-table td:nth-child(1), /* Fecha */
+  .history-table td:nth-child(5) { /* Subido por */
+    color: var(--color-text-secondary, #9ca3af);
+    font-size: 0.9em;
+    white-space: nowrap;
+  }
+  .history-table td:nth-child(4) { /* Tamaño */
+      color: var(--color-text-secondary, #9ca3af);
+      font-size: 0.9em;
+      font-family: monospace; /* Fuente monoespaciada para tamaño */
+      white-space: nowrap;
+      text-align: right; /* Alinear tamaño a la derecha */
+  }
+  .history-table td:nth-child(2) { /* Tipo Nicho */
+      font-weight: 500; /* Ligeramente más grueso */
+      color: var(--color-text-primary);
+  }
+  .history-table td:nth-child(3) { /* Nombre Original */
+      max-width: 300px; /* Limitar ancho máximo */
+      overflow: hidden;
+      text-overflow: ellipsis; /* Añadir ... si es muy largo */
+      white-space: nowrap; /* Prevenir wrap */
+      cursor: default; /* Cambia cursor para indicar que puede haber más */
+      /* El title en EJS muestra el nombre completo */
+  }
+  
+  /* Botones de Acción con Tooltips (estilo base) */
+  .history-table .action-buttons {
+    text-align: right;
+    white-space: nowrap;
+    position: relative; /* Para posicionar tooltips si se usan con JS/CSS */
+  }
+  .history-table .action-buttons .btn-action {
+    display: inline-flex; /* Alinea icono */
+    align-items: center;
+    justify-content: center;
+    width: 34px; /* Tamaño fijo */
+    height: 34px;
+    border-radius: 50%; /* Círculos */
+    color: var(--color-background-dark, #0a0a10);
+    font-size: 0.95rem; /* Tamaño icono */
+    text-decoration: none;
+    margin-left: calc(var(--spacing-unit, 1rem) * 0.6);
+    border: none;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                box-shadow 0.3s ease, background-color 0.2s ease, filter 0.2s ease;
+    position: relative; /* Para tooltip si es CSS */
+  }
+  .history-table .btn-action i { line-height: 1; /* Centra icono FA */ }
+  
+  /* Tooltip CSS Básico (añadir `data-tooltip="Descargar"` en EJS) */
+  .btn-action::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 120%; /* Encima del botón */
+      left: 50%;
+      transform: translateX(-50%) scale(0.8);
+      background-color: var(--color-background-light, #1f2937);
+      color: var(--color-text-primary, #e5e7eb);
+      padding: 4px 8px;
+      border-radius: var(--border-radius-small, 4px);
+      font-size: 0.8rem;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+      pointer-events: none; /* No interfiere con el click */
+      z-index: 20;
+  }
+  .btn-action:hover::after {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) scale(1);
+  }
+  
+  /* Botón Descargar */
+  .history-table .btn-download {
+    background: linear-gradient(145deg, var(--color-accent, #4caf91), var(--color-accent-hover, #5cdb95));
+    box-shadow: 0 3px 6px rgba(76, 175, 145, 0.3);
+  }
+  .history-table .btn-download:hover {
+    transform: scale(1.15); /* Más zoom */
+    box-shadow: 0 5px 10px rgba(76, 175, 145, 0.5);
+    filter: brightness(1.1);
+  }
+  
+  /* Botón Borrar */
+  .history-table .btn-delete {
+    background: linear-gradient(145deg, #f87171, #ef4444); /* Gradiente rojo */
+    box-shadow: 0 3px 6px rgba(239, 68, 68, 0.3);
+  }
+  .history-table .btn-delete:hover {
+    transform: scale(1.15);
+    box-shadow: 0 5px 10px rgba(239, 68, 68, 0.5);
+    filter: brightness(1.1);
+  }
+  
+  /* Mensaje "No hay archivos" */
+  .no-files-message {
+    text-align: center;
+    padding: calc(var(--spacing-unit, 1rem) * 4) 0; /* Más padding */
+    color: var(--color-text-secondary, #9ca3af);
+    font-style: italic;
+    font-size: 1.15rem;
+    opacity: 0.8;
+  }
+  
+  /* ------------------------------- */
+  /* --- Responsividad --- */
+  /* ------------------------------- */
+  @media (max-width: 1200px) {
+      .trackeo-content-wrapper { max-width: 95%; }
+      .history-table { min-width: 900px; }
+  }
+  
+  @media (max-width: 992px) {
+    .history-table th,
+    .history-table td {
+      padding: calc(var(--spacing-unit, 1rem) * 0.9) calc(var(--spacing-unit, 1rem) * 1.2);
+      font-size: 0.9rem;
+    }
+    .history-table td:nth-child(3) { max-width: 220px; } /* Reducir max-width filename */
+  }
+  
+  @media (max-width: 768px) {
+    .trackeo-page-container { padding: calc(var(--spacing-unit, 1rem) * 2.5) calc(var(--spacing-unit, 1rem) * 1); }
+    .upload-form-container, .history-container { padding: calc(var(--spacing-unit, 1rem) * 2.5); } /* Ajustar padding */
+    .page-main-title { font-size: clamp(1.8rem, 6vw, 2.2rem); }
+    .section-title { font-size: clamp(1.4rem, 5vw, 1.7rem); }
+  
+    /* Ocultar columnas menos importantes en móvil */
+    .history-table th:nth-child(4), /* Tamaño */
+    .history-table td:nth-child(4),
+    .history-table th:nth-child(5), /* Subido por */
+    .history-table td:nth-child(5) {
+         display: none; /* OCULTAR */
+    }
+    .history-table { min-width: auto; } /* Quitar min-width si se ocultan */
+  
+    .history-table td:nth-child(3) { max-width: 180px; }
+    .history-table .action-buttons .btn-action { width: 30px; height: 30px; font-size: 0.85rem; margin-left: 4px;}
+    .btn-action::after { display: none; } /* Ocultar tooltips CSS en táctil */
+  }
+  
+  @media (max-width: 480px) {
+    .trackeo-page-container { padding: calc(var(--spacing-unit, 1rem) * 2) calc(var(--spacing-unit, 1rem) * 0.8); }
+    .upload-form-container, .history-container { padding: calc(var(--spacing-unit, 1rem) * 2); border-radius: var(--border-radius-medium, 8px); }
+    .upload-form label { font-size: 0.85rem; letter-spacing: 0.5px;}
+    .upload-form .form-control { font-size: 0.95rem; padding: calc(var(--spacing-unit, 1rem) * 0.8) calc(var(--spacing-unit, 1rem) * 1); }
+    .upload-form .btn-submit { width: 100%; font-size: 1rem; padding: calc(var(--spacing-unit, 1rem) * 0.9) 0; }
+  
+    .history-table th, .history-table td { font-size: 0.85rem; padding: calc(var(--spacing-unit, 1rem) * 0.8); }
+    .history-table td:nth-child(3) { max-width: 140px; } /* Aún más pequeño */
+  
+    /* Ocultar también Fecha y Tipo Nicho en pantallas muy pequeñas */
+     .history-table th:nth-child(1), /* Fecha */
+     .history-table td:nth-child(1),
+     .history-table th:nth-child(2), /* Tipo Nicho */
+     .history-table td:nth-child(2) {
+         display: none; /* OCULTAR */
+     }
+  }

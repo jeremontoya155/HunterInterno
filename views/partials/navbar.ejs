@@ -23,19 +23,35 @@
         <% if (user && (user.role === 'admin' || user.role === 'auditoria' || user.role === 'cro')) { %>
           <a href="/vendedores">
             <i class="fas fa-briefcase"></i> <!-- Icono para Vendedores -->
-            <span>Vendedores</span>
+            <span>Reporte de actividades</span>
           </a>
         <% } %>
         <%# --- FIN ENLACE VENDEDORES --- %>
 <%# --- ENLACE A AUDITORÍA PATRIMONIO (Visible para Admin y Auditoría) --- %>
         <% if (user && (user.role === 'admin' || user.role === 'auditoria')) { %>
           <a href="/auditoria/patrimonio">
-            <i class="fas fa-shield-alt"></i> <!-- Icono para Auditoría -->
+            <i class="fas fa-landmark"></i>
             <span>Auditoría Patrimonio</span>
           </a>
         <% } %>
         <%# --- FIN ENLACE AUDITORÍA --- %>
 
+        <%# --- ENLACE A AUDITORÍA PATRIMONIO (Visible para Admin y Auditoría) --- %>
+        <% if (user && (user.role === 'admin' || user.role === 'auditoria')) { %>
+          <a href="/crecimiento">
+            <i class="fas fa-chart-line"></i> <!-- O fa-arrow-trend-up, fa-seedling -->
+            <span>Crecimiento</span>
+          </a>
+        <% } %>
+        <%# --- FIN ENLACE AUDITORÍA --- %>
+        <%# --- ENLACE A AUDITORÍA PATRIMONIO (Visible para Admin y Auditoría) --- %>
+        <% if (user && (user.role === 'admin' || user.role === 'auditoria')) { %>
+          <a href="/auditoria/trackeo">
+            <i class="fas fa-crosshairs"></i> <!-- O fa-binoculars, fa-route -->
+            <span>Trackeo</span>
+          </a>
+        <% } %>
+        <%# --- FIN ENLACE AUDITORÍA --- %>
         <%# Enlace a Leads (Solo Admin - Mantenido como estaba) %>
         <% if (user && user.role === 'admin') { %> <%# Cambiado de user.username a user.role %>
           <a href="/leads">
