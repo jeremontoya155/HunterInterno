@@ -899,20 +899,26 @@ app.get('/crecimiento/dashboard-data', isAuthenticated, async (req, res) => {
 // ... (otros requires, app, pool, isAuthenticated, etc.) ...
 
 app.get('/onboarding', isAuthenticated, (req, res) => {
-    const userRole = req.session.user.role; // Asegúrate que 'role' existe en req.session.user
-  
-    if (userRole === 'auditoria' || userRole === 'admin') { // Admin también ve auditoría? Decide tú
-      res.render('onboarding_auditoria', { user: req.session.user }); // Renderiza la vista de Auditoría
-    } else if (userRole === 'fulfillment') {
-      res.render('onboarding_fulfillment', { user: req.session.user }); // Renderiza la NUEVA vista de Fulfillment
-    } else {
-      // Rol desconocido o no especificado, redirige a login o a una página genérica
-      console.warn(`Rol de usuario no manejado en /onboarding: ${userRole}`);
-      // Decide a dónde redirigir, ¿quizás a un dashboard genérico si existe?
-      // O de vuelta al login si no debería estar aquí.
-      res.redirect('/login'); // O '/dashboard_generico'
+    const userRole = req.session.user?.role; // Usamos optional chaining por seguridad
+    
+    // Primero verificamos el rol de auditoría
+    if (userRole === 'auditoria') {
+        return res.render('onboarding_auditoria', { user: req.session.user });
+    } 
+    // Luego verificamos el rol de admin (si quieres que los admin también vean auditoría)
+    else if (userRole === 'admin') {
+        return res.render('onboarding_auditoria', { user: req.session.user });
     }
-  });
+    // Finalmente verificamos fulfillment
+    else if (userRole === 'fulfillment') {
+        return res.render('onboarding_fulfillment', { user: req.session.user });
+    } 
+    // Para cualquier otro caso (rol desconocido o no definido)
+    else {
+        console.warn(`Rol de usuario no manejado en /onboarding: ${userRole}`);
+        return res.redirect('/login');
+    }
+});
   
   // --- NUEVOS ENDPOINTS (STUBS) PARA FULFILLMENT ---
   
