@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HUNTER - Panel de Fulfillment</title>
+
+    <!-- Google Fonts, FontAwesome (Igual que el otro) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Estilos Base (Navbar, Scrollbar, Onboarding para variables/reset) -->
+    <link rel="stylesheet" href="/static/css/navbar.css" />
+    <link rel="stylesheet" href="/static/css/onboarding.css" /> <!-- Para variables y estilos base -->
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+    <!-- CSS Específico para esta vista (Podemos añadir estilos aquí o en un nuevo archivo) -->
+    <!-- Librería FullCalendar CSS (Necesaria para Fase 2) -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css' rel='stylesheet' />
+
+    <!-- Estilos para esta página específica (incluyendo los de FullCalendar) -->
+    <style>
+        /* Reutilizar variables y estilos base de onboarding.css */
+        body {
+            font-family: var(--font-primary, 'Poppins', sans-serif);
+            background-color: var(--color-background-dark, #0a0a10);
+            color: var(--color-text-primary, #e5e7eb);
+            line-height: var(--line-height-base, 1.7);
+        }
+
+        /* Estilos del Scrollbar (si no están globales) */
+        body::-webkit-scrollbar { width: 8px; }
+        body::-webkit-scrollbar-track { background: var(--color-background-medium, #111827); }
+        body::-webkit-scrollbar-thumb { background-color: var(--color-accent, #4caf91); border-radius: 10px; border: 2px solid var(--color-background-medium, #111827); }
+        body::-webkit-scrollbar-thumb:hover { background-color: var(--color-accent-hover, #5cdb95); }
+
+        .fulfillment-container {
+            padding: 2.5rem 1rem;
+            max-width: 1400px;
+            margin: 1.5rem auto;
+        }
+        .fulfillment-header { text-align: center; margin-bottom: 2rem; }
+        .fulfillment-header h1 { font-size: 2.5rem; font-weight: 600; margin-bottom: 0.8rem; color: var(--color-text-primary, #e5e7eb); }
+        .fulfillment-header h1 .highlight { color: var(--color-highlight, #4caf91); }
+        .fulfillment-header p { font-size: 1.1rem; color: var(--color-text-secondary, #9ca3af); max-width: 700px; margin: 0 auto; }
+        .fulfillment-content { display: grid; grid-template-columns: 300px 1fr; gap: 2.5rem; align-items: start; }
+        .fulfillment-menu { background: linear-gradient(145deg, var(--color-background-medium, #111827), var(--color-background-light, #1f2937)); border-radius: var(--border-radius-large, 16px); padding: 2rem 1.5rem; border: 1px solid var(--color-border, rgba(76, 175, 145, 0.2)); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); position: sticky; top: 80px; }
+        .fulfillment-menu h2 { font-size: 1.4rem; color: var(--color-accent-hover, #5cdb95); margin-bottom: 1.5rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--color-border, rgba(76, 175, 145, 0.2)); text-align: center; }
+        .menu-options { display: flex; flex-direction: column; gap: 1.5rem; }
+        .menu-button { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.2rem; background-color: rgba(255, 255, 255, 0.05); color: var(--color-text-primary, #e5e7eb); text-decoration: none; border-radius: var(--border-radius-medium, 8px); font-size: 1.1rem; font-weight: 500; transition: all 0.3s ease; border: 1px solid transparent; border-left: 4px solid transparent; }
+        .menu-button i { font-size: 1.4rem; width: 25px; text-align: center; color: var(--color-accent, #4caf91); transition: color 0.3s ease; }
+        .menu-button:hover { background-color: rgba(76, 175, 145, 0.15); border-left-color: var(--color-accent-hover, #5cdb95); transform: translateX(5px); color: var(--color-accent-hover, #5cdb95); }
+        .menu-button:hover i { color: var(--color-accent-hover, #5cdb95); }
+        .calendar-section { background: linear-gradient(145deg, var(--color-background-medium, #111827), var(--color-background-light, #1f2937)); border-radius: var(--border-radius-large, 16px); padding: 2.5rem; border: 1px solid var(--color-border, rgba(76, 175, 145, 0.2)); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); min-height: 600px; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-border, rgba(76, 175, 145, 0.2)); }
+        .calendar-header h2 { font-size: 1.6rem; color: var(--color-accent-hover, #5cdb95); margin: 0; }
+        .calendar-actions button { margin-left: 0.8rem; padding: 0.6rem 1.2rem; background-color: var(--color-accent, #4caf91); color: var(--color-background-dark, #0a0a10); border: none; border-radius: var(--border-radius-medium, 8px); font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 3px 6px rgba(0,0,0,0.2); }
+        .calendar-actions button:hover { background-color: var(--color-accent-hover, #5cdb95); transform: translateY(-2px); box-shadow: 0 5px 10px rgba(76, 175, 145, 0.4); }
+        .calendar-actions button i { margin-right: 0.5rem; }
+        #fulfillment-calendar { width: 100%; height: auto; }
+
+        /* Estilos FullCalendar */
+        :root {
+            --fc-border-color: var(--color-border, rgba(76, 175, 145, 0.25)); --fc-daygrid-event-dot-width: 8px; --fc-list-event-dot-width: 10px; --fc-event-bg-color: var(--color-accent, #4caf91); --fc-event-border-color: var(--color-accent-hover, #5cdb95); --fc-event-text-color: var(--color-background-dark, #0a0a10); --fc-event-selected-overlay-color: rgba(76, 175, 145, 0.3); --fc-more-link-bg-color: var(--color-background-light); --fc-more-link-text-color: var(--color-text-secondary); --fc-today-bg-color: rgba(76, 175, 145, 0.1); --fc-page-bg-color: transparent; --fc-neutral-bg-color: rgba(0,0,0,0.15); --fc-list-event-hover-bg-color: rgba(76, 175, 145, 0.1);
+        }
+        .fc { color: var(--color-text-primary, #e5e7eb); background-color: transparent; }
+        .fc .fc-toolbar { margin-bottom: 1.5em !important; }
+        .fc .fc-toolbar-title { font-size: 1.8em; font-weight: 600; color: var(--color-text-primary); text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+        .fc .fc-button { background-color: var(--color-background-light, #1f2937); border: 1px solid var(--color-border, rgba(76, 175, 145, 0.2)); color: var(--color-text-secondary, #9ca3af); transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.15); text-transform: none; font-weight: 500; padding: 0.5em 1em; }
+        .fc .fc-button:not(:disabled):hover, .fc .fc-button-primary:not(:disabled):active { background-color: var(--color-accent, #4caf91); color: var(--color-background-dark, #0a0a10); border-color: var(--color-accent, #4caf91); box-shadow: 0 3px 6px rgba(76, 175, 145, 0.3); transform: translateY(-1px); }
+        .fc .fc-button-primary:disabled { background-color: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.1); color: rgba(156, 163, 175, 0.4); box-shadow: none; }
+        .fc .fc-button .fc-icon { color: var(--color-text-secondary, #9ca3af); }
+        .fc .fc-button:not(:disabled):hover .fc-icon { color: var(--color-background-dark, #0a0a10); }
+        .fc .fc-button:focus { box-shadow: 0 0 0 2px rgba(76, 175, 145, 0.4); }
+        .fc .fc-daygrid-day-number { color: var(--color-text-secondary); text-decoration: none; padding: 0.4em 0.5em; }
+        .fc .fc-day-other .fc-daygrid-day-number { opacity: 0.3; }
+        .fc .fc-col-header-cell-cushion { color: var(--color-text-secondary); text-decoration: none; font-weight: 600; font-size: 0.85em; text-transform: uppercase; padding: 0.8em 0.4em; }
+        .fc .fc-daygrid-day { border-color: var(--fc-border-color); }
+        .fc .fc-daygrid-day.fc-day-today { background-color: var(--fc-today-bg-color); }
+        .fc .fc-daygrid-day:hover { background-color: rgba(76, 175, 145, 0.05); }
+        .fc-daygrid-event { border-radius: 4px; padding: 3px 6px; font-weight: 500; font-size: 0.85em; border: 1px solid rgba(0,0,0,0.3); box-shadow: 0 1px 2px rgba(0,0,0,0.2); background-color: var(--fc-event-bg-color); border-color: var(--fc-event-border-color); color: var(--fc-event-text-color); }
+        .fc-daygrid-event:hover { filter: brightness(1.15); }
+        .fc-daygrid-event .fc-event-time { font-weight: 600; }
+        .fc-daygrid-event .fc-event-title { white-space: normal; }
+        .fc .fc-daygrid-more-link { color: var(--color-accent-hover); font-weight: 600; font-size: 0.8em; }
+        .fc .fc-popover { background-color: var(--color-background-light); border: 1px solid var(--color-border); box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+        .fc .fc-popover-header { background-color: rgba(0,0,0,0.2); color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border); }
+        .fc-list { border: 1px solid var(--fc-border-color); }
+        .fc-list-day > * { background-color: rgba(0,0,0,0.2); border-bottom: 1px solid var(--fc-border-color); }
+        .fc-list-day-text, .fc-list-day-side-text { color: var(--color-text-secondary); text-decoration: none; font-weight: 600;}
+        .fc-list-event { background-color: transparent; border-bottom: 1px solid var(--color-border); transition: background-color 0.2s ease; }
+        .fc-list-event:hover { background-color: var(--fc-list-event-hover-bg-color); }
+        .fc-list-event-title a { color: var(--color-text-primary); text-decoration: none; }
+        .fc-list-event-title a:hover { color: var(--color-accent-hover); }
+        .fc-list-event-time { color: var(--color-text-secondary); }
+        .fc-list-event-dot { border-color: var(--fc-event-bg-color); }
+        .fc-timegrid-event { border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.25); border: 1px solid rgba(0,0,0,0.4); font-size: 0.8em; }
+        .fc .fc-timegrid-slot-label { border-color: var(--fc-border-color); color: var(--color-text-secondary); }
+        .fc .fc-timegrid-col.fc-day-today { background-color: var(--fc-today-bg-color); }
+        .fc .fc-timegrid-axis-cushion { color: var(--color-text-secondary); }
+        .fc .fc-timegrid-slot-minor { border-color: rgba(76, 175, 145, 0.1); }
+
+        /* Estilos Modal Eventos */
+        .event-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1050; opacity: 0; transition: opacity 0.3s ease; }
+        .event-modal-overlay.active { display: flex; opacity: 1; }
+        .event-modal-content { background: linear-gradient(145deg, var(--color-background-medium, #111827), var(--color-background-light, #1f2937)); border-radius: var(--border-radius-large, 16px); padding: 0; border: 1px solid var(--color-border, rgba(76, 175, 145, 0.2)); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); width: 90%; max-width: 550px; display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; transform: scale(0.95); transition: transform 0.3s ease; }
+        .event-modal-overlay.active .event-modal-content { transform: scale(1); }
+        .event-modal-header, .event-modal-footer { padding: 1.2rem 1.5rem; background-color: rgba(0,0,0, 0.15); display: flex; justify-content: space-between; align-items: center; }
+        .event-modal-header { border-bottom: 1px solid var(--color-border); border-radius: 16px 16px 0 0;}
+        .event-modal-footer { border-top: 1px solid var(--color-border); border-radius: 0 0 16px 16px; gap: 1rem;} /* Añadido gap */
+        .event-modal-title { font-size: 1.4rem; color: var(--color-accent-hover); margin: 0; font-weight: 600;}
+        .event-modal-close-btn { background: none; border: none; color: var(--color-text-secondary); font-size: 1.8rem; cursor: pointer; padding: 0; line-height: 1; }
+        .event-modal-close-btn:hover { color: var(--color-accent-hover); }
+        .event-modal-body { padding: 1.8rem 1.5rem; flex-grow: 1; overflow-y: auto; min-height: 0; scrollbar-width: thin; scrollbar-color: var(--color-accent) rgba(255, 255, 255, 0.08); }
+        .event-modal-body::-webkit-scrollbar { width: 8px; }
+        .event-modal-body::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 4px; }
+        .event-modal-body::-webkit-scrollbar-thumb { background-color: var(--color-accent); border-radius: 4px; border: 1px solid var(--color-background-light); }
+        .event-modal-body::-webkit-scrollbar-thumb:hover { background-color: var(--color-accent-hover); }
+        .event-modal-body .form-group { margin-bottom: 1.2rem; }
+        .event-modal-body label { display: block; font-weight: 500; color: var(--color-text-secondary, #9ca3af); margin-bottom: 0.5rem; font-size: 0.9rem; }
+        .event-modal-body input[type="text"], .event-modal-body input[type="date"], .event-modal-body textarea { width: 100%; padding: 0.8rem 1rem; background-color: rgba(0, 0, 0, 0.2); border: 1px solid var(--color-border, rgba(76, 175, 145, 0.2)); border-radius: var(--border-radius-medium, 8px); color: var(--color-text-primary, #e5e7eb); font-size: 1rem; transition: border-color 0.3s ease, box-shadow 0.3s ease; }
+        .event-modal-body input:focus, .event-modal-body textarea:focus { outline: none; border-color: var(--color-accent, #4caf91); box-shadow: 0 0 0 3px rgba(76, 175, 145, 0.3); }
+        .event-modal-body textarea { resize: vertical; min-height: 80px;}
+        .event-modal-footer .btn { padding: 0.7rem 1.5rem; font-size: 0.95rem; font-weight: 600; border-radius: var(--border-radius-medium, 8px); border: none; cursor: pointer; transition: all 0.2s ease; }
+        .event-modal-footer .btn-secondary { background-color: var(--color-background-light, #1f2937); color: var(--color-text-secondary, #9ca3af); border: 1px solid var(--color-border, rgba(76, 175, 145, 0.2)); }
+        .event-modal-footer .btn-secondary:hover { background-color: var(--color-background-medium, #111827); color: var(--color-text-primary, #e5e7eb); border-color: var(--color-text-secondary, #9ca3af); }
+        .event-modal-footer .btn-primary { background: linear-gradient(145deg, var(--color-accent, #4caf91), var(--color-accent-hover, #5cdb95)); color: var(--color-background-dark, #0a0a10); box-shadow: 0 3px 8px rgba(76, 175, 145, 0.25); }
+        .event-modal-footer .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 12px rgba(76, 175, 145, 0.4); }
+        .event-modal-footer .btn-danger { background-color: #dc3545; color: white; } /* Estilo botón borrar */
+        .event-modal-footer .btn-danger:hover { background-color: #c82333; }
+        .event-modal-footer .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .event-modal-footer .btn .fa-spinner { margin-right: 0.5rem; }
+
+         /* Responsividad */
+         @media (max-width: 992px) { .fulfillment-content { grid-template-columns: 250px 1fr; gap: 2rem; } }
+         @media (max-width: 768px) { .fulfillment-content { grid-template-columns: 1fr; } .fulfillment-menu { position: static; margin-bottom: 2rem; } .calendar-section { padding: 1.5rem; } .calendar-header { flex-direction: column; gap: 1rem; align-items: stretch; text-align: center; } .calendar-actions { display: flex; justify-content: center; gap: 0.8rem;} .fc .fc-toolbar.fc-header-toolbar { flex-direction: column; gap: 1rem; } }
+         @media (max-width: 480px) { .event-modal-footer { flex-direction: column-reverse; } .event-modal-footer .btn { width: 100%; } .event-modal-footer .btn-danger { margin-right: 0 !important; margin-bottom: 0.5rem;} } /* Botón borrar full width */
+
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %> <!-- Incluye tu Navbar -->
+
+    <div class="onboarding-background">
+        <div class="fulfillment-container">
+
+            <header class="fulfillment-header">
+              <h1>Panel de <span class="highlight">Fulfillment</span></h1>
+              <p>Gestiona tu flujo de trabajo, organiza eventos y supervisa las actividades clave.</p>
+               <!-- Mostrar mensajes flash si existen -->
+              <% if (locals.message) { %><p style="margin-top: 1rem; color: var(--color-text-secondary); font-style: italic;"><%= message %></p><% } %>
+              <% if (locals.error) { %><p style="margin-top: 1rem; color: #f87171;"><%= error %></p><% } %> <!-- Asume color rojo para error -->
+            </header>
+
+            <div class="fulfillment-content">
+                <!-- Columna del Menú Lateral -->
+                <aside class="fulfillment-menu">
+                    <h2>Navegación</h2>
+                    <nav class="menu-options">
+                        <a href="/dashboard" class="menu-button"> <!-- URL REAL DASHBOARD -->
+                            <i class="fas fa-tachometer-alt fa-fw"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="#fulfillment-calendar" class="menu-button" onclick="document.getElementById('fulfillment-calendar').scrollIntoView({ behavior: 'smooth' });"> <!-- Enlace interno al calendario -->
+                            <i class="fas fa-calendar-alt fa-fw"></i>
+                            <span>Calendario</span>
+                        </a>
+                        <a href="/actividades-clientes" class="menu-button"> <!-- URL REAL ACTIVIDADES -->
+                            <i class="fas fa-users fa-fw"></i>
+                            <span>Actividades Clientes</span>
+                        </a>
+                    </nav>
+                </aside>
+
+                <!-- Columna Principal (Calendario) -->
+                <section class="calendar-section">
+                    <div class="calendar-header">
+                         <h2>Calendario de Eventos</h2>
+                         <div class="calendar-actions">
+                             <button id="add-event-btn"><i class="fas fa-plus"></i> Nuevo Evento</button>
+                             <button id="export-calendar-btn"><i class="fas fa-camera"></i> Exportar Imagen</button>
+                         </div>
+                    </div>
+                    <div id="fulfillment-calendar">
+                       <!-- FullCalendar se renderizará aquí -->
+                       <p style="text-align: center; padding: 3rem 0; color: var(--color-text-secondary);">Cargando calendario...</p>
+                    </div>
+                </section>
+            </div>
+
+        </div> <!-- Fin .fulfillment-container -->
+    </div> <!-- Fin .onboarding-background -->
+
+    <!-- ============================================= -->
+    <!--     MODAL AGREGAR/EDITAR EVENTO             -->
+    <!-- ============================================= -->
+    <div id="eventModalOverlay" class="event-modal-overlay">
+        <div class="event-modal-content">
+            <div class="event-modal-header">
+                <h5 class="event-modal-title" id="eventModalLabel">Agregar Nuevo Evento</h5>
+                <button type="button" class="event-modal-close-btn" onclick="closeEventModal()" title="Cerrar">×</button>
+            </div>
+            <div class="event-modal-body custom-scrollbar">
+                <form id="event-form">
+                    <input type="hidden" id="event_id" name="event_id">
+                    <div class="form-group">
+                        <label for="event_title">Título del Evento*</label>
+                        <input type="text" id="event_title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                         <label for="event_start_date">Fecha Inicio*</label>
+                         <input type="date" id="event_start_date" name="start_date" required>
+                    </div>
+                    <div class="form-group">
+                         <label for="event_end_date">Fecha Fin (Opcional)</label>
+                         <input type="date" id="event_end_date" name="end_date">
+                     </div>
+                    <div class="form-group">
+                        <label for="event_description">Descripción</label>
+                        <textarea id="event_description" name="description" rows="3"></textarea>
+                    </div>
+                    <!-- Podrías añadir selector de color, etc. -->
+                </form>
+            </div>
+            <div class="event-modal-footer">
+                 <!-- Botón borrar se añade dinámicamente aquí -->
+                <button type="button" class="btn btn-secondary" onclick="closeEventModal()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveEvent()">Guardar Evento</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ============================================= -->
+    <!--                 SCRIPTS AL FINAL              -->
+    <!-- ============================================= -->
+
+    <!-- Cargar librerías EXTERNAS ANTES de tu script personalizado -->
+    <!-- Usar 'defer' para asegurar ejecución ordenada después del parseo HTML -->
+    <script defer src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js' crossorigin="anonymous"></script>    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script defer src="/static/js/navbar.js"></script> <!-- Navbar script también al final -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+
+    <!-- Tu Script Personalizado (que USA FullCalendar y html2canvas) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- VERIFICAR QUE LAS LIBRERÍAS EXISTEN ANTES DE USARLAS ---
+            if (typeof FullCalendar === 'undefined') {
+                console.error("Error: FullCalendar library not loaded.");
+                document.getElementById('fulfillment-calendar').innerHTML = '<p style="color: #f87171; text-align: center; padding: 2rem;">Error crítico: La librería del calendario (FullCalendar) no pudo cargarse. Revisa la consola del navegador (F12) y la conexión a internet.</p>';
+                return; // Detener ejecución si falta FullCalendar
+            }
+            if (typeof html2canvas === 'undefined') {
+                 console.error("Error: html2canvas library not loaded.");
+                 const exportBtn = document.getElementById('export-calendar-btn');
+                 if(exportBtn) { exportBtn.disabled = true; exportBtn.title = "Librería de exportación no disponible."; }
+            }
+            // ----------------------------------------------------------
+
+            const calendarEl = document.getElementById('fulfillment-calendar');
+            const modalOverlay = document.getElementById('eventModalOverlay');
+            const eventForm = document.getElementById('event-form');
+            const eventModalLabel = document.getElementById('eventModalLabel');
+            const eventIdInput = document.getElementById('event_id');
+            const eventTitleInput = document.getElementById('event_title');
+            const eventStartDateInput = document.getElementById('event_start_date');
+            const eventEndDateInput = document.getElementById('event_end_date');
+            const eventDescriptionInput = document.getElementById('event_description');
+
+            let calendar;
+
+            // --- Inicialización de FullCalendar ---
+            function initializeCalendar(initialEvents = []) {
+                 if (calendar) { calendar.destroy(); }
+                 const formattedEvents = initialEvents.map(event => ({
+                    id: event.id, title: event.title, start: event.start, end: event.end,
+                    allDay: event.all_day, color: event.color, extendedProps: { description: event.description }
+                 }));
+                 calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth', headerToolbar: {left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek'},
+                    locale: 'es', buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana', list: 'Lista'},
+                    editable: true, selectable: true, events: formattedEvents, height: 'auto', contentHeight: 600, eventColor: '#4caf91',
+                    select: function(info) { openEventModal(null, info.startStr, info.endStr, info.allDay); },
+                    eventClick: function(info) { openEventModal(info.event); info.jsEvent.preventDefault(); },
+                    eventDrop: function(info) { if (!confirm("¿Confirmar cambio?")) { info.revert(); } else { updateEvent({ id: info.event.id, start: info.event.startStr, end: info.event.endStr, allDay: info.event.allDay }, info.revert); }},
+                    eventResize: function(info) { if (!confirm("¿Confirmar tamaño?")) { info.revert(); } else { updateEvent({ id: info.event.id, start: info.event.startStr, end: info.event.endStr, allDay: info.event.allDay }, info.revert); }},
+                    eventDidMount: function(info) { if (info.event.extendedProps.description) { info.el.setAttribute('title', info.event.extendedProps.description); } }
+                 });
+                 calendar.render();
+            }
+
+            // --- MANEJO DEL MODAL DE EVENTOS ---
+            window.openEventModal = function(event = null, startDateStr = '', endDateStr = '', isAllDaySelection = true) {
+                 eventForm.reset();
+                 if (event) { /* Modo Edición */ eventModalLabel.innerText = 'Editar Evento'; eventIdInput.value = event.id; eventTitleInput.value = event.title; eventStartDateInput.value = event.start ? event.startStr.split('T')[0] : ''; eventEndDateInput.value = event.end ? event.endStr.split('T')[0] : ''; eventDescriptionInput.value = event.extendedProps?.description || ''; addDeleteButtonIfNeeded(true, event.id); }
+                 else { /* Modo Creación */ eventModalLabel.innerText = 'Agregar Evento'; eventIdInput.value = ''; eventStartDateInput.value = startDateStr ? startDateStr.split('T')[0] : ''; eventEndDateInput.value = ''; if (endDateStr) { let actualEndDate = new Date(endDateStr); if (isAllDaySelection) actualEndDate.setDate(actualEndDate.getDate() - 1); if (!isAllDaySelection || actualEndDate.toISOString().split('T')[0] !== startDateStr.split('T')[0]) { eventEndDateInput.value = actualEndDate.toISOString().split('T')[0]; }} eventDescriptionInput.value = ''; addDeleteButtonIfNeeded(false); }
+                 modalOverlay.classList.add('active'); eventTitleInput.focus();
+            }
+            window.closeEventModal = function() { modalOverlay.classList.remove('active'); }
+            modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeEventModal(); });
+            document.getElementById('add-event-btn').addEventListener('click', () => openEventModal());
+
+            // --- Función Botón Borrar ---
+            function addDeleteButtonIfNeeded(show, eventId = null) {
+                 const footer = document.querySelector('#eventModalOverlay .event-modal-footer'); let deleteBtn = footer.querySelector('.btn-danger'); if (show && eventId) { if (!deleteBtn) { deleteBtn = document.createElement('button'); deleteBtn.type = 'button'; deleteBtn.className = 'btn btn-danger'; deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Borrar'; deleteBtn.style.marginRight = 'auto'; deleteBtn.onclick = () => deleteEvent(eventId); footer.insertBefore(deleteBtn, footer.firstChild); } } else { if (deleteBtn) { deleteBtn.remove(); } }
+             }
+
+            // --- LLAMADAS A LA API ---
+            async function fetchApi(url, options = {}) {
+                try { const response = await fetch(url, { headers: { 'Content-Type': 'application/json', ...options.headers, }, ...options, }); if (!response.ok) { const errorData = await response.json().catch(() => ({ error: `Error ${response.status}` })); throw new Error(errorData.error || `Error HTTP ${response.status}`); } if (response.status === 204) { return { success: true }; } return await response.json(); } catch (error) { console.error(`Error fetch ${options.method || 'GET'} ${url}:`, error); throw error; }
+            }
+            window.saveEvent = async function() {
+                 const eventId = eventIdInput.value; const isUpdate = !!eventId; const url = isUpdate ? `/api/calendar/events/${eventId}` : '/api/calendar/events'; const method = isUpdate ? 'PUT' : 'POST'; const eventData = { title: eventTitleInput.value.trim(), start: eventStartDateInput.value, end: eventEndDateInput.value || null, description: eventDescriptionInput.value.trim() || null, allDay: !eventEndDateInput.value || eventEndDateInput.value === eventStartDateInput.value }; if (!eventData.title || !eventData.start) { alert('Título y Fecha Inicio obligatorios.'); return; } const saveButton = document.querySelector('#eventModalOverlay .btn-primary'); saveButton.disabled = true; saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...'; try { const result = await fetchApi(url, { method: method, body: JSON.stringify(eventData) }); console.log(`Evento ${isUpdate ? 'actualizado' : 'creado'}:`, result.event); if (isUpdate) { const existingEvent = calendar.getEventById(eventId); if (existingEvent) { existingEvent.setProp('title', result.event.title); existingEvent.setStart(result.event.start); existingEvent.setEnd(result.event.end); existingEvent.setAllDay(result.event.all_day); existingEvent.setProp('color', result.event.color); existingEvent.setExtendedProp('description', result.event.description); } else { calendar.addEvent(mapApiEventToFc(result.event)); } } else { calendar.addEvent(mapApiEventToFc(result.event)); } closeEventModal(); } catch (error) { alert(`Error al guardar evento: ${error.message}`); } finally { saveButton.disabled = false; saveButton.innerHTML = 'Guardar Evento'; }
+            }
+            async function updateEvent(eventData, revertFunc) {
+                 const url = `/api/calendar/events/${eventData.id}`; try { await fetchApi(url, { method: 'PUT', body: JSON.stringify({ start: eventData.start, end: eventData.end, allDay: eventData.allDay }) }); console.log(`Evento ${eventData.id} movido/redim. guardado.`); } catch (error) { alert(`Error al actualizar fecha/hora: ${error.message}`); if (revertFunc) revertFunc(); }
+             }
+            async function deleteEvent(eventId) {
+                 if (!confirm("¿Borrar este evento?")) return; const url = `/api/calendar/events/${eventId}`; const deleteButton = document.querySelector('#eventModalOverlay .btn-danger'); if (deleteButton) { deleteButton.disabled = true; deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Borrando...'; } try { await fetchApi(url, { method: 'DELETE' }); console.log(`Evento ${eventId} borrado.`); const eventToRemove = calendar.getEventById(eventId); if (eventToRemove) eventToRemove.remove(); closeEventModal(); } catch (error) { alert(`Error al borrar evento: ${error.message}`); if (deleteButton) { deleteButton.disabled = false; deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i> Borrar'; } }
+            }
+            function mapApiEventToFc(apiEvent) {
+                 return { id: apiEvent.id, title: apiEvent.title, start: apiEvent.start, end: apiEvent.end, allDay: apiEvent.all_day, color: apiEvent.color, extendedProps: { description: apiEvent.description } };
+             }
+
+            // --- EXPORTAR IMAGEN ---
+            document.getElementById('export-calendar-btn').addEventListener('click', function() {
+                 const calendarElement = document.getElementById('fulfillment-calendar'); const containerElement = document.querySelector('.calendar-section'); if (!calendarElement || !containerElement) return; console.log('Iniciando exportación...'); this.disabled = true; this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exportando...'; const backgroundColor = window.getComputedStyle(containerElement).backgroundColor; html2canvas(calendarElement, { backgroundColor: backgroundColor || '#111827', scale: window.devicePixelRatio || 2, useCORS: true, logging: false, allowTaint: true, removeContainer: true }).then(canvas => { console.log('Canvas generado.'); const image = canvas.toDataURL('image/png'); const link = document.createElement('a'); link.href = image; link.download = `calendario_fulfillment_${new Date().toISOString().split('T')[0]}.png`; link.click(); console.log('Descarga iniciada.'); }).catch(err => { console.error('Error exportando:', err); alert('Error al generar imagen.'); }).finally(() => { this.disabled = false; this.innerHTML = '<i class="fas fa-camera"></i> Exportar Imagen'; });
+            });
+
+
+            // --- CARGA INICIAL DE EVENTOS ---
+            async function loadInitialEvents() {
+                try {
+                    const events = await fetchApi('/api/calendar/events');
+                    console.log('Eventos iniciales cargados:', events);
+                    initializeCalendar(events); // Inicializa el calendario con los eventos
+                } catch (error) {
+                     console.error('Error fatal cargando eventos iniciales:', error);
+                     // Mostrar mensaje de error más detallado y específico para FullCalendar
+                     calendarEl.innerHTML = `<div style="color: #f87171; text-align: center; padding: 2rem; border: 1px dashed #f87171; border-radius: 8px; background-color: rgba(239, 68, 68, 0.1);">
+                        <p><i class="fas fa-exclamation-triangle fa-2x"></i></p>
+                        <p style="margin-top: 1rem; font-weight: 500;">Error al cargar datos del calendario</p>
+                        <p style="font-size: 0.9rem; opacity: 0.8;">${error.message}. Revisa la consola (F12) para más detalles.</p>
+                     </div>`;
+                }
+            }
+
+            loadInitialEvents(); // Cargar eventos al inicio
+
+        });
+    </script>
+
+</body>
+</html>

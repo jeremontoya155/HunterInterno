@@ -894,10 +894,236 @@ app.get('/crecimiento/dashboard-data', isAuthenticated, async (req, res) => {
 });
 
 
+// EN TU ARCHIVO server.js
+
+// ... (otros requires, app, pool, isAuthenticated, etc.) ...
+
 app.get('/onboarding', isAuthenticated, (req, res) => {
-  res.render('onboarding');
+    const userRole = req.session.user.role; // Asegúrate que 'role' existe en req.session.user
+  
+    if (userRole === 'auditoria' || userRole === 'admin') { // Admin también ve auditoría? Decide tú
+      res.render('onboarding_auditoria', { user: req.session.user }); // Renderiza la vista de Auditoría
+    } else if (userRole === 'fulfillment') {
+      res.render('onboarding_fulfillment', { user: req.session.user }); // Renderiza la NUEVA vista de Fulfillment
+    } else {
+      // Rol desconocido o no especificado, redirige a login o a una página genérica
+      console.warn(`Rol de usuario no manejado en /onboarding: ${userRole}`);
+      // Decide a dónde redirigir, ¿quizás a un dashboard genérico si existe?
+      // O de vuelta al login si no debería estar aquí.
+      res.redirect('/login'); // O '/dashboard_generico'
+    }
+  });
+  
+  // --- NUEVOS ENDPOINTS (STUBS) PARA FULFILLMENT ---
+  
+  // Placeholder para el Dashboard de Fulfillment (si es distinto al principal)
+  app.get('/dashboard', isAuthenticated, (req, res) => {
+    // Verificar rol si es necesario
+    // if (req.session.user.role !== 'fulfillment') return res.redirect('/');
+    // Renderizar una vista de dashboard específica para fulfillment
+    res.render('dashboard_fulfillment', { user: req.session.user, message: 'Dashboard Fulfillment (Placeholder)' }); // Necesitas crear dashboard_fulfillment.ejs
+  });
+  
+  // Placeholder para la página dedicada al Calendario (si la quieres separada)
+  app.get('/calendario', isAuthenticated, (req, res) => {
+    // Verificar rol
+    if (req.session.user.role !== 'fulfillment') return res.redirect('/');
+    // Renderizar vista de calendario
+    res.render('calendario_fulfillment', { user: req.session.user, message: 'Calendario (Placeholder)' }); // Necesitas crear calendario_fulfillment.ejs
+  });
+  
+  // Placeholder para Actividades Clientes
+  app.get('/actividades-clientes', isAuthenticated, (req, res) => {
+    // Verificar rol
+    if (req.session.user.role !== 'fulfillment') return res.redirect('/');
+    // Renderizar vista de actividades
+    res.render('actividades_clientes_fulfillment', { user: req.session.user, message: 'Actividades Clientes (Placeholder)' }); // Necesitas crear actividades_clientes_fulfillment.ejs
+  });
+  
+  
+  // --- API STUBS PARA EL CALENDARIO (Fase 2) ---
+  
+  // GET para obtener eventos (Devuelve array vacío por ahora)
+// EN TU server.js
+
+// ... (otros requires, app, pool, isAuthenticated, express.json()) ...
+
+// --- API COMPLETA PARA CALENDARIO FULFILLMENT (SIN TRIGGER) ---
+
+// GET /api/calendar/events - Obtener todos los eventos del usuario logueado
+app.get('/api/calendar/events', isAuthenticated, async (req, res) => {
+    if (req.session.user.role !== 'fulfillment') {
+        return res.status(403).json({ error: 'Acceso denegado' });
+    }
+    const userId = req.session.user.id;
+
+    try {
+        const query = `
+            SELECT
+                id, title, description, start_date AS start, end_date AS end,
+                all_day, color
+            FROM fulfillment_calendar_events
+            WHERE user_id = $1 ORDER BY start_date ASC;
+        `;
+        const { rows } = await pool.query(query, [userId]);
+        console.log(`[${new Date().toISOString()}] GET /api/calendar/events - Devolviendo ${rows.length} eventos para user ${userId}`);
+        res.json(rows);
+    } catch (error) {
+        console.error(`[${new Date().toISOString()}] Error en GET /api/calendar/events for user ${userId}:`, error);
+        res.status(500).json({ error: 'Error interno al obtener eventos del calendario' });
+    }
 });
 
+// POST /api/calendar/events - Crear un nuevo evento
+app.post('/api/calendar/events', isAuthenticated, async (req, res) => {
+    if (req.session.user.role !== 'fulfillment') {
+        return res.status(403).json({ error: 'Acceso denegado' });
+    }
+    const userId = req.session.user.id;
+    const { title, description, start, end, all_day, color } = req.body;
+
+    if (!title || !start) {
+        return res.status(400).json({ error: 'Título y Fecha Inicio son obligatorios' });
+    }
+
+    const isAllDay = typeof all_day === 'boolean' ? all_day : (!end || end.split('T')[0] === start.split('T')[0]);
+    let finalEndDate = end || null;
+
+    console.log(`[${new Date().toISOString()}] POST /api/calendar/events for user ${userId}:`, req.body);
+
+    try {
+        // created_at y updated_at toman DEFAULT CURRENT_TIMESTAMP aquí
+        const query = `
+            INSERT INTO fulfillment_calendar_events
+                (title, description, start_date, end_date, all_day, color, user_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING id, title, description, start_date AS start, end_date AS end, all_day, color;
+        `;
+        const { rows } = await pool.query(query, [
+            title, description || null, start, finalEndDate, isAllDay, color || null, userId
+        ]);
+        console.log(`[${new Date().toISOString()}] Evento creado con ID: ${rows[0].id}`);
+        res.status(201).json({ message: 'Evento creado correctamente', event: rows[0] });
+    } catch (error) {
+        console.error(`[${new Date().toISOString()}] Error en POST /api/calendar/events for user ${userId}:`, error);
+        if (error.code === '22007' || error.code === '22008') {
+             return res.status(400).json({ error: 'Formato de fecha inválido. Usa YYYY-MM-DD o formato ISO 8601.' });
+        }
+        res.status(500).json({ error: 'Error interno al crear el evento' });
+    }
+});
+
+// PUT /api/calendar/events/:id - Actualizar un evento existente
+app.put('/api/calendar/events/:id', isAuthenticated, async (req, res) => {
+    if (req.session.user.role !== 'fulfillment') {
+        return res.status(403).json({ error: 'Acceso denegado' });
+    }
+    const eventId = req.params.id;
+    const userId = req.session.user.id;
+    const { title, description, start, end, all_day, color } = req.body;
+
+    if (!eventId) {
+         return res.status(400).json({ error: 'ID del evento es requerido' });
+    }
+
+    console.log(`[${new Date().toISOString()}] PUT /api/calendar/events/${eventId} for user ${userId}:`, req.body);
+
+    try {
+        const currentEventResult = await pool.query(
+            'SELECT * FROM fulfillment_calendar_events WHERE id = $1 AND user_id = $2',
+            [eventId, userId]
+        );
+
+        if (currentEventResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Evento no encontrado o no tienes permiso para editarlo.' });
+        }
+        const currentEvent = currentEventResult.rows[0];
+
+        const isAllDay = typeof all_day === 'boolean' ? all_day : currentEvent.all_day;
+        let finalEndDate = end !== undefined ? (end || null) : currentEvent.end_date;
+
+        // **** ¡CAMBIO IMPORTANTE (YA ESTABA PERO AHORA ES ESENCIAL)! ****
+        // Actualizamos updated_at explícitamente a la hora actual.
+        const query = `
+            UPDATE fulfillment_calendar_events SET
+                title = COALESCE($1, title),           -- Usa nuevo valor o mantiene el actual
+                description = COALESCE($2, description),
+                start_date = COALESCE($3, start_date),
+                end_date = $4,                         -- Usa finalEndDate (puede ser null)
+                all_day = COALESCE($5, all_day),
+                color = COALESCE($6, color),
+                updated_at = CURRENT_TIMESTAMP         -- <-- ACTUALIZACIÓN MANUAL
+            WHERE id = $7 AND user_id = $8
+            RETURNING id, title, description, start_date AS start, end_date AS end, all_day, color;
+        `;
+        // Pasamos los valores recibidos o undefined para que COALESCE funcione
+        const { rows } = await pool.query(query, [
+            title, // COALESCE($1, title) tomará este si no es null/undefined
+            description, // COALESCE($2, description) tomará este si no es null/undefined
+            start, // COALESCE($3, start_date) tomará este si no es null/undefined
+            finalEndDate, // El $4 es finalEndDate directamente
+            isAllDay, // COALESCE($5, all_day) tomará este si no es null/undefined
+            color, // COALESCE($6, color) tomará este si no es null/undefined
+            eventId,
+            userId
+        ]);
+        // Nota sobre COALESCE: Si envías explícitamente `null` en el body, COALESCE usará `null`.
+        // Si *no envías* el campo en el body (es `undefined`), COALESCE usará el valor actual de la BD.
+
+        if (rows.length === 0) {
+             console.warn(`[${new Date().toISOString()}] PUT /api/calendar/events/${eventId} - Update failed after initial check for user ${userId}`);
+             return res.status(404).json({ error: 'No se pudo actualizar el evento.' });
+        }
+
+        console.log(`[${new Date().toISOString()}] Evento ${eventId} actualizado.`);
+        res.status(200).json({ message: 'Evento actualizado correctamente', event: rows[0] });
+
+    } catch (error) {
+        console.error(`[${new Date().toISOString()}] Error en PUT /api/calendar/events/${eventId} for user ${userId}:`, error);
+         if (error.code === '22007' || error.code === '22008') {
+             return res.status(400).json({ error: 'Formato de fecha inválido.' });
+        }
+        res.status(500).json({ error: 'Error interno al actualizar el evento' });
+    }
+});
+
+// DELETE /api/calendar/events/:id - Borrar un evento
+app.delete('/api/calendar/events/:id', isAuthenticated, async (req, res) => {
+    if (req.session.user.role !== 'fulfillment') {
+        return res.status(403).json({ error: 'Acceso denegado' });
+    }
+    const eventId = req.params.id;
+    const userId = req.session.user.id;
+
+     if (!eventId) {
+         return res.status(400).json({ error: 'ID del evento es requerido' });
+    }
+
+    console.log(`[${new Date().toISOString()}] DELETE /api/calendar/events/${eventId} for user ${userId}`);
+
+    try {
+        const query = `DELETE FROM fulfillment_calendar_events WHERE id = $1 AND user_id = $2 RETURNING id;`;
+        const result = await pool.query(query, [eventId, userId]);
+
+        if (result.rowCount === 0) {
+            console.warn(`[${new Date().toISOString()}] DELETE /api/calendar/events/${eventId} - Event not found or permission denied for user ${userId}`);
+            return res.status(404).json({ error: 'Evento no encontrado o no tienes permiso para borrarlo.' });
+        }
+
+        console.log(`[${new Date().toISOString()}] Evento ${eventId} borrado.`);
+        res.status(200).json({ message: 'Evento borrado correctamente', deletedEventId: eventId });
+
+    } catch (error) {
+        console.error(`[${new Date().toISOString()}] Error en DELETE /api/calendar/events/${eventId} for user ${userId}:`, error);
+        res.status(500).json({ error: 'Error interno al borrar el evento' });
+    }
+});
+
+// ... (resto de tus rutas, incluida la GET /onboarding modificada) ...
+  
+  // TODO Fase 2: Añadir endpoints PUT /api/calendar/events/:id y DELETE /api/calendar/events/:id
+  
+  // ... (resto de tus rutas existentes y app.listen) ...
   
 
 // --- Rutas de Auditoría - Trackeo ---
