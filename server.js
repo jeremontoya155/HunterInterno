@@ -323,74 +323,6 @@ app.post('/auditoria/patrimonio', isAuthenticated, async (req, res) => {
 // app.delete('/auditoria/patrimonio/:id', isAuthenticated, async (req, res) => { ... });
 
 // --- GET /vendedores (Modificada para Cards y Datos Agregados) ---
-async function getDashboardData(startDate, endDate) {
-  let totalMensajes = 0;
-  let mensajesPorDia = {};
-  let error = null;
-  let chartData = []; // Definir chartData fuera del try para que siempre exista
-
-  try {
-      // 1. Obtener cuentas asignadas (Optimizacion: Podria cachearse si no cambia mucho)
-      const vendedoresResult = await pool.query('SELECT cuentas_asignadas FROM vendedores');
-      let allAssignedUsernames = [];
-      vendedoresResult.rows.forEach(v => {
-          if (v.cuentas_asignadas && Array.isArray(v.cuentas_asignadas)) {
-              allAssignedUsernames.push(...v.cuentas_asignadas);
-          }
-      });
-      allAssignedUsernames = [...new Set(allAssignedUsernames.map(u => u.toLowerCase()))];
-
-      if (allAssignedUsernames.length > 0) {
-          // 2. Consultar MongoDB
-          const client = new MongoClient(mongoUri, { useUnifiedTopology: true });
-          await client.connect();
-          const db = client.db(mongoDbName);
-          const collection = db.collection('historial_acciones');
-
-          const filter = {
-              username: { $in: allAssignedUsernames },
-              accion: { $regex: /mensaje/i },
-              fecha: { $gte: `${startDate} 00:00:00`, $lte: `${endDate} 23:59:59` }
-          };
-
-          const pipeline = [
-              { $match: filter },
-              { $project: { fechaDia: { $substrCP: ["$fecha", 0, 10] } } },
-              { $group: { _id: "$fechaDia", count: { $sum: 1 } } },
-              { $sort: { _id: 1 } },
-              { $project: { _id: 0, fecha: "$_id", cantidad: "$count" } }
-          ];
-          const dailyCounts = await collection.aggregate(pipeline).toArray();
-
-          dailyCounts.forEach(item => {
-              mensajesPorDia[item.fecha] = item.cantidad;
-              totalMensajes += item.cantidad;
-          });
-          await client.close();
-      }
-
-      // 3. Asegurar datos para cada día en el rango
-      let currentDate = new Date(startDate + 'T00:00:00');
-      const finalDate = new Date(endDate + 'T00:00:00');
-      while (currentDate <= finalDate) {
-          const dateString = currentDate.toISOString().slice(0, 10);
-          chartData.push({
-              fecha: dateString,
-              cantidad: mensajesPorDia[dateString] || 0
-          });
-          currentDate.setDate(currentDate.getDate() + 1);
-      }
-
-  } catch (err) {
-      console.error("Error al obtener datos del dashboard:", err);
-      error = err.message;
-      // En caso de error, devolver un array vacío para el gráfico
-      chartData = [];
-      totalMensajes = 0;
-  }
-
-  return { totalMensajes, chartData, error };
-}
 
 
 // --- GET /vendedores (COMPLETO Y CORREGIDO) ---
@@ -728,175 +660,224 @@ app.get('/vendedores/:id/historial', isAuthenticated, async (req, res) => {
   }
 });
 
-app.get('/crecimiento', isAuthenticated, async (req, res) => {
-  // Define fechas por defecto para el dashboard inicial (ej: último mes)
-  const defaultEndDate = new Date();
-  const defaultStartDate = new Date();
-  defaultStartDate.setDate(defaultEndDate.getDate() - 29); // 30 días incluyendo hoy
-  const initialStartDate = defaultStartDate.toISOString().slice(0, 10);
-  const initialEndDate = defaultEndDate.toISOString().slice(0, 10);
-  const hoy = new Date().toISOString().slice(0, 10); // Definir 'hoy' aquí
+async function getDashboardData(startDate, endDate, selectedAccounts = []) {
+    let totalMensajes = 0;
+    let totalMensajesManuales = 0;
+    let totalRespuestas = 0;
+    let chartData = [];
+    let cuentasDisponibles = [];
+    let error = null;
+  
+    try {
+      // 1. Obtener todas las cuentas disponibles
+      const cuentasResult = await pool.query(`
+        SELECT DISTINCT insta_username 
+        FROM vendedor_desempeno_diario
+        ORDER BY insta_username ASC
+      `);
+      cuentasDisponibles = cuentasResult.rows.map(row => row.insta_username.toLowerCase());
+  
+      // 2. Filtrar cuentas si se especificaron
+      const cuentasAFiltrar = selectedAccounts.length > 0 
+        ? selectedAccounts.map(a => a.toLowerCase())
+        : cuentasDisponibles;
+  
+      if (cuentasAFiltrar.length > 0) {
+        // 3. Obtener totales agregados
+        const totalsQuery = `
+          SELECT 
+            SUM(mensajes_enviados) as total_mensajes,
+            SUM(mensajes_manuales) as total_manuales,
+            SUM(respuestas_recibidas) as total_respuestas
+          FROM vendedor_desempeno_diario
+          WHERE insta_username = ANY($1) AND fecha BETWEEN $2 AND $3
+        `;
+        const totalsResult = await pool.query(totalsQuery, [
+          cuentasAFiltrar,
+          startDate,
+          endDate
+        ]);
+  
+        totalMensajes = parseInt(totalsResult.rows[0].total_mensajes || 0, 10);
+        totalMensajesManuales = parseInt(totalsResult.rows[0].total_manuales || 0, 10);
+        totalRespuestas = parseInt(totalsResult.rows[0].total_respuestas || 0, 10);
+  
+        // 4. Obtener datos para el gráfico (mensajes por día)
+        const chartQuery = `
+          SELECT 
+            fecha,
+            SUM(mensajes_enviados) as cantidad
+          FROM vendedor_desempeno_diario
+          WHERE insta_username = ANY($1) AND fecha BETWEEN $2 AND $3
+          GROUP BY fecha
+          ORDER BY fecha ASC
+        `;
+        const chartResult = await pool.query(chartQuery, [
+          cuentasAFiltrar,
+          startDate,
+          endDate
+        ]);
+  
+        // 5. Procesar datos para el gráfico
+        chartData = chartResult.rows.map(row => ({
+          fecha: new Date(row.fecha).toISOString().split('T')[0],
+          cantidad: parseInt(row.cantidad, 10)
+        }));
+  
+        // 6. Rellenar días faltantes con cero
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const allDates = [];
+        
+        for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+          const dateStr = date.toISOString().split('T')[0];
+          allDates.push(dateStr);
+        }
+  
+        const chartDataMap = chartData.reduce((acc, item) => {
+          acc[item.fecha] = item.cantidad;
+          return acc;
+        }, {});
+  
+        chartData = allDates.map(date => ({
+          fecha: date,
+          cantidad: chartDataMap[date] || 0
+        }));
+      }
+    } catch (err) {
+      console.error("Error al obtener datos del dashboard:", err);
+      error = err.message;
+      chartData = [];
+      totalMensajes = 0;
+      totalMensajesManuales = 0;
+      totalRespuestas = 0;
+    }
+  
+    return { 
+      totalMensajes, 
+      totalMensajesManuales,
+      totalRespuestas,
+      chartData, 
+      error,
+      cuentasDisponibles
+    };
+  }
 
-  try {
+
+  // Endpoint para obtener datos de la tabla
+app.get('/crecimiento/table-data', isAuthenticated, async (req, res) => {
+    const { from, to, accounts } = req.query;
+  
+    // Validar fechas
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!from || !to || !dateRegex.test(from) || !dateRegex.test(to)) {
+      return res.status(400).json({ error: 'Fechas inválidas o faltantes (YYYY-MM-DD)' });
+    }
+  
+    // Procesar cuentas si se especificaron
+    const selectedAccounts = accounts ? accounts.split(',') : [];
+  
+    try {
+      // Consulta SQL para obtener datos detallados por cuenta
+      const query = `
+        SELECT 
+          insta_username as cuenta,
+          SUM(mensajes_enviados) as mensajes_automaticos,
+          SUM(mensajes_manuales) as mensajes_manuales,
+          SUM(respuestas_recibidas) as respuestas,
+          CASE 
+            WHEN SUM(mensajes_enviados) > 0 THEN 
+              ROUND((SUM(respuestas_recibidas)::numeric / SUM(mensajes_enviados)) * 100, 1)
+            ELSE 0 
+          END as tasa_respuesta
+        FROM vendedor_desempeno_diario
+        WHERE fecha BETWEEN $1 AND $2
+        ${selectedAccounts.length > 0 ? 'AND insta_username = ANY($3)' : ''}
+        GROUP BY insta_username
+        ORDER BY mensajes_automaticos DESC
+      `;
+  
+      const queryParams = [from, to];
+      if (selectedAccounts.length > 0) {
+        queryParams.push(selectedAccounts);
+      }
+  
+      const result = await pool.query(query, queryParams);
+      
+      res.json({
+        tableData: result.rows
+      });
+  
+    } catch (error) {
+      console.error("Error en GET /crecimiento/table-data:", error);
+      res.status(500).json({ error: 'Error interno al obtener datos de la tabla' });
+    }
+  });
+  app.get('/crecimiento/dashboard-data', isAuthenticated, async (req, res) => {
+    const { from, to, accounts } = req.query;
+  
+    // Validar fechas
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!from || !to || !dateRegex.test(from) || !dateRegex.test(to)) {
+      return res.status(400).json({ error: 'Fechas inválidas o faltantes (YYYY-MM-DD)' });
+    }
+  
+    // Procesar cuentas si se especificaron
+    const selectedAccounts = accounts ? accounts.split(',') : [];
+  
+    try {
+      const dashboardData = await getDashboardData(from, to, selectedAccounts);
+      
+      if (dashboardData.error) {
+        return res.status(500).json({ error: dashboardData.error });
+      }
+  
+      res.json(dashboardData);
+    } catch (error) {
+      console.error("Error en GET /crecimiento/dashboard-data:", error);
+      res.status(500).json({ error: 'Error interno al obtener datos del dashboard' });
+    }
+  });
+  app.get('/crecimiento', isAuthenticated, async (req, res) => {
+    // Define fechas por defecto para el dashboard inicial (ej: último mes)
+    const defaultEndDate = new Date();
+    const defaultStartDate = new Date();
+    defaultStartDate.setDate(defaultEndDate.getDate() - 29); // 30 días incluyendo hoy
+    const initialStartDate = defaultStartDate.toISOString().slice(0, 10);
+    const initialEndDate = defaultEndDate.toISOString().slice(0, 10);
+  
+    try {
       // 1. Obtener datos del dashboard inicial
-      // Se llama a getDashboardData ANTES de cualquier posible error en las queries de vendedor
       const initialDashboardData = await getDashboardData(initialStartDate, initialEndDate);
-
+  
       // 2. Obtener datos de vendedores
       const sqlQueryVendedores = `
-          SELECT v.*,
-                 COALESCE(jsonb_array_length(v.cuentas_asignadas), 0) as num_cuentas
-          FROM vendedores v ORDER BY v.nombre ASC
+        SELECT v.*,
+               COALESCE(jsonb_array_length(v.cuentas_asignadas), 0) as num_cuentas
+        FROM vendedores v ORDER BY v.nombre ASC
       `;
-      // console.log('DEBUG: Query Vendedores SQL:', sqlQueryVendedores);
       const vendedoresResult = await pool.query(sqlQueryVendedores);
       const vendedores = vendedoresResult.rows;
-      const vendedorIds = vendedores.map(v => v.id);
-
-      // 3. Calcular fechas y desempeño MENSUAL
-      const nowForMonth = new Date(); // Usar una nueva instancia por claridad
-      const year = nowForMonth.getFullYear();
-      const month = nowForMonth.getMonth();
-      const firstDayOfMonth = new Date(year, month, 1).toISOString().slice(0, 10);
-      const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().slice(0, 10);
-
-      let desempenoMesMap = {};
-      if (vendedorIds.length > 0) {
-          const sqlQueryMes = `
-              SELECT
-                  vendedor_id,
-                  SUM(mensajes_enviados) as total_mensajes_mes,
-                  SUM(respuestas_recibidas) as total_respuestas_mes
-              FROM vendedor_desempeno_diario
-              WHERE vendedor_id = ANY($1::int[]) AND fecha >= $2 AND fecha <= $3
-              GROUP BY vendedor_id;
-          `;
-          const desempenoMesResult = await pool.query(sqlQueryMes, [vendedorIds, firstDayOfMonth, lastDayOfMonth]);
-          desempenoMesResult.rows.forEach(item => {
-               desempenoMesMap[item.vendedor_id] = {
-                   mensajes: parseInt(item.total_mensajes_mes, 10) || 0,
-                   respuestas: parseInt(item.total_respuestas_mes, 10) || 0
-               };
-          });
-      }
-
-      // 4. Obtener desempeño de HOY
-      const sqlQueryHoy = `
-          SELECT vendedor_id, insta_username, mensajes_enviados, respuestas_recibidas
-          FROM vendedor_desempeno_diario
-          WHERE fecha = $1
-      `;
-      const desempenoHoyResult = await pool.query(sqlQueryHoy, [hoy]);
-      const desempenoHoyMap = desempenoHoyResult.rows.reduce((map, item) => {
-           if (!map[item.vendedor_id]) map[item.vendedor_id] = {};
-           map[item.vendedor_id][item.insta_username.toLowerCase()] = {
-               mensajes: item.mensajes_enviados,
-               respuestas: item.respuestas_recibidas
-           };
-           return map;
-       }, {});
-
-      // 5. Obtener totales de MongoDB
-      let allAssignedUsernames = [];
-       vendedores.forEach(v => {
-          if (v.cuentas_asignadas && Array.isArray(v.cuentas_asignadas)) {
-               allAssignedUsernames.push(...v.cuentas_asignadas);
-           }
-       });
-      allAssignedUsernames = [...new Set(allAssignedUsernames.map(u => u.toLowerCase()))];
-      let mongoMessageCounts = {};
-      if (allAssignedUsernames.length > 0) {
-          const client = new MongoClient(mongoUri, { useUnifiedTopology: true });
-           try {
-               await client.connect();
-               const db = client.db(mongoDbName);
-               const collection = db.collection('historial_acciones');
-               const pipeline = [
-                  { $match: { username: { $in: allAssignedUsernames }, accion: { $regex: /mensaje/i } } },
-                  { $group: { _id: { $toLower: "$username" }, count: { $sum: 1 } } },
-                  { $project: { _id: 0, username: "$_id", count: 1 } }
-               ];
-               const results = await collection.aggregate(pipeline).toArray();
-               results.forEach(item => { mongoMessageCounts[item.username] = item.count; });
-            } finally { await client.close(); }
-      }
-
-      // 6. Combinar datos para la vista
-      const vendedoresParaVista = vendedores.map(vendedor => {
-           let cuentasConDatos = [];
-           let totalMensajesHoy = 0;
-           let totalRespuestasHoy = 0;
-           let totalMensajesMongo = 0;
-           if (vendedor.cuentas_asignadas && Array.isArray(vendedor.cuentas_asignadas)) {
-              cuentasConDatos = vendedor.cuentas_asignadas.map(cuenta => {
-                  const cuentaLower = cuenta.toLowerCase();
-                  const desempenoCuentaHoy = desempenoHoyMap[vendedor.id]?.[cuentaLower] || { mensajes: 0, respuestas: 0 };
-                  const mensajesMongo = mongoMessageCounts[cuentaLower] || 0;
-                  totalMensajesHoy += desempenoCuentaHoy.mensajes;
-                  totalRespuestasHoy += desempenoCuentaHoy.respuestas;
-                  totalMensajesMongo += mensajesMongo;
-                  return { nombre: cuenta, mensajesHoy: desempenoCuentaHoy.mensajes, respuestasHoy: desempenoCuentaHoy.respuestas, mensajesMongoTotal: mensajesMongo };
-              });
-          }
-
-           const objetivoMensual = vendedor.objetivo_mensual || 0;
-           const mensajesEsteMes = desempenoMesMap[vendedor.id]?.mensajes || 0;
-           let progresoMensualPct = 0;
-           if (objetivoMensual > 0) {
-               progresoMensualPct = Math.min(100, Math.max(0, (mensajesEsteMes / objetivoMensual) * 100));
-           }
-           return {
-               ...vendedor,
-               num_cuentas: vendedor.num_cuentas || 0,
-               cuentasDetalle: cuentasConDatos,
-               totalMensajesHoy, totalRespuestasHoy, totalMensajesMongo,
-               total_mensajes_mes: mensajesEsteMes,
-               progreso_mensajes_mes_pct: progresoMensualPct,
-           };
-      });
-
-      // 7. Renderizar vista pasando TODAS las variables necesarias
+  
+      // 3. Renderizar vista
       res.render('crecimiento', {
-          vendedores: vendedoresParaVista,
-          user: req.session.user,
-          success: req.query.success,
-          // Pasar el error específico del dashboard si existe, sino el query param
-          error: initialDashboardData.error ? `Error al cargar datos del dashboard: ${initialDashboardData.error}` : req.query.error,
-          today: hoy,
-          initialDashboard: initialDashboardData, // Objeto { totalMensajes, chartData, error }
-          initialStartDate: initialStartDate,     // String YYYY-MM-DD
-          initialEndDate: initialEndDate          // String YYYY-MM-DD
+        user: req.session.user,
+        success: req.query.success,
+        error: initialDashboardData.error ? `Error al cargar datos del dashboard: ${initialDashboardData.error}` : req.query.error,
+        initialDashboard: initialDashboardData,
+        initialStartDate: initialStartDate,
+        initialEndDate: initialEndDate
       });
-
-  } catch (error) {
-      // Captura errores de las queries de vendedor o cualquier otro error inesperado
-      console.error("Error severo en GET /vendedores:", error);
+  
+    } catch (error) {
+      console.error("Error en GET /crecimiento:", error);
       res.status(500).render('error', {
-           message: 'Error al cargar la página de vendedores',
-           error: error, // Pasar el error para depuración (si error.ejs lo maneja)
-           user: req.session.user
-         });
-  }
-});
-// --- NUEVO ENDPOINT: GET /vendedores/dashboard-data (para AJAX) ---
-app.get('/crecimiento/dashboard-data', isAuthenticated, async (req, res) => {
-  const { from, to } = req.query;
-
-  // Validar fechas (básico)
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!from || !to || !dateRegex.test(from) || !dateRegex.test(to)) {
-      return res.status(400).json({ error: 'Fechas inválidas o faltantes (YYYY-MM-DD)' });
-  }
-
-  const dashboardData = await getDashboardData(from, to);
-
-  if (dashboardData.error) {
-      return res.status(500).json({ error: `Error al obtener datos del dashboard: ${dashboardData.error}` });
-  }
-
-  res.json(dashboardData); // Devuelve { totalMensajes, chartData }
-});
-
+        message: 'Error al cargar la página de crecimiento',
+        error: error,
+        user: req.session.user
+      });
+    }
+  });
 
 // EN TU ARCHIVO server.js
 
