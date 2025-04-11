@@ -1,0 +1,43 @@
+<%# views/partials/client_card.ejs %>
+<div class="client-card card-style" data-cliente-id="<%= cliente.id %>">
+    <div class="card-header">
+        <h3><%= cliente.nombre %></h3>
+        <span class="status-badge status-<%= cliente.estado?.toLowerCase() || 'desconocido' %>">
+            <%= cliente.estado || 'N/A' %>
+        </span>
+    </div>
+    <div class="card-body">
+        <div class="info-group">
+            <span class="label"><i class="fas fa-user-tie fa-fw"></i> Formador:</span>
+            <span class="value"><%= cliente.nombre %></span> <%# Asumiendo que 'nombre' es el formador %>
+        </div>
+         <div class="metrics-group">
+            <div class="metric-item">
+                <span class="metric-value"><%= cliente.cuentas_asignadas?.length || 0 %></span>
+                <span class="metric-label">Cuentas IG</span>
+            </div>
+             <div class="metric-item">
+                <span class="metric-value"><%= cliente.mensajes_manuales || 0 %></span>
+                <span class="metric-label">Msj. Manuales</span>
+            </div>
+             <!-- Puedes añadir más métricas aquí si las tienes -->
+        </div>
+         <div class="info-group">
+            <span class="label"><i class="fas fa-clipboard-check fa-fw"></i> Cumplimiento:</span>
+            <span class="value"><%= cliente.porcentaje_cumplimiento || '0.00' %>%</span>
+        </div>
+         <!-- Más info si es relevante -->
+    </div>
+    <div class="card-footer">
+        <span class="last-update">Actualizado: <%= cliente.updated_at ? new Date(cliente.updated_at).toLocaleDateString('es-ES') : 'N/A' %></span>
+        <% if (locals.showDetailsButton) { %>
+            <button class="btn btn-secondary btn-sm btn-view-details" onclick="openSeguimientoModal('<%= cliente.id %>', '<%= cliente.nombre %>')">
+                <i class="fas fa-notes-medical"></i> Ver Seguimientos
+            </button>
+        <% } %>
+         <!-- Podrías añadir botón editar si fulfillment puede editar -->
+         <!-- <button class="btn btn-warning btn-sm btn-edit-client" onclick="openEditClientModal('<%= cliente.id %>')">
+             <i class="fas fa-edit"></i> Editar
+         </button> -->
+    </div>
+</div>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUNTER - Actividades Clientes</title>
+    <!-- Carga tus CSS base y FontAwesome -->
+    <link rel="stylesheet" href="/static/css/navbar.css" />
+    <link rel="stylesheet" href="/static/css/onboarding.css" />
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- CSS para cards y modal de seguimiento -->
+    <link rel="stylesheet" href="/static/css/client_cards.css" />
+    <link rel="stylesheet" href="/static/css/seguimiento_modal.css" /> <!-- Crear este archivo -->
+     <style> /* Estilos rápidos */
+        .main-content-area { padding: 80px 20px 20px 20px; max-width: 1600px; margin: auto; }
+        .page-title { text-align: center; margin-bottom: 2rem; font-size: 2.2rem; font-weight: 600; color: var(--color-text-primary);}
+        .client-cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 2rem; }
+        /* Estilos .client-card van en client_cards.css */
+        /* Estilos .seguimiento-modal-overlay van en seguimiento_modal.css */
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+    <div class="main-content-area">
+        <h1 class="page-title">Actividades y Seguimiento de Clientes</h1>
+
+        <!-- Mensajes Flash -->
+        <% if (locals.success_msg) { %><div class="alert alert-success"><%= success_msg %></div><% } %>
+        <% if (locals.error_msg) { %><div class="alert alert-danger"><%= error_msg %></div><% } %>
+
+        <div class="client-cards-grid">
+             <% if (typeof clientes !== 'undefined' && clientes.length > 0) { %>
+                <% clientes.forEach(cliente => { %>
+                   <%- include('partials/client_card', { cliente: cliente, showDetailsButton: true }) %> <!-- Mostrar botón detalles -->
+                <% }); %>
+            <% } else { %>
+                <p class="no-data-message">No hay clientes asignados.</p>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Modal para Ver/Agregar/Editar Seguimientos (se controla con JS) -->
+    <%- include('partials/seguimiento_modal') %>
+
+    <script defer src="/static/js/navbar.js"></script>
+    <!-- JS para manejar la lógica de seguimientos -->
+    <script defer src="/static/js/actividades_manager.js"></script> <!-- Crear este archivo JS -->
+</body>
+</html>

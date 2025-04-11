@@ -1,0 +1,58 @@
+<%# views/partials/seguimiento_modal.ejs %>
+<div id="seguimientoModalOverlay" class="seguimiento-modal-overlay">
+    <div class="seguimiento-modal-content">
+        <div class="seguimiento-modal-header">
+            <h5 class="seguimiento-modal-title">Seguimiento de <span id="seguimiento-modal-cliente-nombre">Cliente</span></h5>
+            <button type="button" class="modal-close-btn" onclick="closeSeguimientoModal()" title="Cerrar">×</button>
+        </div>
+        <div class="seguimiento-modal-body custom-scrollbar">
+            <!-- Formulario para Nueva Nota -->
+            <form id="seguimiento-form" class="seguimiento-form-add">
+                <h6><i class="fas fa-plus-circle"></i> Agregar Nueva Nota / Seguimiento</h6>
+                <input type="hidden" id="seguimiento-cliente-id">
+                <input type="hidden" id="seguimiento-id-edit"> <!-- Para modo edición -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="seguimiento-subcliente">Sub-Cliente (Opcional)</label>
+                        <input type="text" id="seguimiento-subcliente" placeholder="Nombre del contacto/subcliente">
+                    </div>
+                     <div class="form-group">
+                        <label for="seguimiento-estado">Estado Actual</label>
+                        <select id="seguimiento-estado">
+                            <option value="pendiente">Pendiente</option>
+                            <option value="contactado">Contactado</option>
+                            <option value="esperando respuesta">Esperando Respuesta</option>
+                            <option value="resuelto">Resuelto</option>
+                            <option value="descartado">Descartado</option>
+                            <!-- Añadir más estados si es necesario -->
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="seguimiento-notas">Notas*</label>
+                    <textarea id="seguimiento-notas" rows="3" placeholder="Detalles del contacto, acuerdos, próxima acción..." required></textarea>
+                </div>
+                 <div class="form-group">
+                    <label for="seguimiento-proximo">Próximo Seguimiento (Opcional)</label>
+                    <input type="date" id="seguimiento-proximo">
+                </div>
+                <div class="form-actions">
+                     <button type="button" class="btn btn-secondary btn-sm" onclick="resetSeguimientoForm()">Limpiar</button>
+                     <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Guardar Nota</button>
+                </div>
+            </form>
+
+            <hr class="modal-hr">
+
+            <!-- Lista de Seguimientos Existentes -->
+            <h6><i class="fas fa-history"></i> Historial de Seguimientos</h6>
+            <div id="seguimiento-list" class="seguimiento-list-container">
+                <p class="loading-message">Cargando seguimientos...</p>
+                <!-- Los seguimientos se cargarán aquí con JS -->
+            </div>
+        </div>
+        <div class="seguimiento-modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeSeguimientoModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
