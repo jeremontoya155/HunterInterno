@@ -84,6 +84,12 @@
                                 <% } else { %><p class="no-data"><small>Sin cuentas asignadas.</small></p><% } %>
                             </div>
                             <div class="card-section card-stats">
+                                <!-- Dentro de la card en vendedores.ejs -->
+<div class="stat-item">
+    <label><i class="far fa-clock"></i> Hoy</label>
+    <span><%= vendedor.totalMensajesHoy || 0 %> B / <%= vendedor.totalMensajesManualesHoy || 0 %> M / <%= vendedor.totalRespuestasHoy || 0 %> R</span>
+    <%# B=Bot, M=Manual, R=Respuesta %>
+</div>
                                 <div class="stat-item"><label><i class="far fa-clock"></i> Hoy</label><span><%= vendedor.totalMensajesHoy || 0 %> M / <%= vendedor.totalRespuestasHoy || 0 %> R</span></div>
                                 <% if (vendedor.fecha_ingreso) { %><div class="stat-item"><label><i class="far fa-calendar-alt"></i> Ingreso</label><span><%= new Date(vendedor.fecha_ingreso).toLocaleDateString('es-ES') %></span></div><% } %>
 

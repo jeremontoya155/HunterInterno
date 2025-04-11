@@ -353,3 +353,96 @@
       .btn, .btn-sm { font-size: 0.85rem; padding: 0.7rem 1.1rem; }
       .btn-lg { font-size: 0.95rem; padding: 0.9rem 1.6rem; }
   }
+
+  /* --- ESTILOS PARA EL MODAL DE DESEMPEÑO --- */
+
+/* Contenedor de CADA fila de cuenta */
+.desempeno-modal-body .account-input-group {
+    display: flex;           /* Probablemente ya usa flex */
+    align-items: center;     /* Alinea verticalmente nombre e inputs */
+    justify-content: space-between; /* Empuja nombre a la izq, inputs a la dcha */
+    gap: 1.5rem;             /* Espacio entre nombre y bloque de inputs (Puedes AJUSTAR este valor) */
+    padding: 0.75rem 0;      /* Espacio vertical entre filas */
+    border-bottom: 1px solid var(--color-border, rgba(76, 175, 145, 0.15)); /* Separador sutil */
+    flex-wrap: wrap; /* Permitir que los inputs bajen en pantallas muy pequeñas */
+}
+
+.desempeno-modal-body .account-name {
+    font-weight: 500;
+    color: var(--color-text-primary);
+    flex-shrink: 0; /* Evita que el nombre se encoja demasiado */
+    margin-right: 1rem; /* Asegura espacio a la derecha del nombre */
+    /* min-width: 120px; /* Opcional: darle un ancho mínimo */
+}
+
+/* Wrapper para los 3 campos de input (MEJOR PRÁCTICA si no lo tienes) */
+/* Si no tienes este wrapper, aplica 'display: flex' y 'gap' al padre */
+/* y ajusta directamente '.input-field' */
+.desempeno-modal-body .input-fields-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1rem; /* <<< AJUSTA ESTE GAP para el espacio ENTRE los inputs */
+    flex-grow: 1; /* Ocupa el espacio disponible */
+    justify-content: flex-end; /* Alinea inputs a la derecha */
+}
+
+
+/* Estilo para CADA par Label/Input */
+.desempeno-modal-body .input-field {
+    display: flex;
+    flex-direction: column; /* Label arriba del input */
+    align-items: center; /* Centra el label y el input */
+    /* Ajusta el espacio que ocupa cada campo */
+    flex: 1 1 auto; /* Permite que crezcan y se encojan, base automática */
+     /* O un ancho fijo/máximo si prefieres */
+     /* width: 80px; */
+     max-width: 90px; /* <<< INTENTA AJUSTAR ESTE VALOR */
+
+}
+
+.desempeno-modal-body .input-field label {
+    font-size: 0.75rem; /* Más pequeño */
+    color: var(--color-text-secondary);
+    margin-bottom: 4px; /* Espacio entre label e input */
+    white-space: nowrap; /* Evita que el label se parta */
+}
+
+.desempeno-modal-body .input-field input[type="number"] {
+    width: 100%; /* Ocupa el ancho del .input-field */
+    padding: 0.5rem; /* Padding interno */
+    text-align: center;
+    font-size: 0.95rem;
+    /* --- Heredar estilos base de inputs --- */
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--color-border, rgba(76, 175, 145, 0.2));
+    border-radius: var(--border-radius-small, 4px);
+    color: var(--color-text-primary, #e5e7eb);
+    /* Ocultar spinners */
+    -moz-appearance: textfield;
+}
+.desempeno-modal-body .input-field input[type="number"]::-webkit-inner-spin-button,
+.desempeno-modal-body .input-field input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Ajustes para pantallas más pequeñas si es necesario */
+@media (max-width: 500px) {
+    .desempeno-modal-body .account-input-group {
+        flex-direction: column; /* Apilar nombre encima de inputs */
+        align-items: flex-start; /* Alinear a la izquierda */
+        gap: 0.5rem;
+    }
+    .desempeno-modal-body .input-fields-wrapper {
+        justify-content: flex-start; /* Alinear inputs a la izquierda */
+        gap: 0.5rem;
+        width: 100%; /* Ocupar todo el ancho */
+    }
+     .desempeno-modal-body .input-field {
+        max-width: none; /* Permitir que ocupen más espacio */
+        flex: 1; /* Distribuir espacio equitativamente */
+    }
+    .desempeno-modal-body .account-name {
+        margin-bottom: 0.5rem;
+    }
+}
