@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desempeño de Vendedores</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.css">
+    <!-- Reutiliza tus estilos existentes -->
+    <link rel="stylesheet" href="/static/css/navbar.css">
+    <link rel="stylesheet" href="/static/css/scrollbar.css">
+    <link rel="stylesheet" href="/static/css/vendedores.css">
+    <style>
+
+        h1{
+            color: white;
+        }
+        /* Estilos específicos para esta página */
+        .auditoria-main-container {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        body{
+            color: black;
+        }
+        
+        .auditoria-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .card-style {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .table-filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-input, .filter-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .totals-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .total-card {
+            flex: 1;
+            min-width: 200px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .total-card h3 {
+            margin: 0 0 5px 0;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        
+        .total-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #4361ee;
+        }
+        
+        .chart-container {
+            height: 400px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+        }
+        
+        .auditoria-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        
+        .auditoria-table th, 
+        .auditoria-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+        
+        .auditoria-table th {
+            background-color: #f5f7fa;
+            font-weight: 600; /* Negrita más fuerte */
+            color: #333; /* Color más oscuro */
+        }
+        
+        .positive {
+            color: #28a745;
+            font-weight: 500;
+        }
+        
+        .negative {
+            color: #dc3545;
+            font-weight: 500;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .table-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .table-search {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            width: 250px;
+        }
+        
+        @media (max-width: 768px) {
+            .table-filters {
+                flex-direction: column;
+            }
+            
+            .filter-group {
+                min-width: 100%;
+            }
+            
+            .totals-container {
+                flex-direction: column;
+            }
+            
+            .total-card {
+                min-width: 100%;
+            }
+            
+            .table-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .table-search {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+    
+    <div class="auditoria-main-container">
+        <div class="auditoria-header">
+            <h1><i class="fas fa-chart-line"></i> Desempeño de Vendedores</h1>
+        </div>
+        
+        <!-- Filtros principales -->
+        <div class="card-style">
+            <form method="GET" action="/vendedores/desempeno">
+                <div class="table-filters">
+                    <div class="filter-group">
+                        <label for="start_date">Fecha Inicio</label>
+                        <input type="date" id="start_date" name="start_date" value="<%= startDate %>" class="filter-input" required>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="end_date">Fecha Fin</label>
+                        <input type="date" id="end_date" name="end_date" value="<%= endDate %>" class="filter-input" required>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="username">Usuario Instagram</label>
+                        <select id="username" name="username" class="filter-select">
+                            <option value="">Todos los usuarios</option>
+                            <% usernames.forEach(username => { %>
+                                <option value="<%= username %>" <%= username === selectedUsername ? 'selected' : '' %>>
+                                    <%= username %>
+                                </option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="vendedor">Vendedor</label>
+                        <select id="vendedor" name="vendedor" class="filter-select">
+                            <option value="">Todos los vendedores</option>
+                            <% vendedores.forEach(vendedor => { %>
+                                <option value="<%= vendedor.id %>" <%= vendedor.id.toString() === selectedVendedor ? 'selected' : '' %>>
+                                    <%= vendedor.nombre %>
+                                </option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group" style="align-self: flex-end;">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filtrar</button>
+                        <a href="/vendedores/desempeno" class="btn btn-secondary" style="margin-left: 10px;">
+                            <i class="fas fa-sync-alt"></i> Limpiar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Totales -->
+        <div class="totals-container">
+            <div class="total-card">
+                <h3>Mensajes Automáticos</h3>
+                <div class="total-value"><%= totals.mensajes.toLocaleString() %></div>
+            </div>
+            
+            <div class="total-card">
+                <h3>Mensajes Manuales</h3>
+                <div class="total-value"><%= totals.manuales.toLocaleString() %></div>
+            </div>
+            
+            <div class="total-card">
+                <h3>Respuestas Recibidas</h3>
+                <div class="total-value"><%= totals.respuestas.toLocaleString() %></div>
+            </div>
+            
+            <div class="total-card">
+                <h3>Tasa de Respuesta</h3>
+                <div class="total-value <%= totals.mensajes > 0 ? (totals.respuestas/totals.mensajes*100 > 10 ? 'positive' : 'negative') : '' %>">
+                    <%= totals.mensajes > 0 ? (totals.respuestas/totals.mensajes*100).toFixed(1) + '%' : 'N/A' %>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gráfico -->
+        <div class="card-style">
+            <div class="card-header">
+                <h2><i class="fas fa-chart-bar"></i> Actividad por Día</h2>
+            </div>
+            <div class="chart-container">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Tabla de Detalles -->
+        <div class="card-style">
+            <div class="card-header">
+                <div class="table-header">
+                    <h2><i class="fas fa-table"></i> Detalle de Actividad</h2>
+                    <div class="table-actions">
+                        <input type="text" id="tableSearch" class="table-search" placeholder="Buscar en tabla...">
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="auditoria-table" id="detailTable">
+                    <thead>
+                        <tr>
+                            <th>Vendedor</th>
+                            <th>Usuario IG</th>
+                            <th class="text-center">Fecha</th>
+                            <th class="text-center">Mensajes Auto</th>
+                            <th class="text-center">Mensajes Manual</th>
+                            <th class="text-center">Respuestas</th>
+                            <th class="text-center">Tasa Respuesta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (tableData.length > 0) { %>
+                            <% tableData.forEach(row => { %>
+                                <tr>
+                                    <td><%= row.vendedor || 'N/A' %></td>
+                                    <td><%= row.insta_username %></td>
+                                    <td class="text-center"><%= new Date(row.fecha).toLocaleDateString('es-ES') %></td>
+                                    <td class="text-center"><%= row.mensajes_enviados %></td>
+                                    <td class="text-center"><%= row.mensajes_manuales %></td>
+                                    <td class="text-center"><%= row.respuestas_recibidas %></td>
+                                    <td class="text-center <%= row.tasa_respuesta > 10 ? 'positive' : 'negative' %>">
+                                        <%= row.tasa_respuesta %>%
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="7" style="text-align: center;">No se encontraron datos con los filtros seleccionados</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script>
+        // Parsear los datos del gráfico desde el servidor
+        const rawChartData = <%- chartData %>;
+        
+        // Preparar datos para el gráfico
+        const labels = rawChartData.map(item => {
+            const date = new Date(item.fecha);
+            return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+        });
+        
+        const mensajesData = rawChartData.map(item => item.total_mensajes);
+        const manualesData = rawChartData.map(item => item.total_manuales);
+        const respuestasData = rawChartData.map(item => item.total_respuestas);
+        
+        // Configuración del gráfico
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Mensajes Automáticos',
+                        data: mensajesData,
+                        backgroundColor: 'rgba(67, 97, 238, 0.2)',
+                        borderColor: 'rgba(67, 97, 238, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    },
+                    {
+                        label: 'Mensajes Manuales',
+                        data: manualesData,
+                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    },
+                    {
+                        label: 'Respuestas Recibidas',
+                        data: respuestasData,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0,
+                            callback: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                }
+            }
+        });
+
+        // Filtrado de la tabla
+        document.getElementById('tableSearch').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#detailTable tbody tr');
+            
+            rows.forEach(row => {
+                const rowText = row.textContent.toLowerCase();
+                if (rowText.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

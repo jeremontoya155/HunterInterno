@@ -1590,6 +1590,139 @@ app.post('/api/manual-tracking/bulk', isAuthenticated,  async (req, res, next) =
   }
 });
 
+// GET /vendedores/desempeno - Dashboard de desempeño
+// GET /vendedores/desempeno - Dashboard de desempeño
+app.get('/vendedores/desempeno', isAuthenticated, async (req, res) => {
+  // Fechas por defecto (últimos 30 días)
+  const defaultEndDate = new Date();
+  const defaultStartDate = new Date();
+  defaultStartDate.setDate(defaultEndDate.getDate() - 30);
+  
+  const initialStartDate = req.query.start_date || defaultStartDate.toISOString().split('T')[0];
+  const initialEndDate = req.query.end_date || defaultEndDate.toISOString().split('T')[0];
+  const selectedUsername = req.query.username || '';
+  const selectedVendedor = req.query.vendedor || '';
+
+  try {
+      // 1. Obtener todos los usuarios únicos para el dropdown
+      const usersQuery = `
+          SELECT DISTINCT insta_username 
+          FROM vendedor_desempeno_diario 
+          ORDER BY insta_username ASC
+      `;
+      const usersResult = await pool.query(usersQuery);
+      const usernames = usersResult.rows.map(row => row.insta_username);
+
+      // 2. Obtener todos los vendedores para el dropdown
+      const vendedoresQuery = `
+          SELECT id, nombre FROM vendedores ORDER BY nombre ASC
+      `;
+      const vendedoresResult = await pool.query(vendedoresQuery);
+      const vendedores = vendedoresResult.rows;
+
+      // 3. Obtener datos para el gráfico (agrupado por fecha)
+      let chartQuery = `
+          SELECT 
+              fecha,
+              SUM(mensajes_enviados) as total_mensajes,
+              SUM(mensajes_manuales) as total_manuales,
+              SUM(respuestas_recibidas) as total_respuestas
+          FROM vendedor_desempeno_diario
+          WHERE fecha BETWEEN $1 AND $2
+      `;
+      
+      let queryParams = [initialStartDate, initialEndDate];
+      let paramCount = 2;
+      
+      if (selectedUsername) {
+          paramCount++;
+          chartQuery += ` AND insta_username = $${paramCount}`;
+          queryParams.push(selectedUsername);
+      }
+      
+      if (selectedVendedor) {
+          paramCount++;
+          chartQuery += ` AND vendedor_id = $${paramCount}`;
+          queryParams.push(selectedVendedor);
+      }
+      
+      chartQuery += ' GROUP BY fecha ORDER BY fecha ASC';
+      
+      const chartResult = await pool.query(chartQuery, queryParams);
+      
+      // 4. Obtener datos para la tabla (detallado por usuario)
+      let tableQuery = `
+          SELECT 
+              v.id as vendedor_id,
+              v.nombre as vendedor,
+              d.insta_username,
+              d.fecha,
+              d.mensajes_enviados,
+              d.mensajes_manuales,
+              d.respuestas_recibidas,
+              CASE 
+                  WHEN d.mensajes_enviados > 0 THEN 
+                      ROUND((d.respuestas_recibidas::numeric / d.mensajes_enviados) * 100, 1)
+                  ELSE 0 
+              END as tasa_respuesta
+          FROM vendedor_desempeno_diario d
+          LEFT JOIN vendedores v ON d.vendedor_id = v.id
+          WHERE d.fecha BETWEEN $1 AND $2
+      `;
+      
+      paramCount = 2;
+      
+      if (selectedUsername) {
+          paramCount++;
+          tableQuery += ' AND d.insta_username = $' + paramCount;
+      }
+      
+      if (selectedVendedor) {
+          paramCount++;
+          tableQuery += ' AND d.vendedor_id = $' + paramCount;
+      }
+      
+      tableQuery += ' ORDER BY d.fecha DESC, v.nombre ASC';
+      
+      const tableResult = await pool.query(tableQuery, queryParams);
+      
+      // 5. Calcular totales
+      const totals = {
+          mensajes: 0,
+          manuales: 0,
+          respuestas: 0
+      };
+      
+      chartResult.rows.forEach(row => {
+          totals.mensajes += parseInt(row.total_mensajes || 0, 10);
+          totals.manuales += parseInt(row.total_manuales || 0, 10);
+          totals.respuestas += parseInt(row.total_respuestas || 0, 10);
+      });
+
+      res.render('desempeno_vendedores', {
+          user: req.session.user,
+          usernames,
+          vendedores,
+          selectedUsername,
+          selectedVendedor,
+          startDate: initialStartDate,
+          endDate: initialEndDate,
+          chartData: JSON.stringify(chartResult.rows), // Enviar como JSON para el JS
+          tableData: tableResult.rows,
+          totals,
+          success: req.query.success,
+          error: req.query.error
+      });
+
+  } catch (error) {
+      console.error("Error en GET /vendedores/desempeno:", error);
+      res.status(500).render('error', {
+          message: 'Error al cargar el dashboard de desempeño',
+          error: error,
+          user: req.session.user
+      });
+  }
+});
 
 
 app.get('/logout', (req, res) => {
