@@ -889,6 +889,29 @@ app.get('/crecimiento/table-data', isAuthenticated, async (req, res) => {
 
 // ... (otros requires, app, pool, isAuthenticated, etc.) ...
 
+app.get('/onboarding_auditoria', isAuthenticated, (req, res) => {
+  const userRole = req.session.user?.role; // Usamos optional chaining por seguridad
+  return res.render('onboarding_auditoria', { user: req.session.user });
+
+  
+});
+
+
+app.get('/onboarding_full', isAuthenticated, (req, res) => {
+  const userRole = req.session.user?.role; // Usamos optional chaining por seguridad
+  return res.render('onboarding_fulfillment', { user: req.session.user });
+
+  
+});
+
+
+app.get('/onboarding_ventas', isAuthenticated, (req, res) => {
+  const userRole = req.session.user?.role; // Usamos optional chaining por seguridad
+  return res.render('onboarding_ventas', { user: req.session.user });
+
+  
+});
+
 app.get('/onboarding', isAuthenticated, (req, res) => {
     const userRole = req.session.user?.role; // Usamos optional chaining por seguridad
     
@@ -898,7 +921,7 @@ app.get('/onboarding', isAuthenticated, (req, res) => {
     } 
     // Luego verificamos el rol de admin (si quieres que los admin también vean auditoría)
     else if (userRole === 'admin') {
-        return res.render('onboarding_auditoria', { user: req.session.user });
+        return res.render('onboarding_admin', { user: req.session.user });
     }
     // Finalmente verificamos fulfillment
     else if (userRole === 'fulfillment') {
