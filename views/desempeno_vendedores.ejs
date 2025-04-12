@@ -12,7 +12,10 @@
     <link rel="stylesheet" href="/static/css/scrollbar.css">
     <link rel="stylesheet" href="/static/css/vendedores.css">
     <style>
-
+        body
+        {
+            color: black;
+        }
         h1{
             color: white;
         }
@@ -21,10 +24,6 @@
             padding: 20px;
             max-width: 1400px;
             margin: 0 auto;
-        }
-
-        body{
-            color: black;
         }
         
         .auditoria-header {
@@ -115,8 +114,8 @@
         
         .auditoria-table th {
             background-color: #f5f7fa;
-            font-weight: 600; /* Negrita más fuerte */
-            color: #333; /* Color más oscuro */
+            font-weight: 600;
+            color: #333;
         }
         
         .positive {
@@ -131,6 +130,10 @@
         
         .text-center {
             text-align: center;
+        }
+        
+        .text-right {
+            text-align: right;
         }
         
         .table-header {
@@ -151,6 +154,26 @@
             border-radius: 4px;
             font-size: 0.85rem;
             width: 250px;
+        }
+        
+        .table-totals {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .table-totals td {
+            border-top: 2px solid #ddd;
+            border-bottom: none;
+        }
+        
+        .table-date-filter {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .table-date-filter input {
+            width: 120px;
         }
         
         @media (max-width: 768px) {
@@ -177,6 +200,16 @@
             }
             
             .table-search {
+                width: 100%;
+            }
+            
+            .table-date-filter {
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+            }
+            
+            .table-date-filter input {
                 width: 100%;
             }
         }
@@ -279,6 +312,10 @@
                 <div class="table-header">
                     <h2><i class="fas fa-table"></i> Detalle de Actividad</h2>
                     <div class="table-actions">
+                        <div class="table-date-filter">
+                            <input type="date" id="tableStartDate" class="filter-input" placeholder="Desde">
+                            <input type="date" id="tableEndDate" class="filter-input" placeholder="Hasta">
+                        </div>
                         <input type="text" id="tableSearch" class="table-search" placeholder="Buscar en tabla...">
                     </div>
                 </div>
@@ -299,7 +336,7 @@
                     <tbody>
                         <% if (tableData.length > 0) { %>
                             <% tableData.forEach(row => { %>
-                                <tr>
+                                <tr class="data-row" data-date="<%= new Date(row.fecha).toISOString().split('T')[0] %>">
                                     <td><%= row.vendedor || 'N/A' %></td>
                                     <td><%= row.insta_username %></td>
                                     <td class="text-center"><%= new Date(row.fecha).toLocaleDateString('es-ES') %></td>
@@ -311,6 +348,13 @@
                                     </td>
                                 </tr>
                             <% }); %>
+                            <tr class="table-totals">
+                                <td colspan="3" class="text-right"><strong>Totales:</strong></td>
+                                <td class="text-center" id="totalAuto">0</td>
+                                <td class="text-center" id="totalManual">0</td>
+                                <td class="text-center" id="totalRespuestas">0</td>
+                                <td class="text-center" id="totalTasa">0%</td>
+                            </tr>
                         <% } else { %>
                             <tr>
                                 <td colspan="7" style="text-align: center;">No se encontraron datos con los filtros seleccionados</td>
@@ -409,12 +453,72 @@
             }
         });
 
-        // Filtrado de la tabla
+        // Función para calcular y mostrar los totales
+        function updateTotals() {
+            let totalAuto = 0;
+            let totalManual = 0;
+            let totalRespuestas = 0;
+            
+            document.querySelectorAll('#detailTable tbody tr.data-row').forEach(row => {
+                if (row.style.display !== 'none') {
+                    const auto = parseInt(row.cells[3].textContent) || 0;
+                    const manual = parseInt(row.cells[4].textContent) || 0;
+                    const resp = parseInt(row.cells[5].textContent) || 0;
+                    
+                    totalAuto += auto;
+                    totalManual += manual;
+                    totalRespuestas += resp;
+                }
+            });
+            
+            document.getElementById('totalAuto').textContent = totalAuto.toLocaleString();
+            document.getElementById('totalManual').textContent = totalManual.toLocaleString();
+            document.getElementById('totalRespuestas').textContent = totalRespuestas.toLocaleString();
+            
+            const tasa = totalAuto > 0 ? (totalRespuestas / totalAuto * 100).toFixed(1) + '%' : '0%';
+            const tasaElement = document.getElementById('totalTasa');
+            tasaElement.textContent = tasa;
+            tasaElement.className = 'text-center ' + (totalAuto > 0 ? (totalRespuestas/totalAuto*100 > 10 ? 'positive' : 'negative') : '');
+        }
+
+        // Filtrado de la tabla por texto
         document.getElementById('tableSearch').addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#detailTable tbody tr');
+            filterTable(searchTerm);
+        });
+
+        // Filtrado de la tabla por fecha
+        document.getElementById('tableStartDate').addEventListener('change', filterByDate);
+        document.getElementById('tableEndDate').addEventListener('change', filterByDate);
+
+        function filterByDate() {
+            const startDate = document.getElementById('tableStartDate').value;
+            const endDate = document.getElementById('tableEndDate').value;
             
-            rows.forEach(row => {
+            document.querySelectorAll('#detailTable tbody tr.data-row').forEach(row => {
+                const rowDate = row.getAttribute('data-date');
+                let shouldShow = true;
+                
+                if (startDate && rowDate < startDate) {
+                    shouldShow = false;
+                }
+                
+                if (endDate && rowDate > endDate) {
+                    shouldShow = false;
+                }
+                
+                if (shouldShow) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            updateTotals();
+        }
+
+        function filterTable(searchTerm) {
+            document.querySelectorAll('#detailTable tbody tr.data-row').forEach(row => {
                 const rowText = row.textContent.toLowerCase();
                 if (rowText.includes(searchTerm)) {
                     row.style.display = '';
@@ -422,6 +526,21 @@
                     row.style.display = 'none';
                 }
             });
+            
+            updateTotals();
+        }
+
+        // Inicializar los totales al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTotals();
+            
+            // Establecer fechas por defecto para el filtro de tabla
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('tableEndDate').value = today;
+            
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            document.getElementById('tableStartDate').value = thirtyDaysAgo.toISOString().split('T')[0];
         });
     </script>
 </body>
