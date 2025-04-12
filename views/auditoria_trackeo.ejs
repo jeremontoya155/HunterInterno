@@ -99,7 +99,11 @@
         #bulk-textarea { min-height: 200px; font-family: monospace; font-size: 0.9rem; white-space: pre; }
         #bulk-add-feedback { margin-top: 1rem; font-size: 0.9rem; padding: 0.5rem; border-radius: var(--border-radius-small); } #bulk-add-feedback.error { color: var(--color-danger); background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);} #bulk-add-feedback.success { color: var(--color-success); background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);} #bulk-add-feedback.warning { color: var(--color-warning); background-color: rgba(243, 156, 18, 0.1); border: 1px solid rgba(243, 156, 18, 0.3);}
         #bulk-errors-list { margin-top: 0.5rem; padding-left: 1.5rem; font-size: 0.85rem; color: var(--color-warning); max-height: 150px; overflow-y: auto; list-style: disc; }
-    </style>
+        .action-buttons{
+            text-align: left;
+            align-items: left;
+        }
+   </style>
 </head>
 <body>
     <%- include('partials/navbar') %>
@@ -128,7 +132,7 @@
                 <div class="table-wrapper custom-scrollbar">
                     <table id="manual-niche-table" class="history-table">
                         <thead>
-                            <tr> <th>Cuenta a Usar</th> <th>Cuenta a Trackear</th> <th>Tipo/Keyword</th> <th>Estado</th> <th>Agregado por</th> <th>Fecha</th> <th>Acciones</th> </tr>
+                            <tr> <th>Cuenta a EFECTUARr</th> <th>Cuenta a Trackear</th> <th>Tipo/Keyword</th> <th>Estado</th> <th>Agregado por</th> <th>Fecha</th> <th>Acciones</th> </tr>
                         </thead>
                         <tbody>
                             <% if (locals.manualNiches && manualNiches.length > 0) { %>
@@ -175,7 +179,7 @@
                 <% if (locals.uploads && uploads.length > 0) { %>
                     <div class="table-wrapper custom-scrollbar">
                         <table id="csv-history-table" class="history-table">
-                            <thead> <tr> <th>Fecha Subida</th> <th>Tipo Nicho</th> <th>Nombre Original</th> <th class="numeric">Tamaño</th> <th>Subido por</th> <th class="action-buttons">Acciones</th> </tr> </thead>
+                            <thead> <tr> <th>Fecha Subida</th> <th>Cuenta a efectuar</th> <th>Nombre Original</th> <th class="numeric">Tamaño</th> <th>Subido por</th> <th class="action-buttons">Acciones</th> </tr> </thead>
                             <tbody> <!-- ID añadido para el selector JS -->
                                 <% uploads.forEach(upload => { %>
                                     <% let fileSizeFormatted; if (upload.size < 1024) fileSizeFormatted = upload.size + ' B'; else if (upload.size < 1024*1024) fileSizeFormatted = (upload.size / 1024).toFixed(1) + ' KB'; else fileSizeFormatted = (upload.size / (1024 * 1024)).toFixed(2) + ' MB'; %>

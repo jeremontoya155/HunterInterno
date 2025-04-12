@@ -11,14 +11,8 @@
     <link rel="stylesheet" href="/static/css/navbar.css">
     <link rel="stylesheet" href="/static/css/scrollbar.css">
     <link rel="stylesheet" href="/static/css/vendedores.css">
+   
     <style>
-        body
-        {
-            color: black;
-        }
-        h1{
-            color: white;
-        }
         /* Estilos específicos para esta página */
         .auditoria-main-container {
             padding: 20px;
@@ -33,10 +27,20 @@
             margin-bottom: 20px;
         }
         
+        .auditoria-header h1 {
+            color: var(--color-text-primary);
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+        
         .card-style {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background: var(--color-background-medium);
+            border-radius: var(--border-radius-large);
+            border: 1px solid var(--color-border);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0,0,0,0.1);
             padding: 20px;
             margin-bottom: 20px;
         }
@@ -53,12 +57,37 @@
             min-width: 200px;
         }
         
+        .filter-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+        }
+        
         .filter-input, .filter-select {
             width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.85rem;
+            padding: 0.7rem 1rem;
+            background-color: var(--color-background-dark);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-medium);
+            color: var(--color-text-primary);
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-input:focus, .filter-select:focus {
+            outline: none;
+            border-color: var(--color-info);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+        }
+        
+        .filter-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238b949e' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 16px 12px;
         }
         
         .totals-container {
@@ -71,28 +100,41 @@
         .total-card {
             flex: 1;
             min-width: 200px;
-            background-color: #f8f9fa;
-            border-radius: 6px;
+            background-color: var(--color-background-light);
+            border-radius: var(--border-radius-medium);
+            border: 1px solid var(--color-border);
             padding: 15px;
             text-align: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .total-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
         
         .total-card h3 {
             margin: 0 0 5px 0;
             font-size: 0.9rem;
-            color: #555;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            font-weight: 500;
         }
         
         .total-value {
             font-size: 1.5rem;
             font-weight: 600;
-            color: #4361ee;
+            color: var(--color-accent);
         }
         
         .chart-container {
             height: 400px;
             margin-bottom: 20px;
             position: relative;
+            background-color: var(--color-background-light);
+            padding: 1.5rem 2rem;
+            border-radius: var(--border-radius-medium);
+            border: 1px solid var(--color-border);
         }
         
         .table-responsive {
@@ -107,24 +149,26 @@
         
         .auditoria-table th, 
         .auditoria-table td {
-            padding: 8px 12px;
-            border-bottom: 1px solid #eee;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--color-border);
             text-align: left;
         }
         
         .auditoria-table th {
-            background-color: #f5f7fa;
+            background-color: var(--color-background-light);
             font-weight: 600;
-            color: #333;
+            color: var(--color-text-primary);
+            position: sticky;
+            top: 0;
         }
         
         .positive {
-            color: #28a745;
+            color: var(--color-success);
             font-weight: 500;
         }
         
         .negative {
-            color: #dc3545;
+            color: var(--color-danger);
             font-weight: 500;
         }
         
@@ -146,23 +190,33 @@
         .table-actions {
             display: flex;
             gap: 10px;
+            align-items: center;
         }
         
         .table-search {
-            padding: 6px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.85rem;
+            padding: 0.7rem 1rem;
+            background-color: var(--color-background-dark);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-medium);
+            color: var(--color-text-primary);
+            font-size: 0.9rem;
             width: 250px;
+            transition: all 0.2s ease;
+        }
+        
+        .table-search:focus {
+            outline: none;
+            border-color: var(--color-info);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
         }
         
         .table-totals {
-            background-color: #f8f9fa;
+            background-color: var(--color-background-light);
             font-weight: 600;
         }
         
         .table-totals td {
-            border-top: 2px solid #ddd;
+            border-top: 2px solid var(--color-border);
             border-bottom: none;
         }
         
@@ -174,6 +228,68 @@
         
         .table-date-filter input {
             width: 120px;
+            padding: 0.7rem 1rem;
+            background-color: var(--color-background-dark);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-medium);
+            color: var(--color-text-primary);
+            font-size: 0.9rem;
+        }
+        
+        .btn {
+            padding: 0.7rem 1.3rem;
+            border: none;
+            border-radius: var(--border-radius-medium);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            justify-content: center;
+            text-decoration: none;
+            line-height: 1.4;
+            white-space: nowrap;
+            box-shadow: 0 1px 0 rgba(27, 31, 36, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        }
+        
+        .btn i {
+            font-size: 1em;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .btn:active {
+            transform: translateY(0px);
+            box-shadow: 0 1px 0 rgba(27, 31, 36, 0.04);
+        }
+        
+        .btn-primary {
+            background-color: var(--color-green-progress);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .btn-primary:hover {
+            background-color: #2ea043;
+            border-color: rgba(255,255,255,0.15);
+        }
+        
+        .btn-secondary {
+            background-color: var(--color-background-light);
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+            box-shadow: none;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #30363d;
+            color: var(--color-text-primary);
+            border-color: #4b5563;
         }
         
         @media (max-width: 768px) {
@@ -238,7 +354,7 @@
                     </div>
                     
                     <div class="filter-group">
-                        <label for="username">Usuario Instagram</label>
+                        <label for="username">Cuenta</label>
                         <select id="username" name="username" class="filter-select">
                             <option value="">Todos los usuarios</option>
                             <% usernames.forEach(username => { %>
@@ -250,9 +366,9 @@
                     </div>
                     
                     <div class="filter-group">
-                        <label for="vendedor">Vendedor</label>
+                        <label for="vendedor">Cliente</label>
                         <select id="vendedor" name="vendedor" class="filter-select">
-                            <option value="">Todos los vendedores</option>
+                            <option value="">Todos los Clientes</option>
                             <% vendedores.forEach(vendedor => { %>
                                 <option value="<%= vendedor.id %>" <%= vendedor.id.toString() === selectedVendedor ? 'selected' : '' %>>
                                     <%= vendedor.nombre %>
@@ -324,7 +440,7 @@
                 <table class="auditoria-table" id="detailTable">
                     <thead>
                         <tr>
-                            <th>Vendedor</th>
+                            <th>Cliente</th>
                             <th>Usuario IG</th>
                             <th class="text-center">Fecha</th>
                             <th class="text-center">Mensajes Auto</th>

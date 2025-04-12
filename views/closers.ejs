@@ -9,134 +9,318 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/navbar.css" />
     <link rel="stylesheet" href="/static/css/scrollbar.css" />
-    <!-- CSS específico (Puede reutilizar vendedores.css o crear closers.css) -->
-    <link rel="stylesheet" href="/static/css/vendedores.css" /> <!-- REUTILIZANDO -->
-
+    <!-- Reutilizamos el CSS de vendedores -->
+    <link rel="stylesheet" href="/static/css/vendedores.css" />
     <style>
-        /* Pequeños ajustes si son necesarios o ponerlos en closers.css */
-        .vendedor-main-container { max-width: 1200px; /* Quizás más estrecho */}
-        .table-section th:nth-child(4), /* Columna Agendas */
-        .table-section td:nth-child(4) {
-            text-align: center; /* Centrar agendas */
+        .closer-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+        .closer-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        .closer-card:hover {
+            transform: translateY(-5px);
+        }
+        .closer-card-header {
+            padding: 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+        }
+        .closer-card-header h3 {
+            margin: 0;
+            color: #333;
+        }
+        .closer-card-body {
+            padding: 15px;
+        }
+        .closer-stat {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .closer-stat-label {
+            font-weight: 500;
+            color: #666;
+        }
+        .closer-stat-value {
             font-weight: 600;
         }
-         /* Ocultar formulario si canEdit es false */
-         <% if (!locals.canEdit) { %>
-            .form-container { display: none; }
-         <% } %>
+        .closer-progress {
+            margin: 15px 0;
+        }
+        .progress-bar-container {
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #4e73df;
+            border-radius: 5px;
+        }
+        .closer-card-footer {
+            padding: 15px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        .no-data-global {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
     </style>
 </head>
 <body>
     <%- include('partials/navbar') %>
 
-    <div class="vendedor-main-container"> <!-- Reutilizamos clase container -->
-        <h1 class="page-title"><i class="fas fa-handshake icon-header"></i>Gestión de Closers</h1>
+    <div class="vendedor-main-container">
+        <h1 class="page-title"><i class="fas fa-handshake icon-header"></i> Gestión de Closers</h1>
 
         <!-- Mensajes Flash -->
         <% if (locals.success_msg) { %><div class="alert alert-success"><%= success_msg %></div><% } %>
         <% if (locals.error_msg) { %><div class="alert alert-danger"><%= error_msg %></div><% } %>
 
-        <!-- Formulario para Agregar/Editar (SOLO ADMIN) -->
-        <% if (locals.canEdit) { %>
-            <section id="form-container" class="form-container card-style">
-                <h2 id="form-title"><i class="fas fa-user-plus"></i> Agregar Nuevo Closer</h2>
-                <form id="closer-form" action="/closers" method="POST"> <!-- Apunta a /closers -->
-                    <input type="hidden" id="closer_id" name="closer_id"> <!-- ID para editar -->
+        <!-- Encabezado con filtro y botón -->
+        <div class="vendedor-section-header">
+            <div class="header-title-button">
+                <h2><i class="fas fa-id-card-alt icon-header"></i> Closers Activos</h2>
+                <% if (locals.canEdit) { %>
+                    <button class="btn btn-primary btn-add-vendedor" onclick="openCloserModal()">
+                        <i class="fas fa-user-plus"></i> Agregar Closer
+                    </button>
+                <% } %>
+            </div>
+            <div class="seller-filter-container">
+                <i class="fas fa-search filter-icon"></i>
+                <input type="text" id="closer-name-filter" placeholder="Filtrar por nombre...">
+            </div>
+        </div>
 
+        <!-- Contenedor de Cards de Closers -->
+        <div class="closer-cards-grid">
+            <% if (locals.closers && closers.length > 0) { %>
+                <% closers.forEach(closer => { %>
+                    <div class="closer-card" id="closer-card-<%= closer.id %>" data-closer='<%- JSON.stringify(closer) %>'>
+                        <div class="closer-card-header">
+                            <span class="tag tag-estado tag-estado-<%= closer.estado %>"><%= closer.estado %></span>
+                            <h3 class="closer-nombre"><%= closer.nombre %></h3>
+                            <% if (closer.manager_asignado) { %>
+                                <small class="manager"><i class="fas fa-user-tie"></i> Manager: <%= closer.manager_asignado %></small>
+                            <% } %>
+                        </div>
+                        <div class="closer-card-body">
+                            <div class="card-section">
+                                <h4><i class="fab fa-instagram"></i> Cuentas (<%= closer.cuentas_asignadas ? closer.cuentas_asignadas.length : 0 %>)</h4>
+                                <% if (closer.cuentas_asignadas && closer.cuentas_asignadas.length > 0) { %>
+                                    <ul class="account-list custom-scrollbar">
+                                        <% closer.cuentas_asignadas.forEach(cuenta => { %>
+                                            <li>
+                                                <span class="tag tag-cuenta"><%= cuenta %></span>
+                                            </li>
+                                        <% }); %>
+                                    </ul>
+                                <% } else { %>
+                                    <p class="no-data"><small>Sin cuentas asignadas.</small></p>
+                                <% } %>
+                            </div>
+                            
+                            <div class="card-section card-stats">
+                                <div class="closer-stat">
+                                    <span class="closer-stat-label"><i class="far fa-calendar-alt"></i> Agendas Mes</span>
+                                    <span class="closer-stat-value"><%= closer.agendas || 0 %></span>
+                                </div>
+                                
+                                <% if (closer.fecha_ingreso) { %>
+                                    <div class="closer-stat">
+                                        <span class="closer-stat-label"><i class="far fa-calendar-alt"></i> Ingreso</span>
+                                        <span class="closer-stat-value"><%= new Date(closer.fecha_ingreso).toLocaleDateString('es-ES') %></span>
+                                    </div>
+                                <% } %>
+                            </div>
+                            
+                            <% if (locals.canEdit && closer.notas_auditoria) { %>
+                                <div class="card-section">
+                                    <h4><i class="far fa-clipboard"></i> Notas</h4>
+                                    <p class="notas custom-scrollbar"><%= closer.notas_auditoria %></p>
+                                </div>
+                            <% } %>
+                        </div>
+                        <div class="closer-card-footer">
+                            <% if (locals.canEdit) { %>
+                                <button class="btn btn-sm btn-warning" onclick="openCloserModal('<%= closer.id %>')" title="Editar perfil">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                            <% } %>
+                            <a href="/closers/<%= closer.id %>/historial" class="btn btn-sm btn-info" title="Ver historial de agendas">
+                                <i class="fas fa-history"></i> Historial
+                            </a>
+                            <% if (locals.canEdit) { %>
+                                <button class="btn btn-sm btn-danger delete-btn" data-id="<%= closer.id %>" title="Eliminar Closer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            <% } %>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <p class="no-data-global">No hay closers registrados actualmente.</p>
+            <% } %>
+            <p id="no-closer-found-message" class="no-data-global" style="display: none;">No se encontraron closers que coincidan con el filtro.</p>
+        </div>
+    </div>
+
+    <!-- Modal para Agregar/Editar Closer -->
+    <div id="closerModalOverlay" class="modal-overlay">
+        <div class="modal-content" id="closerModalContent">
+            <form id="closer-form" action="/closers" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="closerModalLabel">Agregar Closer</h5>
+                    <button type="button" class="modal-close-btn" onclick="closeCloserModal()" title="Cerrar">×</button>
+                </div>
+                <div class="modal-body custom-scrollbar">
+                    <input type="hidden" id="closer_id" name="closer_id">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="nombre">Nombre Closer*</label>
-                            <input type="text" id="nombre" name="nombre" required>
+                            <label for="modal_nombre"><i class="fas fa-user fa-fw"></i> Nombre Closer*</label>
+                            <input type="text" id="modal_nombre" name="nombre" required>
                         </div>
                         <div class="form-group">
-                            <label for="estado">Estado</label>
-                            <select id="estado" name="estado">
+                            <label for="modal_manager_asignado"><i class="fas fa-user-tie fa-fw"></i> Manager Asignado</label>
+                            <input type="text" id="modal_manager_asignado" name="manager_asignado">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal_cuentas_asignadas"><i class="fab fa-instagram fa-fw"></i> Cuentas Instagram (separadas por coma)</label>
+                        <input type="text" id="modal_cuentas_asignadas" name="cuentas_asignadas" placeholder="usuario1, usuario2">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="modal_agendas"><i class="fas fa-calendar-check fa-fw"></i> Agendas Registradas</label>
+                            <input type="number" id="modal_agendas" name="agendas" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="modal_estado"><i class="fas fa-toggle-on fa-fw"></i> Estado</label>
+                            <select id="modal_estado" name="estado">
                                 <option value="activo" selected>Activo</option>
                                 <option value="inactivo">Inactivo</option>
-                                <!-- Otros estados si aplican -->
+                                <option value="prueba">En Prueba</option>
                             </select>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="cuentas_asignadas">Cuentas Instagram (separadas por coma)</label>
-                        <input type="text" id="cuentas_asignadas" name="cuentas_asignadas" placeholder="usuario_ig1, usuario_ig2">
+                        <label for="modal_notas_auditoria"><i class="far fa-clipboard fa-fw"></i> Notas / Comentarios</label>
+                        <textarea id="modal_notas_auditoria" name="notas_auditoria" rows="3"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label for="agendas">Agendas Registradas</label>
-                        <input type="number" id="agendas" name="agendas" min="0" value="0">
-                    </div>
-                    <!-- Añadir aquí inputs para otros campos editables si es necesario -->
-                     <!-- <div class="form-group"> <label for="notas_auditoria">Notas</label> <textarea id="notas_auditoria" name="notas_auditoria" rows="2"></textarea> </div> -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeCloserModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-                    <div class="form-actions">
-                        <button type="button" id="cancel-edit-btn" class="btn btn-secondary btn-sm" style="display: none;">Cancelar Edición</button>
-                        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Guardar Closer</button>
-                    </div>
-                </form>
-            </section>
-        <% } %>
-
-
-        <!-- Tabla de Closers -->
-        <section class="table-section card-style">
-            <h2><i class="fas fa-list-ul icon-header"></i> Lista de Closers</h2>
-            <div class="table-wrapper custom-scrollbar">
-                <table class="data-table"> <!-- Reutilizar clase de tabla si existe -->
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Cuentas Asignadas</th>
-                            <th>Estado</th>
-                            <th class="numeric">Agendas</th>
-                            <th>Últ. Actualización</th>
-                            <% if (locals.canEdit) { %><th>Acciones</th><% } %>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% if (locals.closers && closers.length > 0) { %>
-                            <% closers.forEach(closer => { %>
-                                <tr id="closer-row-<%= closer.id %>" data-closer='<%- JSON.stringify(closer) %>'>
-                                    <td><%= closer.nombre %></td>
-                                    <td>
-                                        <% if (closer.cuentas_asignadas && closer.cuentas_asignadas.length > 0) { %>
-                                            <% closer.cuentas_asignadas.forEach((cuenta, index) => { %>
-                                                <span class="tag tag-cuenta"><%= cuenta %></span><%= index < closer.cuentas_asignadas.length - 1 ? ' ' : '' %>
-                                            <% }); %>
-                                        <% } else { %>
-                                            <span class="text-secondary">-</span>
-                                        <% } %>
-                                    </td>
-                                    <td><span class="tag tag-estado tag-estado-<%= closer.estado %>"><%= closer.estado %></span></td>
-                                    <td class="numeric"><%= closer.agendas || 0 %></td>
-                                    <td><%= closer.updated_at ? new Date(closer.updated_at).toLocaleString('es-ES', {dateStyle: 'short', timeStyle: 'short'}) : 'N/A' %></td>
-                                    <% if (locals.canEdit) { %>
-                                        <td class="actions-cell">
-                                            <button class="btn btn-warning btn-sm edit-btn" data-id="<%= closer.id %>" title="Editar Closer">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-danger btn-sm delete-btn" data-id="<%= closer.id %>" title="Eliminar Closer">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    <% } %>
-                                </tr>
-                            <% }); %>
-                        <% } else { %>
-                            <tr class="no-data-row">
-                                <td colspan="<%= locals.canEdit ? 6 : 5 %>">No hay closers registrados.</td>
-                            </tr>
-                        <% } %>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-    </div> <!-- Fin main-container -->
-
-    <!-- Scripts al final -->
+    <!-- Scripts -->
     <script defer src="/static/js/navbar.js"></script>
-    <!-- JS específico para esta página (Manejo de Formulario/Edición/Borrado) -->
-    <script defer src="/static/js/closers_manager.js"></script> <!-- Crear este archivo JS -->
+    <script>
+        // Funciones para manejar el modal de closers
+        function openCloserModal(closerId = null) {
+            const modal = document.getElementById('closerModalOverlay');
+            const form = document.getElementById('closer-form');
+            
+            if (closerId) {
+                // Modo edición
+                document.getElementById('closerModalLabel').textContent = 'Editar Closer';
+                const card = document.getElementById(`closer-card-${closerId}`);
+                const closerData = JSON.parse(card.getAttribute('data-closer'));
+                
+                // Llenar el formulario con los datos del closer
+                document.getElementById('closer_id').value = closerData.id;
+                document.getElementById('modal_nombre').value = closerData.nombre;
+                document.getElementById('modal_manager_asignado').value = closerData.manager_asignado || '';
+                document.getElementById('modal_cuentas_asignadas').value = closerData.cuentas_asignadas ? closerData.cuentas_asignadas.join(', ') : '';
+                document.getElementById('modal_agendas').value = closerData.agendas || 0;
+                document.getElementById('modal_estado').value = closerData.estado || 'activo';
+                document.getElementById('modal_notas_auditoria').value = closerData.notas_auditoria || '';
+            } else {
+                // Modo agregar
+                document.getElementById('closerModalLabel').textContent = 'Agregar Closer';
+                form.reset();
+                document.getElementById('closer_id').value = '';
+            }
+            
+            modal.style.display = 'flex';
+        }
 
+        function closeCloserModal() {
+            document.getElementById('closerModalOverlay').style.display = 'none';
+        }
+
+        // Filtro de closers por nombre
+        document.getElementById('closer-name-filter').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.closer-card');
+            let visibleCount = 0;
+            
+            cards.forEach(card => {
+                const nombre = card.querySelector('.closer-nombre').textContent.toLowerCase();
+                if (nombre.includes(searchTerm)) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Mostrar mensaje si no hay resultados
+            const noResultsMsg = document.getElementById('no-closer-found-message');
+            noResultsMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+        });
+
+        // Manejar botones de eliminar
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const closerId = this.getAttribute('data-id');
+                if (confirm('¿Estás seguro de que quieres eliminar este closer?')) {
+                    fetch(`/closers/${closerId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert('Error al eliminar: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error al eliminar el closer');
+                    });
+                }
+            });
+        });
+
+        // Cerrar modal al hacer clic fuera del contenido
+        document.getElementById('closerModalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCloserModal();
+            }
+        });
+    </script>
+    <script defer src="/static/js/closers_manager.js"></script> <%# Script Corregido %>
 </body>
 </html>

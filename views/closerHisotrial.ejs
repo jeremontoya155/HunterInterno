@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Historial de Agendas - <%= closer.nombre %></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/navbar.css" />
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+    <style>
+        .historial-container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .closer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .closer-title {
+            margin: 0;
+        }
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .historial-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .historial-table th, .historial-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .historial-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .historial-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+        .fecha-header {
+            background-color: #e9ecef !important;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <div class="historial-container">
+        <div class="closer-header">
+            <h2 class="closer-title">
+                <i class="fas fa-history"></i> Historial de Agendas - <%= closer.nombre %>
+            </h2>
+            <button class="back-btn" onclick="window.history.back()">
+                <i class="fas fa-arrow-left"></i> Volver
+            </button>
+        </div>
+
+        <% if (historial.length > 0) { %>
+            <table class="historial-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Agendas</th>
+                        <th>Notas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% historial.forEach(dia => { %>
+                        <tr class="fecha-header">
+                            <td colspan="3">
+                                <%= new Date(dia.fecha).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+                            </td>
+                        </tr>
+                        <% dia.entradas.forEach(entrada => { %>
+                            <tr>
+                                <td></td>
+                                <td><%= entrada.agendas_registradas %></td>
+                                <td><%= entrada.notas || '--' %></td>
+                            </tr>
+                        <% }); %>
+                    <% }); %>
+                </tbody>
+            </table>
+        <% } else { %>
+            <p class="no-data">No hay registros de agendas para este closer.</p>
+        <% } %>
+    </div>
+
+    <script defer src="/static/js/navbar.js"></script>
+</body>
+</html>

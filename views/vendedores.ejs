@@ -20,22 +20,177 @@
       // Define la variable global ANTES de que se cargue vendedores_manager.js
       const initialDashboardDataForChart = <%- JSON.stringify(initialDashboard || { chartData: [], totalMensajes: 0 }) %>;
     </script>
-
+    <style>
+        /* ESTILOS PARA LA NUEVA SECCIÓN DE RESUMEN - AJUSTADOS AL TEMA */
+        .resumen-vendedores-container {
+            background: var(--color-background-medium);
+            border-radius: var(--border-radius-large);
+            border: 1px solid var(--color-border);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        
+        .resumen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background: linear-gradient(to right, rgba(33, 38, 45, 0.6), rgba(22, 27, 34, 0.4));
+            border-bottom: 1px solid var(--color-border);
+        }
+        
+        .resumen-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+        
+        .resumen-header h3 i {
+            color: var(--color-accent);
+        }
+        
+        .resumen-list-container {
+            transition: all 0.3s ease;
+            max-height: 1000px;
+            overflow: auto;
+        }
+        
+        .resumen-list-container.collapsed {
+            max-height: 0;
+            overflow: hidden;
+        }
+        
+        .resumen-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .resumen-table th, .resumen-table td {
+            padding: 0.8rem 1.2rem;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 0.9rem;
+        }
+        
+        .resumen-table th {
+            background-color: var(--color-background-light);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+        
+        .resumen-table tr {
+            background-color: var(--color-background-medium);
+            transition: background-color 0.2s ease;
+        }
+        
+        .resumen-table tr:hover {
+            background-color: var(--color-background-light);
+            cursor: pointer;
+        }
+        
+        .resumen-nombre {
+            font-weight: 500;
+            color: var(--color-text-primary);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .resumen-nombre small {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            margin-top: 0.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        
+        .resumen-nombre small i {
+            color: var(--color-accent);
+        }
+        
+        .mini-progress-container {
+            position: relative;
+            height: 20px;
+            background: rgba(35, 134, 54, 0.15);
+            border-radius: var(--border-radius-medium);
+            overflow: hidden;
+            border: 1px solid rgba(35, 134, 54, 0.2);
+        }
+        
+        .mini-progress-bar {
+            height: 100%;
+            transition: width 0.3s ease;
+            background-color: var(--color-green-progress);
+        }
+        
+        .mini-progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+        
+        /* Estilo para destacar la card al hacer clic en el resumen */
+        .vendedor-card.highlighted {
+            animation: highlight 2s ease;
+        }
+        
+        @keyframes highlight {
+            0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.3); }
+            50% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
+        }
+        
+        /* Ocultar cards inicialmente */
+        .vendedor-cards-grid {
+            display: none;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 2.5rem;
+        }
+        
+        .vendedor-cards-grid.visible {
+            display: grid;
+        }
+        
+        /* Ajustes para responsividad */
+        @media (max-width: 768px) {
+            .resumen-table th, .resumen-table td {
+                padding: 0.6rem 0.8rem;
+            }
+            
+            .resumen-header {
+                padding: 0.8rem 1rem;
+            }
+            
+            .resumen-header h3 {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <%- include('partials/navbar') %> <%# Asegúrate que esta ruta sea correcta %>
+    <%- include('partials/navbar') %>
 
     <div class="vendedor-main-container">
-
-      
-
         <!-- ============================================= -->
         <!--    ENCABEZADO Y FILTRO PARA VENDEDORES      -->
         <!-- ============================================= -->
         <div class="vendedor-section-header">
              <div class="header-title-button">
                 <h2><i class="fas fa-id-card-alt icon-header"></i> Auditoria Individuales</h2>
-                <%# Verificar user y rol antes de mostrar el botón %>
                 <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'auditoria')) { %>
                     <button class="btn btn-primary btn-add-vendedor" onclick="openVendedorModal()">
                         <i class="fas fa-user-plus"></i> Agregar Cliente
@@ -50,15 +205,76 @@
 
         <!-- Mensajes de Feedback Globales -->
         <% if (typeof success !== 'undefined' && success) { %><div class="alert alert-success global-feedback" role="alert"><%= success %></div><% } %>
-        <%# Mostrar error global solo si existe y NO viene del dashboard AJAX %>
         <% if (typeof error !== 'undefined' && error && (!req || !req.originalUrl || !req.originalUrl.includes('dashboard-data'))) { %>
             <div class="alert alert-danger global-feedback" role="alert"><%= error %></div>
         <% } %>
 
+        <!-- ============================================= -->
+        <!--         NUEVA SECCIÓN DE RESUMEN             -->
+        <!-- ============================================= -->
+        <div class="resumen-vendedores-container">
+            <div class="resumen-header">
+                <h3><i class="fas fa-list-ol"></i> Resumen de Clientes</h3>
+                <button id="toggle-resumen" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-chevron-up"></i> Contraer
+                </button>
+            </div>
+            
+            <div class="resumen-list-container" id="resumen-list">
+                <% if (typeof vendedores !== 'undefined' && vendedores && Array.isArray(vendedores) && vendedores.length > 0) { %>
+                    <table class="resumen-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Estado</th>
+                                <th>Cuentas</th>
+                                <th>Mensajes (B/M/R)</th>
+                                <th>Total Mensajes</th>
+                                <th>Cumplimiento</th>
+                                <th>Progreso</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% vendedores.forEach(vendedor => { %>
+                                <tr class="resumen-item" data-vendedor-id="<%= vendedor.id %>">
+                                    <td class="resumen-nombre">
+                                        <span><%= vendedor.nombre %></span>
+                                        <% if (vendedor.manager_asignado) { %>
+                                            <small><i class="fas fa-user-tie"></i> <%= vendedor.manager_asignado %></small>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <span class="tag tag-estado tag-estado-<%= vendedor.estado %>"><%= vendedor.estado %></span>
+                                    </td>
+                                    <td><%= vendedor.num_cuentas || 0 %></td>
+                                    <td>
+                                        <%= vendedor.totalMensajesHoy || 0 %> / 
+                                        <%= vendedor.totalMensajesManualesHoy || 0 %> / 
+                                        <%= vendedor.totalRespuestasHoy || 0 %>
+                                    </td>
+                                    <td><%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %></td>
+                                    <td><%= parseFloat(vendedor.porcentaje_cumplimiento || 0).toFixed(1) %>%</td>
+                                    <td>
+                                        <div class="mini-progress-container">
+                                            <div class="mini-progress-bar" 
+                                                 style="width: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0) %>%; 
+                                                        background-color: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0) >= 100 ? 'var(--color-green-progress)' : 'var(--color-accent)' %>;">
+                                            </div>
+                                            <span class="mini-progress-text"><%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(0) %>%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                <% } else { %>
+                    <p class="no-data-global">No hay Clientes registrados actualmente.</p>
+                <% } %>
+            </div>
+        </div>
 
-        <!-- Contenedor de Cards de Vendedores -->
-        <div class="vendedor-cards-grid">
-            <%# Verificar que 'vendedores' existe y es un array antes de iterar %>
+        <!-- Contenedor de Cards de Vendedores (oculto inicialmente) -->
+        <div class="vendedor-cards-grid" id="vendedor-cards-container">
             <% if (typeof vendedores !== 'undefined' && vendedores && Array.isArray(vendedores) && vendedores.length > 0) { %>
                 <% vendedores.forEach(vendedor => { %>
                     <div class="vendedor-card" id="vendedor-card-<%= vendedor.id %>" data-vendedor='<%- JSON.stringify(vendedor) %>'>
@@ -76,7 +292,7 @@
                                             <li>
                                                 <span class="tag tag-cuenta"><%= cuenta.nombre %></span>
                                                 <span class="account-stats" title="Hoy (Msgs/Rpts) / Histórico Total (Msgs)">
-                                                     (<%= cuenta.mensajesHoy || 0 %> / <%= cuenta.respuestasHoy || 0 %> / <%= (cuenta.mensajesMongoTotal || 0).toLocaleString('es-ES') %>)
+                                                     (<%= cuenta.mensajesHoy || 0 %> / <%= cuenta.respuestasHoy || 0 %> / <%= (cuenta.mensajesMongoTotal || 0).toLocaleString('es-ES') %>)
                                                 </span>
                                             </li>
                                         <% }); %>
@@ -84,13 +300,14 @@
                                 <% } else { %><p class="no-data"><small>Sin cuentas asignadas.</small></p><% } %>
                             </div>
                             <div class="card-section card-stats">
-                                <!-- Dentro de la card en vendedores.ejs -->
-<div class="stat-item">
-    <label><i class="far fa-clock"></i> Hoy</label>
-    <span><%= vendedor.totalMensajesHoy || 0 %> B / <%= vendedor.totalMensajesManualesHoy || 0 %> M / <%= vendedor.totalRespuestasHoy || 0 %> R</span>
-    <%# B=Bot, M=Manual, R=Respuesta %>
-</div>
-                                <div class="stat-item"><label><i class="far fa-clock"></i> Hoy</label><span><%= vendedor.totalMensajesHoy || 0 %> M / <%= vendedor.totalRespuestasHoy || 0 %> R</span></div>
+                                <div class="stat-item">
+                                    <label><i class="far fa-clock"></i> Hoy</label>
+                                    <span><%= vendedor.totalMensajesHoy || 0 %> B / <%= vendedor.totalMensajesManualesHoy || 0 %> M / <%= vendedor.totalRespuestasHoy || 0 %> R</span>
+                                </div>
+                                <div class="stat-item">
+                                    <label><i class="fas fa-chart-line"></i> Total Mes</label>
+                                    <span><%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %></span>
+                                </div>
                                 <% if (vendedor.fecha_ingreso) { %><div class="stat-item"><label><i class="far fa-calendar-alt"></i> Ingreso</label><span><%= new Date(vendedor.fecha_ingreso).toLocaleDateString('es-ES') %></span></div><% } %>
 
                                 <div class="stat-item stat-progress">
@@ -104,8 +321,7 @@
                                     </div>
                                 </div>
                             </div>
-                             <%# Verificar user y rol para sección de Notas %>
-                            <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'auditoria')) { %>
+                             <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'auditoria')) { %>
                                 <div class="card-section">
                                     <h4><i class="far fa-clipboard"></i> Notas</h4>
                                     <p class="notas custom-scrollbar"><%= vendedor.notas_auditoria || 'Sin notas.' %></p>
@@ -113,7 +329,6 @@
                             <% } %>
                         </div>
                         <div class="card-footer">
-                             <%# Verificar user y rol para botones de acción %>
                              <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'auditoria')) { %>
                                 <button class="btn btn-sm btn-secondary" onclick="openDesempenoModal('<%= vendedor.id %>')" title="Registrar desempeño diario"><i class="fas fa-calendar-plus"></i> Registrar Hoy</button>
                                 <button class="btn btn-sm btn-warning" onclick="openVendedorModal('<%= vendedor.id %>')" title="Editar perfil"><i class="fas fa-edit"></i> Editar</button>
@@ -227,7 +442,120 @@
 
     <!-- Scripts (Navbar, Lógica Vendedores con Chart.js) -->
     <script defer src="/static/js/navbar.js"></script>
-    <script defer src="/static/js/vendedores_manager.js"></script> <%# Script Corregido %>
+    <script defer src="/static/js/vendedores_manager.js"></script>
+    
+    <script>
+        // NUEVO CÓDIGO PARA MANEJAR EL RESUMEN Y CARDS
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle para expandir/contraer el resumen
+            const toggleBtn = document.getElementById('toggle-resumen');
+            const resumenList = document.getElementById('resumen-list');
+            const cardsContainer = document.getElementById('vendedor-cards-container');
+            
+            // Inicialmente ocultar las cards
+            cardsContainer.style.display = 'none';
+            
+            toggleBtn.addEventListener('click', function() {
+                resumenList.classList.toggle('collapsed');
+                const icon = this.querySelector('i');
+                if (resumenList.classList.contains('collapsed')) {
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                    this.innerHTML = '<i class="fas fa-chevron-down"></i> Expandir';
+                } else {
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                    this.innerHTML = '<i class="fas fa-chevron-up"></i> Contraer';
+                }
+            });
 
+            // Hacer clic en un item del resumen para mostrar la card correspondiente
+            document.querySelectorAll('.resumen-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const vendedorId = this.getAttribute('data-vendedor-id');
+                    
+                    // Mostrar el contenedor de cards si está oculto
+                    if (cardsContainer.style.display === 'none') {
+                        cardsContainer.style.display = 'grid';
+                    }
+                    
+                    // Ocultar todas las cards primero
+                    document.querySelectorAll('.vendedor-card').forEach(card => {
+                        card.style.display = 'none';
+                    });
+                    
+                    // Mostrar solo la card seleccionada
+                    const card = document.getElementById(`vendedor-card-${vendedorId}`);
+                    if (card) {
+                        card.style.display = 'block';
+                        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        
+                        // Destacar la card
+                        card.classList.add('highlighted');
+                        setTimeout(() => {
+                            card.classList.remove('highlighted');
+                        }, 2000);
+                    }
+                });
+            });
+
+            // Asegurar que el filtro afecte tanto al resumen como a las cards
+            const sellerFilter = document.getElementById('seller-name-filter');
+            if (sellerFilter) {
+                sellerFilter.addEventListener('input', function() {
+                    const filterValue = this.value.toLowerCase();
+                    let hasVisibleItems = false;
+                    
+                    // Filtrar en el resumen
+                    document.querySelectorAll('.resumen-item').forEach(row => {
+                        const nombre = row.querySelector('.resumen-nombre').textContent.toLowerCase();
+                        if (nombre.includes(filterValue)) {
+                            row.style.display = '';
+                            hasVisibleItems = true;
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                    
+                    // Filtrar en las cards (si están visibles)
+                    if (cardsContainer.style.display !== 'none') {
+                        document.querySelectorAll('.vendedor-card').forEach(card => {
+                            const nombre = card.querySelector('.vendedor-nombre').textContent.toLowerCase();
+                            if (nombre.includes(filterValue)) {
+                                card.style.display = 'block';
+                                hasVisibleItems = true;
+                            } else {
+                                card.style.display = 'none';
+                            }
+                        });
+                    }
+                    
+                    // Mostrar mensaje si no hay coincidencias
+                    const noSellerMsg = document.getElementById('no-seller-found-message');
+                    if (noSellerMsg) {
+                        noSellerMsg.style.display = hasVisibleItems ? 'none' : 'block';
+                    }
+                });
+            }
+            
+            // Botón para mostrar todas las cards
+            const showAllBtn = document.createElement('button');
+            showAllBtn.className = 'btn btn-info btn-sm';
+            showAllBtn.innerHTML = '<i class="fas fa-eye"></i> Mostrar Todos';
+            showAllBtn.style.marginLeft = '10px';
+            showAllBtn.addEventListener('click', function() {
+                cardsContainer.style.display = 'grid';
+                document.querySelectorAll('.vendedor-card').forEach(card => {
+                    card.style.display = 'block';
+                });
+            });
+            
+            // Agregar botón al header
+            const header = document.querySelector('.vendedor-section-header');
+            if (header) {
+                header.appendChild(showAllBtn);
+            }
+        });
+    </script>
 </body>
 </html>

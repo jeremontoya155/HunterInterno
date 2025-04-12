@@ -241,90 +241,84 @@ app.get('/auditoria/patrimonio', isAuthenticated, async (req, res) => {
 
 // --- POST /auditoria/patrimonio (Para Agregar/Editar Cuenta) ---
 app.post('/auditoria/patrimonio', isAuthenticated, async (req, res) => {
-  // Verificación de Rol Interna (Solo Admin/Auditoría)
-  const userRole = req.session.user.role;
-  if (userRole !== 'admin' && userRole !== 'auditoria') {
-      return res.status(403).redirect('/auditoria/patrimonio?error=Acción no permitida');
-  }
-
-  // Extraer todos los campos del formulario (modal)
+  // Extraer todos los campos del formulario
   const {
-      cuenta_id, // ID oculto para saber si es edición
+      cuenta_id,
       nombre_cliente,
       usuario,
       link,
       tipo_cuenta,
       correo,
-      contrasena, // ¡¡RECORDATORIO: ENCRIPTAR!!
-      verificacion, // Vendrá como 'on' o undefined si es checkbox
+      contrasena,
+      verificacion,
       celu_abierto,
       autentificador,
       codigos_respaldo,
-      codigos_actualizados_en, // Fecha
-      codigos_validez_dias
+      codigos_actualizados_en,
+      codigos_validez_dias,
+      celular, // Nuevo campo
+      ultima_carga_celular, // Nuevo campo
+      contrasena_mail // Nuevo campo
   } = req.body;
 
   // Validación básica
   if (!usuario || !tipo_cuenta) {
       return res.redirect('/auditoria/patrimonio?error=Usuario y Tipo de Cuenta son obligatorios');
   }
+
   // Convertir checkboxes a boolean
   const esVerificado = verificacion === 'on';
   const tieneCeluAbierto = celu_abierto === 'on';
   const tieneAutentificador = autentificador === 'on';
+  
   // Convertir validez a número, con default
   const validezDias = parseInt(codigos_validez_dias, 10) || 7;
-   // Validar fecha
-   const fechaActualizacionCodigos = codigos_actualizados_en || null; // Permitir nulo si no se ingresa
 
   try {
       if (cuenta_id) {
-          // --- Modo Edición ---
+          // Modo Edición
           const queryText = `
               UPDATE patrimonio_cuentas SET
-                  nombre_cliente = $1, usuario = $2, link = $3, tipo_cuenta = $4, correo = $5,
-                  contrasena = $6, verificacion = $7, celu_abierto = $8, autentificador = $9,
-                  codigos_respaldo = $10, codigos_actualizados_en = $11, codigos_validez_dias = $12,
-                  updated_at = CURRENT_TIMESTAMP
-              WHERE id = $13;
+                  nombre_cliente = $1, usuario = $2, link = $3, tipo_cuenta = $4, 
+                  correo = $5, contrasena = $6, verificacion = $7, celu_abierto = $8, 
+                  autentificador = $9, codigos_respaldo = $10, codigos_actualizados_en = $11, 
+                  codigos_validez_dias = $12, celular = $13, ultima_carga_celular = $14,
+                  contrasena_mail = $15, updated_at = CURRENT_TIMESTAMP
+              WHERE id = $16;
           `;
           await pool.query(queryText, [
-              nombre_cliente || null, usuario, link || null, tipo_cuenta, correo || null,
-              contrasena || null, esVerificado, tieneCeluAbierto, tieneAutentificador,
-              codigos_respaldo || null, fechaActualizacionCodigos, validezDias,
-              cuenta_id
+              nombre_cliente || null, usuario, link || null, tipo_cuenta, 
+              correo || null, contrasena || null, esVerificado, tieneCeluAbierto, 
+              tieneAutentificador, codigos_respaldo || null, ultima_carga_celular || null, 
+              validezDias, celular || null, ultima_carga_celular || null,
+              contrasena_mail || null, cuenta_id
           ]);
-           res.redirect('/auditoria/patrimonio?success=Cuenta actualizada correctamente');
+          res.redirect('/auditoria/patrimonio?success=Cuenta actualizada correctamente');
       } else {
-          // --- Modo Agregar ---
+          // Modo Agregar
           const queryText = `
               INSERT INTO patrimonio_cuentas (
                   nombre_cliente, usuario, link, tipo_cuenta, correo, contrasena,
                   verificacion, celu_abierto, autentificador, codigos_respaldo,
-                  codigos_actualizados_en, codigos_validez_dias
+                  codigos_actualizados_en, codigos_validez_dias, celular,
+                  ultima_carga_celular, contrasena_mail
               ) VALUES (
-                  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+                  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
               ) RETURNING id;
           `;
-           await pool.query(queryText, [
+          await pool.query(queryText, [
               nombre_cliente || null, usuario, link || null, tipo_cuenta, correo || null,
               contrasena || null, esVerificado, tieneCeluAbierto, tieneAutentificador,
-              codigos_respaldo || null, fechaActualizacionCodigos, validezDias
-           ]);
-           res.redirect('/auditoria/patrimonio?success=Cuenta agregada correctamente');
+              codigos_respaldo || null, codigos_actualizados_en || null, validezDias,
+              celular || null, ultima_carga_celular || null, contrasena_mail || null
+          ]);
+          res.redirect('/auditoria/patrimonio?success=Cuenta agregada correctamente');
       }
-
   } catch (error) {
       console.error("Error en POST /auditoria/patrimonio:", error);
-      // Si es error de duplicado de usuario (unique constraint)
-      if (error.code === '23505' && error.constraint === 'patrimonio_cuentas_usuario_key') {
-           res.redirect('/auditoria/patrimonio?error=El nombre de usuario de Instagram ya existe');
-      } else {
-           res.redirect(`/auditoria/patrimonio?error=Error al guardar la cuenta: ${error.message}`);
-      }
+      res.redirect(`/auditoria/patrimonio?error=Error al guardar la cuenta: ${error.message}`);
   }
 });
-
 // Opcional: Endpoint DELETE (requiere JS con Fetch y método DELETE)
 // app.delete('/auditoria/patrimonio/:id', isAuthenticated, async (req, res) => { ... });
 
@@ -1747,6 +1741,50 @@ app.get('/vendedores/desempeno', isAuthenticated, async (req, res) => {
   }
 });
 
+
+// --- GET /closers/:id/historial ---
+app.get('/closers/:id/historial', isAuthenticated, async (req, res) => {
+  const closerId = req.params.id;
+  
+  try {
+      // 1. Obtener datos del closer
+      const closerResult = await pool.query('SELECT * FROM closers WHERE id = $1', [closerId]);
+      if (closerResult.rows.length === 0) {
+          return res.status(404).render('error', {message: 'Closer no encontrado', error: {}, user: req.session.user});
+      }
+      const closer = closerResult.rows[0];
+
+      // 2. Obtener historial de agendas (necesitarías una tabla para esto)
+      // Asumiendo que tienes una tabla closer_agendas_diarias similar a vendedor_desempeno_diario
+      const historialResult = await pool.query(`
+          SELECT fecha, agendas_registradas, notas
+          FROM closer_agendas_diarias
+          WHERE closer_id = $1
+          ORDER BY fecha DESC
+      `, [closerId]);
+      const historial = historialResult.rows;
+
+      // 3. Agrupar por fecha para la vista
+      const historialAgrupado = historial.reduce((acc, item) => {
+          const fechaStr = item.fecha.toISOString().slice(0, 10);
+          if (!acc[fechaStr]) {
+              acc[fechaStr] = { fecha: fechaStr, entradas: [] };
+          }
+          acc[fechaStr].entradas.push(item);
+          return acc;
+      }, {});
+
+      res.render('closer_historial', {
+          closer: closer,
+          historial: Object.values(historialAgrupado).sort((a,b) => b.fecha.localeCompare(a.fecha)),
+          user: req.session.user
+      });
+
+  } catch (error) {
+      console.error(`Error en GET /closers/${closerId}/historial:`, error);
+      res.status(500).render('error', { message: 'Error al cargar historial', error, user: req.session.user });
+  }
+});
 
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
