@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HUNTER - Gestión de Closers</title>
+    <!-- CSS Base, FontAwesome, Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/navbar.css" />
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+    <!-- CSS específico (Puede reutilizar vendedores.css o crear closers.css) -->
+    <link rel="stylesheet" href="/static/css/vendedores.css" /> <!-- REUTILIZANDO -->
+
+    <style>
+        /* Pequeños ajustes si son necesarios o ponerlos en closers.css */
+        .vendedor-main-container { max-width: 1200px; /* Quizás más estrecho */}
+        .table-section th:nth-child(4), /* Columna Agendas */
+        .table-section td:nth-child(4) {
+            text-align: center; /* Centrar agendas */
+            font-weight: 600;
+        }
+         /* Ocultar formulario si canEdit es false */
+         <% if (!locals.canEdit) { %>
+            .form-container { display: none; }
+         <% } %>
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <div class="vendedor-main-container"> <!-- Reutilizamos clase container -->
+        <h1 class="page-title"><i class="fas fa-handshake icon-header"></i>Gestión de Closers</h1>
+
+        <!-- Mensajes Flash -->
+        <% if (locals.success_msg) { %><div class="alert alert-success"><%= success_msg %></div><% } %>
+        <% if (locals.error_msg) { %><div class="alert alert-danger"><%= error_msg %></div><% } %>
+
+        <!-- Formulario para Agregar/Editar (SOLO ADMIN) -->
+        <% if (locals.canEdit) { %>
+            <section id="form-container" class="form-container card-style">
+                <h2 id="form-title"><i class="fas fa-user-plus"></i> Agregar Nuevo Closer</h2>
+                <form id="closer-form" action="/closers" method="POST"> <!-- Apunta a /closers -->
+                    <input type="hidden" id="closer_id" name="closer_id"> <!-- ID para editar -->
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nombre">Nombre Closer*</label>
+                            <input type="text" id="nombre" name="nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="estado">Estado</label>
+                            <select id="estado" name="estado">
+                                <option value="activo" selected>Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                                <!-- Otros estados si aplican -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="cuentas_asignadas">Cuentas Instagram (separadas por coma)</label>
+                        <input type="text" id="cuentas_asignadas" name="cuentas_asignadas" placeholder="usuario_ig1, usuario_ig2">
+                    </div>
+                    <div class="form-group">
+                        <label for="agendas">Agendas Registradas</label>
+                        <input type="number" id="agendas" name="agendas" min="0" value="0">
+                    </div>
+                    <!-- Añadir aquí inputs para otros campos editables si es necesario -->
+                     <!-- <div class="form-group"> <label for="notas_auditoria">Notas</label> <textarea id="notas_auditoria" name="notas_auditoria" rows="2"></textarea> </div> -->
+
+                    <div class="form-actions">
+                        <button type="button" id="cancel-edit-btn" class="btn btn-secondary btn-sm" style="display: none;">Cancelar Edición</button>
+                        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Guardar Closer</button>
+                    </div>
+                </form>
+            </section>
+        <% } %>
+
+
+        <!-- Tabla de Closers -->
+        <section class="table-section card-style">
+            <h2><i class="fas fa-list-ul icon-header"></i> Lista de Closers</h2>
+            <div class="table-wrapper custom-scrollbar">
+                <table class="data-table"> <!-- Reutilizar clase de tabla si existe -->
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Cuentas Asignadas</th>
+                            <th>Estado</th>
+                            <th class="numeric">Agendas</th>
+                            <th>Últ. Actualización</th>
+                            <% if (locals.canEdit) { %><th>Acciones</th><% } %>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (locals.closers && closers.length > 0) { %>
+                            <% closers.forEach(closer => { %>
+                                <tr id="closer-row-<%= closer.id %>" data-closer='<%- JSON.stringify(closer) %>'>
+                                    <td><%= closer.nombre %></td>
+                                    <td>
+                                        <% if (closer.cuentas_asignadas && closer.cuentas_asignadas.length > 0) { %>
+                                            <% closer.cuentas_asignadas.forEach((cuenta, index) => { %>
+                                                <span class="tag tag-cuenta"><%= cuenta %></span><%= index < closer.cuentas_asignadas.length - 1 ? ' ' : '' %>
+                                            <% }); %>
+                                        <% } else { %>
+                                            <span class="text-secondary">-</span>
+                                        <% } %>
+                                    </td>
+                                    <td><span class="tag tag-estado tag-estado-<%= closer.estado %>"><%= closer.estado %></span></td>
+                                    <td class="numeric"><%= closer.agendas || 0 %></td>
+                                    <td><%= closer.updated_at ? new Date(closer.updated_at).toLocaleString('es-ES', {dateStyle: 'short', timeStyle: 'short'}) : 'N/A' %></td>
+                                    <% if (locals.canEdit) { %>
+                                        <td class="actions-cell">
+                                            <button class="btn btn-warning btn-sm edit-btn" data-id="<%= closer.id %>" title="Editar Closer">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-danger btn-sm delete-btn" data-id="<%= closer.id %>" title="Eliminar Closer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    <% } %>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr class="no-data-row">
+                                <td colspan="<%= locals.canEdit ? 6 : 5 %>">No hay closers registrados.</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div> <!-- Fin main-container -->
+
+    <!-- Scripts al final -->
+    <script defer src="/static/js/navbar.js"></script>
+    <!-- JS específico para esta página (Manejo de Formulario/Edición/Borrado) -->
+    <script defer src="/static/js/closers_manager.js"></script> <!-- Crear este archivo JS -->
+
+</body>
+</html>

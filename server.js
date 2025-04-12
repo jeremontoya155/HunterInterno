@@ -85,6 +85,12 @@ app.use((req, res, next) => {
   next();
 });
 
+async function getCrecimientoDataSimple(filters) { /* ... (sin cambios) ... */ }
+// --- GET /crecimiento ---
+app.get('/crecimiento', isAuthenticated, (req, res, next) => { /* ... (sin cambios, renderiza la vista) ... */ });
+// --- GET /api/crecimiento/data ---
+app.get('/api/crecimiento/data', isAuthenticated, async (req, res, next) => { /* ... (sin cambios) ... */ });
+
 // Middleware para proteger rutas
 function isAuthenticated(req, res, next) {
   if (req.session && req.session.user) {
@@ -898,6 +904,10 @@ app.get('/onboarding', isAuthenticated, (req, res) => {
     else if (userRole === 'fulfillment') {
         return res.render('onboarding_fulfillment', { user: req.session.user });
     } 
+     // Finalmente verificamos fulfillment
+     else if (userRole === 'ventas') {
+      return res.render('onboarding_ventas', { user: req.session.user });
+  } 
     // Para cualquier otro caso (rol desconocido o no definido)
     else {
         console.warn(`Rol de usuario no manejado en /onboarding: ${userRole}`);
@@ -1120,34 +1130,43 @@ app.delete('/api/calendar/events/:id', isAuthenticated, async (req, res) => {
 // --- Rutas de Auditoría - Trackeo ---
 
 // GET /auditoria/trackeo - Muestra el formulario y el historial
-app.get('/auditoria/trackeo', isAuthenticated, async (req, res) => {
-  // Verificar Rol (opcional pero recomendado para secciones de auditoría)
-  const userRole = req.session.user.role;
-  if (userRole !== 'admin' && userRole !== 'auditoria') {
-      return res.status(403).render('error', { message: 'Acceso Denegado', error: { status: 403 }, user: req.session.user });
-  }
-
+// GET /auditoria/trackeo - Muestra AMBOS (Uploads y Manuales)
+app.get('/auditoria/trackeo', isAuthenticated, async (req, res, next) => {
+  console.log("[Trackeo] Accediendo a la vista combinada.");
   try {
-      // Consultar historial de uploads, uniendo con la tabla de usuarios para obtener el nombre
-      const query = `
+      // 1. Obtener historial de uploads CSV
+      const uploadQuery = `
           SELECT t.*, u.username as uploaded_by_username
           FROM tracking_uploads t
           LEFT JOIN users u ON t.uploaded_by_user_id = u.id
           ORDER BY t.uploaded_at DESC;
       `;
-      const result = await pool.query(query);
-      const uploads = result.rows;
+      const uploadResult = await pool.query(uploadQuery);
+      const uploads = uploadResult.rows;
 
-      res.render('auditoria_trackeo', {
+      // 2. Obtener historial de seguimientos manuales
+      const manualQuery = `
+          SELECT m.*, u.username as added_by_username
+          FROM manual_niche_tracking m
+          LEFT JOIN users u ON m.added_by_user_id = u.id
+          ORDER BY m.created_at DESC;
+      `;
+      const manualResult = await pool.query(manualQuery);
+      const manualNiches = manualResult.rows;
+
+      console.log(`[Trackeo] Encontrados ${uploads.length} uploads y ${manualNiches.length} seguimientos manuales.`);
+
+      res.render('auditoria_trackeo', { // Renderiza el MISMO EJS
           user: req.session.user,
           uploads: uploads,
-          success: req.query.success,
-          error: req.query.error
+          manualNiches: manualNiches, // <<< Pasar datos manuales
+          success: res.locals.success_msg, // Usar flash
+          error: res.locals.error_msg
       });
 
   } catch (error) {
-      console.error("Error en GET /auditoria/trackeo:", error);
-      res.status(500).render('error', { message: 'Error al cargar la página de trackeo', error, user: req.session.user });
+      console.error("[Trackeo] Error en GET /auditoria/trackeo:", error);
+      next(error);
   }
 });
 
@@ -1160,6 +1179,10 @@ app.post('/auditoria/trackeo', isAuthenticated, upload.single('csvFile'), async 
        if (req.file) fs.unlinkSync(req.file.path);
        return res.status(403).redirect('/auditoria/trackeo?error=Acción no permitida');
    }
+
+
+   // --- NUEVA RUTA: POST para Guardar Seguimiento Manual ---
+
 
   // Verificar si Multer encontró un error (ej. tipo de archivo incorrecto)
   if (!req.file) {
@@ -1202,6 +1225,19 @@ app.post('/auditoria/trackeo', isAuthenticated, upload.single('csvFile'), async 
       }
       res.redirect('/auditoria/trackeo?error=Error al guardar la información en la base de datos.');
   }
+});
+
+app.post('/auditoria/manual-tracking', isAuthenticated, async (req, res) => {
+  const { cuenta_a_trackear, cuenta_a_usar, tipo_palabra_clave, notas_manual } = req.body;
+  const userId = req.session.user.id;
+  if (!cuenta_a_trackear || !cuenta_a_usar || !tipo_palabra_clave) { req.session.error_msg = 'Campos Cuenta Trackear, Cuenta Usar y Tipo son obligatorios.'; return res.redirect('/auditoria/trackeo'); }
+  console.log(`[Trackeo Manual] Creando entrada por user ${userId}:`, req.body);
+  try {
+      const query = `INSERT INTO manual_niche_tracking (cuenta_a_trackear, cuenta_a_usar, tipo_palabra_clave, notas, added_by_user_id, estado) VALUES ($1, $2, $3, $4, $5, 'activo') RETURNING id;`;
+      await pool.query(query, [cuenta_a_trackear.trim(), cuenta_a_usar.trim(), tipo_palabra_clave.trim(), notas_manual || null, userId]);
+      req.session.success_msg = 'Seguimiento manual agregado.';
+      res.redirect('/auditoria/trackeo');
+  } catch (error) { console.error("[Trackeo Manual] Error POST:", error); req.session.error_msg = `Error al guardar: ${error.message}`; res.redirect('/auditoria/trackeo'); }
 });
 
 // GET /auditoria/trackeo/download/:id - Permite descargar un archivo específico
@@ -1267,6 +1303,294 @@ next(err);
 });
 
 // ... resto de tus rutas y app.listen ...
+
+
+// =============================================
+//           server.js (Añadir esta sección)
+// =============================================
+
+// ... (Dependencias, Configuración, Middlewares, Rutas Públicas, Onboarding, Fulfillment, Auditoría, Vendedores... todo lo anterior) ...
+
+
+// --- RUTA PARA LA VISTA DE CLOSERS ---
+app.get('/closers', isAuthenticated, async (req, res, next) => {
+    console.log(`[Closers] Accediendo a la vista.`);
+    // Roles que pueden editar/agregar closers (ajustar según necesidad)
+
+    try {
+        // Consultar todos los closers ordenados por nombre
+        const query = `
+            SELECT
+                id,
+                nombre,
+                cuentas_asignadas,
+                estado,
+                agendas -- Columna clave para esta vista
+                -- , created_at -- Opcional
+                , updated_at -- Para saber última actualización
+            FROM closers -- <<< USAR LA TABLA CORRECTA
+            ORDER BY nombre ASC;
+        `;
+        const { rows } = await pool.query(query);
+
+        console.log(`[Closers] Encontrados ${rows.length} closers.`);
+
+        res.render('closers', { // Renderizar la NUEVA vista closers.ejs
+            user: req.session.user,
+            closers: rows,
+            canEdit: true, // Pasar flag para mostrar/ocultar formulario y botones
+            success: res.locals.success_msg,
+            error: res.locals.error_msg
+        });
+
+    } catch (error) {
+        console.error("[Closers] Error al obtener datos:", error);
+        next(error); // Pasar al manejador de errores general
+    }
+});
+
+// --- ENDPOINTS API PARA MANEJAR CLOSERS (Similar a Vendedores) ---
+
+// POST /closers (Crear/Editar Closer - SOLO ADMIN?)
+app.post('/closers', isAuthenticated, async (req, res) => { // Solo Admin puede crear/editar
+    const { closer_id, nombre, cuentas_asignadas, estado, agendas } = req.body;
+     // Añadir las demás columnas si las quieres editar desde aquí (porcentaje_cumplimiento, etc.)
+
+    // Validación básica
+    if (!nombre) { req.session.error_msg = 'El nombre es obligatorio'; return res.redirect('/closers'); }
+
+    let cuentasArray = [];
+    if (cuentas_asignadas && typeof cuentas_asignadas === 'string') {
+        cuentasArray = cuentas_asignadas.split(',').map(c => c.trim()).filter(Boolean); // Limpiar espacios
+    }
+    const cuentasJson = JSON.stringify(cuentasArray);
+    const agendasParsed = parseInt(agendas, 10) || 0; // Asegurar que agendas sea número
+
+    try {
+        if (closer_id) { // --- MODO EDICIÓN ---
+            console.log(`[Closers] Actualizando Closer ID: ${closer_id}`);
+            const queryText = `
+                UPDATE closers SET
+                    nombre = $1,
+                    cuentas_asignadas = $2,
+                    estado = $3,
+                    agendas = $4,
+                    updated_at = CURRENT_TIMESTAMP
+                    -- Añadir más campos aquí si son editables
+                WHERE id = $5;
+            `;
+            await pool.query(queryText, [
+                nombre, cuentasJson, estado || 'activo', agendasParsed, closer_id
+            ]);
+            req.session.success_msg = 'Closer actualizado correctamente.';
+
+        } else { // --- MODO AGREGAR ---
+             console.log(`[Closers] Creando nuevo Closer: ${nombre}`);
+             const queryText = `
+                INSERT INTO closers (nombre, cuentas_asignadas, estado, agendas)
+                VALUES ($1, $2, $3, $4)
+                -- Añadir más campos aquí si tienen valor inicial
+                RETURNING id;
+            `;
+            await pool.query(queryText, [
+                 nombre, cuentasJson, estado || 'activo', agendasParsed
+            ]);
+            req.session.success_msg = 'Closer agregado correctamente.';
+        }
+        res.redirect('/closers');
+
+    } catch (error) {
+        console.error("[Closers] Error en POST /closers:", error);
+         // Manejar error de constraint único si 'nombre' debe ser único
+         // if (error.code === '23505' && error.constraint === 'closers_nombre_key') { ... }
+        req.session.error_msg = `Error al guardar closer: ${error.message}`;
+        res.redirect('/closers');
+    }
+});
+
+// DELETE /closers/:id (Opcional - SOLO ADMIN?)
+app.delete('/closers/:id', isAuthenticated, async (req, res) => {
+    const { id } = req.params;
+    const userId = req.session.user.id; // Para logs
+    console.log(`[Closers] Intento de borrado ID: ${id} por user ${userId}`);
+    try {
+        const query = `DELETE FROM closers WHERE id = $1 RETURNING id;`;
+        const result = await pool.query(query, [id]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, message: 'Closer no encontrado.' });
+        }
+        console.log(`[Closers] Closer ID: ${id} borrado.`);
+        // Enviar respuesta JSON para AJAX o redirigir si se usa form normal
+        res.status(200).json({ success: true, message: 'Closer eliminado correctamente.' });
+        // Si usaras un form tradicional para borrar:
+        // req.session.success_msg = 'Closer eliminado.';
+        // res.redirect('/closers');
+    } catch (error) {
+        console.error(`[Closers] Error en DELETE /closers/${id}:`, error);
+         // Manejar error de FK si hay tablas relacionadas (como vendedor_desempeno_diario si cambia)
+         // if (error.code === '23503') { ... }
+        res.status(500).json({ success: false, message: `Error interno al eliminar closer: ${error.message}` });
+    }
+});
+
+app.put('/api/manual-tracking/:id/estado', isAuthenticated,  async (req, res, next) => {
+  const { id } = req.params;
+  const { estado } = req.body;
+  const userId = req.session.user.id; // Para auditoría
+
+  const validStates = ['activo', 'pausado', 'finalizado']; // Estados permitidos
+  if (!estado || !validStates.includes(estado)) {
+      return res.status(400).json({ success: false, message: 'Estado inválido o faltante.' });
+  }
+
+  console.log(`[API Trackeo Manual] Actualizando estado de ID ${id} a '${estado}' por user ${userId}`);
+  try {
+      const query = `
+          UPDATE manual_niche_tracking
+          SET estado = $1, updated_at = CURRENT_TIMESTAMP
+          WHERE id = $2
+          RETURNING id, estado;
+      `;
+      const result = await pool.query(query, [estado, id]);
+
+      if (result.rowCount === 0) {
+          return res.status(404).json({ success: false, message: 'Entrada no encontrada.' });
+      }
+
+      res.json({ success: true, message: 'Estado actualizado.', updated: result.rows[0] });
+  } catch (error) {
+      console.error(`[API Trackeo Manual] Error PUT estado ID ${id}:`, error);
+      next(error); // Pasar al manejador general
+  }
+});
+
+// DELETE /api/auditoria/trackeo/uploads/:id - Borrar registro CSV y archivo físico
+app.delete('/api/auditoria/trackeo/uploads/:id', isAuthenticated,  async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.session.user.id;
+  console.log(`[Trackeo CSV Delete] Solicitud para borrar ID ${id} por user ${userId}`);
+
+  let filePathToDelete = null;
+  try {
+      // 1. Obtener la ruta del archivo ANTES de borrar el registro
+      const findQuery = 'SELECT filepath FROM tracking_uploads WHERE id = $1';
+      const findResult = await pool.query(findQuery, [id]);
+
+      if (findResult.rowCount === 0) {
+          return res.status(404).json({ success: false, message: 'Registro de upload no encontrado.' });
+      }
+      filePathToDelete = findResult.rows[0].filepath;
+
+      // 2. Borrar el registro de la base de datos
+      const deleteQuery = 'DELETE FROM tracking_uploads WHERE id = $1 RETURNING id';
+      const deleteResult = await pool.query(deleteQuery, [id]);
+
+      if (deleteResult.rowCount > 0) {
+          console.log(`[Trackeo CSV Delete] Registro BD ID ${id} eliminado.`);
+          // 3. Si el registro se borró, intentar borrar el archivo físico
+          if (filePathToDelete) {
+              const absolutePath = path.resolve(filePathToDelete); // Asegurar ruta absoluta
+               console.log(`[Trackeo CSV Delete] Intentando borrar archivo: ${absolutePath}`);
+               try {
+                  await fs.promises.unlink(absolutePath); // Usar versión promesa de unlink
+                  console.log(`[Trackeo CSV Delete] Archivo ${absolutePath} borrado exitosamente.`);
+                  res.status(200).json({ success: true, message: 'Registro y archivo CSV eliminados.' });
+               } catch (fileError) {
+                  // Error al borrar archivo: Loggear pero devolver éxito porque el registro BD se borró
+                  console.error(`[Trackeo CSV Delete] Error al borrar archivo ${absolutePath} (registro ${id} ya eliminado de BD):`, fileError);
+                  res.status(200).json({ success: true, message: 'Registro eliminado, pero hubo un error al borrar el archivo físico.', fileError: fileError.code });
+               }
+          } else {
+               console.warn(`[Trackeo CSV Delete] Registro ${id} borrado, pero no se encontró filepath.`);
+               res.status(200).json({ success: true, message: 'Registro eliminado (no se encontró ruta de archivo).' });
+          }
+      } else {
+           // Esto no debería pasar si el find inicial funcionó
+           console.warn(`[Trackeo CSV Delete] Registro ${id} no encontrado para eliminar después de encontrarlo inicialmente.`);
+           res.status(404).json({ success: false, message: 'Registro no encontrado para eliminar.' });
+      }
+
+  } catch (error) {
+      console.error(`[Trackeo CSV Delete] Error general al borrar ID ${id}:`, error);
+      next(error);
+  }
+});
+
+// POST /api/manual-tracking/bulk - Agregar múltiples entradas manuales desde textarea
+app.post('/api/manual-tracking/bulk', isAuthenticated,  async (req, res, next) => {
+  const { bulkData } = req.body; // Espera un string con líneas: trackear,usar,tipo
+  const userId = req.session.user.id;
+
+  if (!bulkData || typeof bulkData !== 'string' || bulkData.trim() === '') {
+      return res.status(400).json({ success: false, message: 'No se proporcionaron datos para agregar.' });
+  }
+
+  const lines = bulkData.trim().split('\n');
+  const entries = [];
+  const errors = [];
+
+  lines.forEach((line, index) => {
+      const parts = line.split(',').map(p => p.trim());
+      if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
+          entries.push({
+              cuenta_a_trackear: parts[0],
+              cuenta_a_usar: parts[1],
+              tipo_palabra_clave: parts[2],
+              added_by_user_id: userId,
+              estado: 'activo' // Estado por defecto
+          });
+      } else {
+          errors.push(`Línea ${index + 1} inválida: "${line}". Formato esperado: cuenta_a_trackear, cuenta_a_usar, tipo/palabra`);
+      }
+  });
+
+  if (entries.length === 0) {
+      return res.status(400).json({ success: false, message: 'Ninguna línea válida encontrada.', errors });
+  }
+
+  console.log(`[Trackeo Manual Bulk] Intentando insertar ${entries.length} entradas por user ${userId}`);
+
+  const client = await pool.connect();
+  try {
+      await client.query('BEGIN');
+      let insertedCount = 0;
+      // Usar un bucle para insertar una por una (más simple que construir un INSERT múltiple complejo)
+      for (const entry of entries) {
+          const query = `
+              INSERT INTO manual_niche_tracking
+                  (cuenta_a_trackear, cuenta_a_usar, tipo_palabra_clave, added_by_user_id, estado, updated_at)
+              VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+              ON CONFLICT DO NOTHING; -- Opcional: evitar duplicados exactos si tienes constraints
+          `;
+           // No incluimos 'notas' en la inserción masiva por simplicidad
+          const result = await client.query(query, [
+              entry.cuenta_a_trackear, entry.cuenta_a_usar, entry.tipo_palabra_clave,
+              entry.added_by_user_id, entry.estado
+          ]);
+          insertedCount += result.rowCount; // Contar cuántas se insertaron realmente
+      }
+      await client.query('COMMIT');
+      console.log(`[Trackeo Manual Bulk] ${insertedCount} de ${entries.length} entradas insertadas.`);
+      req.session.success_msg = `${insertedCount} seguimiento(s) manual(es) agregado(s) correctamente.`;
+      // Devolver éxito incluso si hubo errores de formato, pero incluir los errores
+       res.status(errors.length > 0 ? 207 : 201).json({ // 207 Multi-Status si hubo errores
+           success: true,
+           message: `${insertedCount} entrada(s) agregada(s).`,
+           errors: errors.length > 0 ? errors : null
+       });
+
+  } catch (dbError) {
+      await client.query('ROLLBACK');
+      console.error("[Trackeo Manual Bulk] Error BD:", dbError);
+      // Devolver un error 500 genérico
+      res.status(500).json({ success: false, message: 'Error interno al guardar las entradas.', errors });
+      // NO usar req.session aquí porque es una API AJAX
+  } finally {
+      client.release();
+  }
+});
+
+
 
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {

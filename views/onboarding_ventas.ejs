@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HUNTER - Panel de Ventas</title>
+
+    <!-- Google Fonts (Poppins) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Estilos -->
+    <link rel="stylesheet" href="/static/css/navbar.css" />
+    <link rel="stylesheet" href="/static/css/onboarding.css" /> <!-- Reutilizamos estilos base -->
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+
+    <script defer src="/static/js/navbar.js"></script>
+
+    <!-- CSS específico para el menú de auditoría -->
+    <style>
+        /* Estilos existentes... */
+        .audit-menu-container {
+            padding: 3rem 1rem;
+            max-width: 1000px;
+            margin: 2rem auto;
+            text-align: center;
+        }
+
+        .audit-menu-container h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            /* Adaptado a variables (si las usas globalmente) o colores directos */
+            color: var(--color-text-primary, #333); /* Usar variable si está definida */
+        }
+         .audit-menu-container h1 .highlight {
+            color: var(--color-highlight, #007bff); /* Usar variable si está definida */
+         }
+
+        .audit-menu-container > p { /* Estilo para el párrafo directo del header */
+            font-size: 1.1rem;
+            color: var(--color-text-secondary, #555); /* Usar variable si está definida */
+            margin-bottom: 1.5rem; /* Reducido ligeramente para dar espacio al nuevo texto */
+        }
+
+        /* --- NUEVOS ESTILOS PARA EL TEXTO INTRODUCTORIO --- */
+        .audit-intro-text {
+            margin-top: 0; /* Ajustado, ya hay margen en el párrafo del header */
+            margin-bottom: 3rem; /* Espacio generoso antes de los botones */
+            padding: 0 1rem; /* Padding lateral por si acaso */
+        }
+
+        .audit-intro-text p {
+            font-size: 1.05rem; /* Ligeramente más pequeño que el subtítulo */
+            color: var(--color-text-secondary, #6c757d); /* Color secundario, más sutil */
+            line-height: 1.65; /* Buena legibilidad */
+            max-width: 750px; /* Limita el ancho de línea para lectura cómoda */
+            margin-left: auto; /* Centra el bloque de párrafo */
+            margin-right: auto;
+        }
+        /* --- FIN NUEVOS ESTILOS --- */
+
+
+        .menu-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2.5rem; /* Aumentado espacio entre botones */
+            justify-content: center;
+        }
+
+        .menu-button {
+            display: block;
+            padding: 1.8rem 1rem; /* Más padding vertical */
+            /* Usando variables CSS si están definidas globalmente */
+            background: linear-gradient(145deg, var(--color-background-medium, #f8f9fa), var(--color-background-light, #e9ecef));
+            color: var(--color-text-primary, #343a40);
+            text-decoration: none;
+            border-radius: 12px; /* Más redondeado */
+            font-size: 1.25rem; /* Ligeramente más grande */
+            font-weight: 500;
+            transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1); /* Transición más suave */
+            border: 1px solid var(--color-border, #dee2e6);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.07); /* Sombra inicial */
+            text-align: center;
+        }
+
+        .menu-button i {
+            display: block;
+            font-size: 2.8rem; /* Iconos más grandes */
+            margin-bottom: 1.2rem;
+            color: var(--color-accent, #007bff); /* Usar variable si está definida */
+            transition: transform 0.3s ease;
+        }
+
+        .menu-button:hover {
+            transform: translateY(-8px) scale(1.03); /* Efecto levantar más pronunciado */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12); /* Sombra más pronunciada */
+            background: linear-gradient(145deg, var(--color-background-light, #e9ecef), var(--color-background-medium, #f8f9fa)); /* Invertir gradiente sutil */
+        }
+        .menu-button:hover i {
+             transform: scale(1.1); /* Icono crece un poco */
+        }
+
+        .audit-footer {
+            margin-top: 5rem; /* Más espacio antes del footer */
+            padding: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary, #aaa);
+            text-align: center;
+            border-top: 1px solid var(--color-border, #eee); /* Línea sutil */
+        }
+
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %> <!-- Incluye tu Navbar -->
+
+    <div class="onboarding-background">
+      <div class="audit-menu-container">
+
+        <header>
+          <h1>Panel de <span class="highlight">Auditoría</span></h1>
+          <!-- Párrafo existente, con margen inferior ajustado -->
+          <p>Bienvenido/a. Selecciona una sección para comenzar.</p>
+        </header>
+
+        <!-- ===== NUEVO BLOQUE DE TEXTO INTRODUCTORIO ===== -->
+        <div class="audit-intro-text">
+            <p>
+                Este es tu centro de control para los vendedores. Desde aquí puedes acceder a las herramientas clave para supervisar la actividad, analizar el crecimiento, gestionar el patrimonio digital y generar reportes detallados. Utiliza los accesos directos a continuación.
+            </p>
+        </div>
+        <!-- ===== FIN NUEVO BLOQUE ===== -->
+
+        <main class="menu-options">
+          <!-- Botones con iconos actualizados -->
+          <a href="/closers" class="menu-button">
+            <i class="fas fa-crosshairs"></i> <!-- Icono para Trackeo -->
+            <span>Closers</span>
+          </a>
+         
+        </main>
+
+        <footer class="audit-footer">
+            <p>© <%= new Date().getFullYear() %> HUNTER - Módulo Auditoría</p>
+        </footer>
+
+      </div> <!-- Fin .audit-menu-container -->
+    </div> <!-- Fin .onboarding-background -->
+</body>
+</html>

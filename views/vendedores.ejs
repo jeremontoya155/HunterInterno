@@ -38,7 +38,7 @@
                 <%# Verificar user y rol antes de mostrar el botón %>
                 <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'auditoria')) { %>
                     <button class="btn btn-primary btn-add-vendedor" onclick="openVendedorModal()">
-                        <i class="fas fa-user-plus"></i> Agregar Vendedor
+                        <i class="fas fa-user-plus"></i> Agregar Cliente
                     </button>
                 <% } %>
              </div>

@@ -1,0 +1,57 @@
+/* ============================================= */
+/*      static/css/closers.css (o vendedores.css)   */
+/* ============================================= */
+
+/* --- Importar variables si es necesario --- */
+/* @import url('theme_variables.css'); */
+
+/* --- Estilos Generales (Copiar de vendedores.css) --- */
+.vendedor-main-container { /* Renombrar a .closer-main-container si prefieres */
+    max-width: 1200px; /* Ajusta según necesites */
+    margin: 1.5rem auto;
+    padding: 2rem;
+    padding-top: calc(var(--spacing-unit, 1rem) * 5); /* Espacio navbar */
+}
+.page-title { /* ... */ }
+.card-style { /* ... */ }
+.alert { /* ... */ } .alert-success { /* ... */ } .alert-danger { /* ... */ }
+.spinner { /* ... */ }
+
+/* --- Formulario Agregar/Editar (Copiar de vendedores.css) --- */
+.form-container { margin-bottom: 2.5rem; }
+.form-container h2 { /* ... */ }
+#closer-form { /* Renombrar ID si usaste uno nuevo */ display: flex; flex-direction: column; gap: 1rem; }
+.form-row { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.form-group { flex: 1 1 calc(50% - 1rem); min-width: 200px; }
+.form-group label { /* ... */ }
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="date"],
+.form-group select,
+.form-group textarea { /* ... Estilos de Inputs ... */ }
+.form-actions { margin-top: 1rem; display: flex; justify-content: flex-end; gap: 1rem; }
+#cancel-edit-btn { /* ... */ }
+
+/* --- Tabla de Closers (Adaptar de tabla vendedores) --- */
+.table-section { /* ... */ }
+.table-section h2 { /* ... */ }
+.table-wrapper { /* ... */ }
+.data-table { /* Usar esta clase o .desempeno-table */ width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.data-table thead { /* ... */ }
+.data-table th { /* ... */ }
+.data-table tbody tr { /* ... */ }
+.data-table tbody tr:hover { /* ... */ }
+.data-table td { /* ... */ }
+.data-table td.numeric { text-align: center; font-weight: 600; /* Centrar Agendas */ }
+.data-table .tag { /* Estilos tags (copiar de vendedores) */ }
+.data-table .tag-estado { /* ... */ } .tag-estado-activo { /* ... */ } /* etc. */
+.data-table .tag-cuenta { /* ... */ }
+.actions-cell { text-align: center; white-space: nowrap; }
+.actions-cell .btn { margin: 0 3px; padding: 0.3rem 0.6rem;} /* Ajustar botones acción */
+.actions-cell .btn i { font-size: 0.9em; }
+.no-data-row td { /* ... */ }
+
+/* --- CSS específico para seguimiento modal (NUEVO ARCHIVO O AQUI) --- */
+/* .seguimiento-modal-overlay { ... } */
+/* .seguimiento-modal-content { ... } */
+/* etc... */
