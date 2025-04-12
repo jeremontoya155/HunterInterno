@@ -13,14 +13,78 @@
     <link rel="stylesheet" href="/static/css/vendedores.css" />
     <!-- CSS específico para esta página (añadido abajo o en vendedores.css) -->
     <link rel="stylesheet" href="/static/css/auditoria_patrimonio.css" />
+    <style>
+        /* Estilos adicionales para optimizar espacio */
+        .auditoria-table {
+            font-size: 0.85rem;
+        }
+        .auditoria-table th, 
+        .auditoria-table td {
+            padding: 0.3rem 0.5rem;
+            white-space: nowrap;
+        }
+        .link-col {
+            max-width: 50px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .link-col a {
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .password-col {
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .table-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 120px;
+        }
+        .filter-input {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .filter-select {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            background-color: white;
+        }
+        .no-data-row {
+            text-align: center;
+            padding: 10px;
+            color: #666;
+        }
+        .text-danger-strong {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .text-warning-strong {
+            color: #ffc107;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <%- include('partials/navbar') %>
 
-    <div class="auditoria-main-container"> <%# Contenedor específico %>
+    <div class="auditoria-main-container">
         <div class="auditoria-header">
             <h1><i class="fas fa-shield-alt icon-header"></i> Auditoría de Patrimonio Digital</h1>
-             <%# Botón para abrir modal de Agregar %>
             <button class="btn btn-primary btn-lg" onclick="openPatrimonioModal()">
                 <i class="fas fa-plus-circle"></i> Agregar Cuenta
             </button>
@@ -33,8 +97,37 @@
         <!-- SECCIÓN CUENTAS DE CLIENTES -->
         <section class="table-section card-style">
             <h2><i class="fas fa-briefcase section-icon"></i> Cuentas de Clientes</h2>
-            <div class="table-wrapper custom-scrollbar"> <%# Wrapper para scroll horizontal %>
-                <table class="auditoria-table">
+            <div class="table-filters">
+                <div class="filter-group">
+                    <input type="text" id="filter-cliente-nombre" class="filter-input" placeholder="Filtrar por cliente">
+                </div>
+                <div class="filter-group">
+                    <input type="text" id="filter-cliente-usuario" class="filter-input" placeholder="Filtrar por usuario">
+                </div>
+                <div class="filter-group">
+                    <select id="filter-cliente-verificacion" class="filter-select">
+                        <option value="">Todos (Verificación)</option>
+                        <option value="1">Verificados</option>
+                        <option value="0">No verificados</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <select id="filter-cliente-celu" class="filter-select">
+                        <option value="">Todos (Celular)</option>
+                        <option value="1">Accesible</option>
+                        <option value="0">No accesible</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <select id="filter-cliente-2fa" class="filter-select">
+                        <option value="">Todos (2FA)</option>
+                        <option value="1">Con 2FA</option>
+                        <option value="0">Sin 2FA</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-wrapper custom-scrollbar">
+                <table class="auditoria-table" id="clientes-table">
                     <thead>
                         <tr>
                             <th>Cliente</th>
@@ -43,7 +136,7 @@
                             <th>Correo</th>
                             <th>Cel. OK?</th>
                             <th>2FA App?</th>
-                            <th>Contraseña (¡RIESGO!)</th> <%# CAMBIO: Advertencia en header %>
+                            <th>Contraseña (¡RIESGO!)</th>
                             <th>Cód. Respaldo</th>
                             <th>Días Rest. Cód.</th>
                             <th>Link</th>
@@ -57,18 +150,15 @@
                                 <% if (cuenta.tipo_cuenta === 'cliente') { %>
                                     <% clientesCount++; %>
                                     <tr id="cuenta-row-<%= cuenta.id %>" data-cuenta='<%- JSON.stringify(cuenta) %>'>
-                                        <td><%= cuenta.nombre_cliente || '-' %></td>
-                                        <td><strong><%= cuenta.usuario %></strong></td>
-                                        <td class="text-center"><%- cuenta.verificacion ? '<i class="fas fa-check-circle text-success" title="Verificada"></i>' : '<i class="fas fa-times-circle text-danger" title="No Verificada"></i>' %></td>
+                                        <td class="filter-cliente"><%= cuenta.nombre_cliente || '-' %></td>
+                                        <td class="filter-usuario"><strong><%= cuenta.usuario %></strong></td>
+                                        <td class="text-center filter-verificacion"><%- cuenta.verificacion ? '<i class="fas fa-check-circle text-success" title="Verificada"></i>' : '<i class="fas fa-times-circle text-danger" title="No Verificada"></i>' %></td>
                                         <td><%= cuenta.correo || '-' %></td>
-                                        <td class="text-center"><%- cuenta.celu_abierto ? '<i class="fas fa-mobile-alt text-success" title="Accesible"></i>' : '<i class="fas fa-mobile-alt text-muted" title="No Accesible"></i>' %></td>
-                                        <td class="text-center"><%- cuenta.autentificador ? '<i class="fas fa-shield-alt text-success" title="Sí"></i>' : '<i class="fas fa-shield-alt text-muted" title="No"></i>' %></td>
-                                        <%# === CAMBIO AQUÍ === %>
-                                        <%# Muestra la contraseña real. ¡¡¡ALTO RIESGO DE SEGURIDAD!!! %>
+                                        <td class="text-center filter-celu"><%- cuenta.celu_abierto ? '<i class="fas fa-mobile-alt text-success" title="Accesible"></i>' : '<i class="fas fa-mobile-alt text-muted" title="No Accesible"></i>' %></td>
+                                        <td class="text-center filter-2fa"><%- cuenta.autentificador ? '<i class="fas fa-shield-alt text-success" title="Sí"></i>' : '<i class="fas fa-shield-alt text-muted" title="No"></i>' %></td>
                                         <td class="password-col" title="Contraseña REAL (¡ALTO RIESGO!)">
-                                            <%= cuenta.contrasena || '-' %> <%# Asegúrate que 'contrasena' es el nombre correcto %>
+                                            <%= cuenta.contrasena || '-' %>
                                         </td>
-                                        <%# === FIN CAMBIO === %>
                                         <td class="codigos-col" title="<%= cuenta.codigos_respaldo ? 'Códigos registrados' : 'Sin códigos' %>"><%= cuenta.codigos_respaldo ? 'Registrados' : '-' %></td>
                                         <td class="dias-restantes-col <%= (cuenta.dias_restantes_codigos !== null && cuenta.dias_restantes_codigos <= 2) ? 'text-danger-strong' : (cuenta.dias_restantes_codigos !== null && cuenta.dias_restantes_codigos <= 5 ? 'text-warning-strong' : '') %>">
                                             <% if (cuenta.dias_restantes_codigos !== null) { %>
@@ -80,8 +170,6 @@
                                         <td class="link-col"><%= cuenta.link ? '<a href="' + cuenta.link + '" target="_blank" title="Abrir perfil"><i class="fas fa-external-link-alt"></i></a>' : '-' %></td>
                                         <td class="actions-col">
                                             <button class="btn btn-sm btn-warning" onclick="openPatrimonioModal('<%= cuenta.id %>')" title="Editar"><i class="fas fa-edit"></i></button>
-                                            <%# Botón Eliminar (requiere JS adicional) %>
-                                            <!-- <button class="btn btn-sm btn-danger" onclick="deleteCuenta('<%= cuenta.id %>')" title="Eliminar"><i class="fas fa-trash"></i></button> -->
                                         </td>
                                     </tr>
                                 <% } %>
@@ -97,45 +185,66 @@
 
         <!-- SECCIÓN CUENTAS PROPIAS -->
         <section class="table-section card-style">
-             <h2><i class="fas fa-building section-icon"></i> Cuentas Propias (Equipo)</h2>
+            <h2><i class="fas fa-building section-icon"></i> Cuentas Propias (Equipo)</h2>
+            <div class="table-filters">
+                <div class="filter-group">
+                    <input type="text" id="filter-propio-usuario" class="filter-input" placeholder="Filtrar por usuario">
+                </div>
+                <div class="filter-group">
+                    <select id="filter-propio-verificacion" class="filter-select">
+                        <option value="">Todos (Verificación)</option>
+                        <option value="1">Verificados</option>
+                        <option value="0">No verificados</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <select id="filter-propio-celu" class="filter-select">
+                        <option value="">Todos (Celular)</option>
+                        <option value="1">Accesible</option>
+                        <option value="0">No accesible</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <select id="filter-propio-2fa" class="filter-select">
+                        <option value="">Todos (2FA)</option>
+                        <option value="1">Con 2FA</option>
+                        <option value="0">Sin 2FA</option>
+                    </select>
+                </div>
+            </div>
             <div class="table-wrapper custom-scrollbar">
-                <table class="auditoria-table">
-                     <thead>
+                <table class="auditoria-table" id="propios-table">
+                    <thead>
                         <tr>
-                            <%#<th>Cliente</th> oculto %>
                             <th>Usuario IG</th>
                             <th>Verif.?</th>
                             <th>Correo</th>
                             <th>Cel. OK?</th>
                             <th>2FA App?</th>
-                            <th>Contraseña (¡RIESGO!)</th> <%# CAMBIO: Advertencia en header %>
+                            <th>Contraseña (¡RIESGO!)</th>
                             <th>Cód. Respaldo</th>
                             <th>Días Rest. Cód.</th>
                             <th>Link</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
-                     <tbody>
+                    <tbody>
                         <% let propiosCount = 0; %>
                         <% if (typeof cuentas !== 'undefined' && cuentas.length > 0) { %>
                             <% cuentas.forEach(cuenta => { %>
                                 <% if (cuenta.tipo_cuenta === 'propio') { %>
                                     <% propiosCount++; %>
-                                     <tr id="cuenta-row-<%= cuenta.id %>" data-cuenta='<%- JSON.stringify(cuenta) %>'>
-                                        <%#<td>-</td> Nombre Cliente oculto %>
-                                        <td><strong><%= cuenta.usuario %></strong></td>
-                                        <td class="text-center"><%- cuenta.verificacion ? '<i class="fas fa-check-circle text-success" title="Verificada"></i>' : '<i class="fas fa-times-circle text-danger" title="No Verificada"></i>' %></td>
+                                    <tr id="cuenta-row-<%= cuenta.id %>" data-cuenta='<%- JSON.stringify(cuenta) %>'>
+                                        <td class="filter-usuario"><strong><%= cuenta.usuario %></strong></td>
+                                        <td class="text-center filter-verificacion"><%- cuenta.verificacion ? '<i class="fas fa-check-circle text-success" title="Verificada"></i>' : '<i class="fas fa-times-circle text-danger" title="No Verificada"></i>' %></td>
                                         <td><%= cuenta.correo || '-' %></td>
-                                        <td class="text-center"><%- cuenta.celu_abierto ? '<i class="fas fa-mobile-alt text-success" title="Accesible"></i>' : '<i class="fas fa-mobile-alt text-muted" title="No Accesible"></i>' %></td>
-                                        <td class="text-center"><%- cuenta.autentificador ? '<i class="fas fa-shield-alt text-success" title="Sí"></i>' : '<i class="fas fa-shield-alt text-muted" title="No"></i>' %></td>
-                                        <%# === CAMBIO AQUÍ === %>
-                                        <%# Muestra la contraseña real. ¡¡¡ALTO RIESGO DE SEGURIDAD!!! %>
+                                        <td class="text-center filter-celu"><%- cuenta.celu_abierto ? '<i class="fas fa-mobile-alt text-success" title="Accesible"></i>' : '<i class="fas fa-mobile-alt text-muted" title="No Accesible"></i>' %></td>
+                                        <td class="text-center filter-2fa"><%- cuenta.autentificador ? '<i class="fas fa-shield-alt text-success" title="Sí"></i>' : '<i class="fas fa-shield-alt text-muted" title="No"></i>' %></td>
                                         <td class="password-col" title="Contraseña REAL (¡ALTO RIESGO!)">
-                                            <%= cuenta.contrasena || '-' %> <%# Asegúrate que 'contrasena' es el nombre correcto %>
+                                            <%= cuenta.contrasena || '-' %>
                                         </td>
-                                        <%# === FIN CAMBIO === %>
                                         <td class="codigos-col" title="<%= cuenta.codigos_respaldo ? 'Códigos registrados' : 'Sin códigos' %>"><%= cuenta.codigos_respaldo ? 'Registrados' : '-' %></td>
-                                         <td class="dias-restantes-col <%= (cuenta.dias_restantes_codigos !== null && cuenta.dias_restantes_codigos <= 2) ? 'text-danger-strong' : (cuenta.dias_restantes_codigos !== null && cuenta.dias_restantes_codigos <= 5 ? 'text-warning-strong' : '') %>">
+                                        <td class="dias-restantes-col <%= (cuenta.dias_restantes_codigos !== null && cuenta.dias_restantes_codigos <= 2) ? 'text-danger-strong' : (cuenta.dias_restantes_codigos !== null && cuenta.dias_restantes_codigos <= 5 ? 'text-warning-strong' : '') %>">
                                             <% if (cuenta.dias_restantes_codigos !== null) { %>
                                                 <%= cuenta.dias_restantes_codigos %> día<%= cuenta.dias_restantes_codigos !== 1 ? 's' : '' %>
                                             <% } else { %>
@@ -145,8 +254,6 @@
                                         <td class="link-col"><%= cuenta.link ? '<a href="' + cuenta.link + '" target="_blank" title="Abrir perfil"><i class="fas fa-external-link-alt"></i></a>' : '-' %></td>
                                         <td class="actions-col">
                                             <button class="btn btn-sm btn-warning" onclick="openPatrimonioModal('<%= cuenta.id %>')" title="Editar"><i class="fas fa-edit"></i></button>
-                                            <%# Botón Eliminar %>
-                                            <!-- <button class="btn btn-sm btn-danger" onclick="deleteCuenta('<%= cuenta.id %>')" title="Eliminar"><i class="fas fa-trash"></i></button> -->
                                         </td>
                                     </tr>
                                 <% } %>
@@ -159,31 +266,27 @@
                 </table>
             </div>
         </section>
+    </div>
 
-    </div> <!-- Fin auditoria-main-container -->
-
-    <!-- ============================================= -->
-    <!--     MODAL AGREGAR/EDITAR CUENTA PATRIMONIO    -->
-    <!-- ============================================= -->
+    <!-- MODAL AGREGAR/EDITAR CUENTA PATRIMONIO -->
     <div id="patrimonioModalOverlay" class="modal-overlay">
         <div class="modal-content" id="patrimonioModalContent">
             <form action="/auditoria/patrimonio" method="POST" id="patrimonio-form">
-                 <div class="modal-header">
+                <div class="modal-header">
                     <h5 class="modal-title" id="patrimonioModalLabel">Agregar Cuenta a Patrimonio</h5>
                     <button type="button" class="modal-close-btn" onclick="closePatrimonioModal()" title="Cerrar">×</button>
                 </div>
                 <div class="modal-body custom-scrollbar">
-                    <input type="hidden" id="cuenta_id" name="cuenta_id"> <%# ID para editar %>
+                    <input type="hidden" id="cuenta_id" name="cuenta_id">
 
                     <div class="form-group">
-                         <label for="modal_tipo_cuenta"><i class="fas fa-tags fa-fw"></i> Tipo de Cuenta*</label>
-                         <select id="modal_tipo_cuenta" name="tipo_cuenta" required onchange="toggleClienteField()">
+                        <label for="modal_tipo_cuenta"><i class="fas fa-tags fa-fw"></i> Tipo de Cuenta*</label>
+                        <select id="modal_tipo_cuenta" name="tipo_cuenta" required onchange="toggleClienteField()">
                             <option value="cliente">Cliente</option>
                             <option value="propio">Propio (Equipo)</option>
                         </select>
                     </div>
 
-                    <%# Campo Cliente (se muestra/oculta con JS) %>
                     <div class="form-group" id="cliente-field-group">
                         <label for="modal_nombre_cliente"><i class="fas fa-user-tie fa-fw"></i> Nombre del Cliente</label>
                         <input type="text" id="modal_nombre_cliente" name="nombre_cliente">
@@ -194,40 +297,38 @@
                         <input type="text" id="modal_usuario" name="usuario" required>
                     </div>
                     <div class="form-group">
-                         <label for="modal_correo"><i class="far fa-envelope fa-fw"></i> Correo Asociado</label>
+                        <label for="modal_correo"><i class="far fa-envelope fa-fw"></i> Correo Asociado</label>
                         <input type="email" id="modal_correo" name="correo">
                     </div>
                     <div class="form-group">
-                         <label for="modal_contrasena"><i class="fas fa-key fa-fw"></i> Contraseña</label>
-                         <%# Tipo 'password' oculta la entrada, pero el valor se envía al servidor %>
-                         <input type="password" id="modal_contrasena" name="contrasena" placeholder="Ingresar o actualizar">
-                         <small>Se guarda de forma segura. No se muestra aquí ni en la tabla por defecto.</small>
-                         <%# Nota: Aunque el input es tipo password, el código modificado la mostrará en la tabla si se envía desde el servidor %>
+                        <label for="modal_contrasena"><i class="fas fa-key fa-fw"></i> Contraseña</label>
+                        <input type="password" id="modal_contrasena" name="contrasena" placeholder="Ingresar o actualizar">
+                        <small>Se guarda de forma segura. No se muestra aquí ni en la tabla por defecto.</small>
                     </div>
-                     <div class="form-group">
-                         <label for="modal_link"><i class="fas fa-link fa-fw"></i> Link al Perfil</label>
+                    <div class="form-group">
+                        <label for="modal_link"><i class="fas fa-link fa-fw"></i> Link al Perfil</label>
                         <input type="url" id="modal_link" name="link" placeholder="https://instagram.com/usuario">
                     </div>
 
-                     <hr class="modal-hr">
-                     <label class="form-section-title">Seguridad y Respaldo</label>
+                    <hr class="modal-hr">
+                    <label class="form-section-title">Seguridad y Respaldo</label>
 
                     <div class="form-row check-group">
-                         <div class="form-check">
+                        <div class="form-check">
                             <input type="checkbox" id="modal_verificacion" name="verificacion">
                             <label for="modal_verificacion"> Verificada por IG?</label>
-                         </div>
-                          <div class="form-check">
+                        </div>
+                        <div class="form-check">
                             <input type="checkbox" id="modal_celu_abierto" name="celu_abierto">
                             <label for="modal_celu_abierto"> Celular Accesible?</label>
-                         </div>
-                          <div class="form-check">
+                        </div>
+                        <div class="form-check">
                             <input type="checkbox" id="modal_autentificador" name="autentificador">
                             <label for="modal_autentificador"> Usa 2FA App?</label>
-                         </div>
+                        </div>
                     </div>
 
-                     <div class="form-group">
+                    <div class="form-group">
                         <label for="modal_codigos_respaldo"><i class="fas fa-shield-virus fa-fw"></i> Códigos de Respaldo</label>
                         <textarea id="modal_codigos_respaldo" name="codigos_respaldo" rows="2" placeholder="Pegar códigos aquí..."></textarea>
                     </div>
@@ -236,13 +337,13 @@
                             <label for="modal_codigos_actualizados_en"><i class="far fa-calendar-check fa-fw"></i> Última Rev. Códigos</label>
                             <input type="date" id="modal_codigos_actualizados_en" name="codigos_actualizados_en">
                         </div>
-                         <div class="form-group">
+                        <div class="form-group">
                             <label for="modal_codigos_validez_dias"><i class="fas fa-hourglass-half fa-fw"></i> Validez Códigos (días)</label>
                             <input type="number" id="modal_codigos_validez_dias" name="codigos_validez_dias" min="1" value="7">
                         </div>
                     </div>
                 </div>
-                 <div class="modal-footer">
+                <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closePatrimonioModal()">Cancelar</button>
                     <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Cuenta</button>
                 </div>
@@ -252,8 +353,95 @@
 
     <!-- Scripts -->
     <script defer src="/static/js/navbar.js"></script>
-    <%# Un nuevo JS o añadir funciones al existente %>
-    <script defer src="/static/js/auditoria_manager.js"></script>
+    <script>
+        // Función para filtrar tablas
+        function setupTableFilters(tableId, filters) {
+            const table = document.getElementById(tableId);
+            const rows = table.querySelectorAll('tbody tr');
+            
+            filters.forEach(filter => {
+                const input = document.getElementById(filter.inputId);
+                input.addEventListener('input', filterRows);
+            });
+            
+            function filterRows() {
+                rows.forEach(row => {
+                    let showRow = true;
+                    
+                    filters.forEach(filter => {
+                        const input = document.getElementById(filter.inputId);
+                        const cell = row.querySelector(filter.cellSelector);
+                        
+                        if (input && cell) {
+                            const filterValue = input.value.toLowerCase();
+                            let cellValue = '';
+                            
+                            if (filter.inputId.includes('verificacion') || 
+                                filter.inputId.includes('celu') || 
+                                filter.inputId.includes('2fa')) {
+                                // Para selects de estado (verificación, celu, 2fa)
+                                if (input.value !== '') {
+                                    const hasFeature = input.value === '1';
+                                    const cellHasFeature = cell.innerHTML.includes('text-success');
+                                    if (hasFeature !== cellHasFeature) {
+                                        showRow = false;
+                                    }
+                                }
+                            } else {
+                                // Para inputs de texto
+                                if (cell.textContent) {
+                                    cellValue = cell.textContent.toLowerCase();
+                                } else if (cell.innerHTML) {
+                                    cellValue = cell.innerHTML.toLowerCase();
+                                }
+                                
+                                if (filterValue && !cellValue.includes(filterValue)) {
+                                    showRow = false;
+                                }
+                            }
+                        }
+                    });
+                    
+                    row.style.display = showRow ? '' : 'none';
+                });
+            }
+        }
+
+        // Configurar filtros para ambas tablas cuando el DOM esté cargado
+        document.addEventListener('DOMContentLoaded', function() {
+            // Filtros para tabla de clientes
+            setupTableFilters('clientes-table', [
+                { inputId: 'filter-cliente-nombre', cellSelector: '.filter-cliente' },
+                { inputId: 'filter-cliente-usuario', cellSelector: '.filter-usuario' },
+                { inputId: 'filter-cliente-verificacion', cellSelector: '.filter-verificacion' },
+                { inputId: 'filter-cliente-celu', cellSelector: '.filter-celu' },
+                { inputId: 'filter-cliente-2fa', cellSelector: '.filter-2fa' }
+            ]);
+            
+            // Filtros para tabla de cuentas propias
+            setupTableFilters('propios-table', [
+                { inputId: 'filter-propio-usuario', cellSelector: '.filter-usuario' },
+                { inputId: 'filter-propio-verificacion', cellSelector: '.filter-verificacion' },
+                { inputId: 'filter-propio-celu', cellSelector: '.filter-celu' },
+                { inputId: 'filter-propio-2fa', cellSelector: '.filter-2fa' }
+            ]);
+        });
+
+        // Funciones del modal (deben estar definidas en auditoria_manager.js)
+        function openPatrimonioModal(cuentaId = null) {
+            // Implementación existente
+        }
+
+        function closePatrimonioModal() {
+            // Implementación existente
+        }
+
+        function toggleClienteField() {
+            // Implementación existente
+        }
+    </script>
+         <script defer src="/static/js/navbar.js"></script>
+        <script defer src="/static/js/auditoria_manager.js"></script> <!-- Crear este archivo JS -->
 
 </body>
 </html>
