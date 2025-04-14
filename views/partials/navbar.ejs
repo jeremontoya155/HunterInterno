@@ -37,6 +37,15 @@
         <%# --- FIN ENLACE AUDITORÍA --- %>
 
         <%# --- ENLACE A AUDITORÍA PATRIMONIO (Visible para Admin y Auditoría) --- %>
+          <a href="/sprints">
+            <i class="fas fa-stopwatch"></i>
+            <span>Sprints</span>
+          </a>
+       
+        
+        <%# --- FIN ENLACE AUDITORÍA --- %>
+
+        <%# --- ENLACE A AUDITORÍA PATRIMONIO (Visible para Admin y Auditoría) --- %>
         <% if (user && (user.role === 'admin' || user.role === 'auditoria')) { %>
           <a href="/vendedores/desempeno">
             <i class="fas fa-chart-line"></i> <!-- O fa-arrow-trend-up, fa-seedling -->

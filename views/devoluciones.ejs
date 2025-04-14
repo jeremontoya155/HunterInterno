@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HUNTER - Gestión de Sprints</title>
+
+    <!-- Google Fonts (Poppins) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Estilos -->
+    <link rel="stylesheet" href="/static/css/navbar.css" />
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+    <style>
+        :root {
+            --color-background-dark: #0a0a10;
+            --color-background-medium: #111827; /* Fondo para filtros y cards */
+            --color-background-light: #1f2937;  /* Fondo para inputs */
+            --color-accent: #4caf91; /* Verde principal */
+            --color-accent-hover: #5cdb95;
+            --color-text-primary: #e5e7eb;
+            --color-text-secondary: #9ca3af;
+            --color-highlight: #4caf91;
+            --color-border: rgba(76, 175, 145, 0.2); /* Borde sutil */
+            --color-success: #4caf50;
+            --color-warning: #ff9800;
+            --color-danger: #f44336;
+            --color-info: #2196f3;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--color-background-dark);
+            color: var(--color-text-primary);
+            line-height: 1.7;
+            padding-top: 70px; /* Espacio para la navbar fija */
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px; /* Espacio antes de los filtros */
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin: 0; /* Reset margin */
+        }
+
+        .page-title .highlight {
+            color: var(--color-highlight);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: var(--color-accent);
+            color: var(--color-background-dark); /* Texto oscuro para contraste con verde */
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(76, 175, 145, 0.3);
+        }
+
+        .btn-secondary { /* Estilo para el botón Limpiar */
+             background-color: var(--color-background-light);
+             color: var(--color-text-primary);
+             border: 1px solid var(--color-border);
+        }
+         .btn-secondary:hover {
+             background-color: #2a3a4a; /* Un poco más claro que background-light */
+             border-color: var(--color-accent);
+         }
+
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        /* --- Estilos para la NUEVA sección de Filtros --- */
+        .filters-section {
+            background: var(--color-background-medium);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px; /* Espacio antes de la lista de sprints */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .filters-header {
+            color: var(--color-text-primary);
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filters-header i {
+            color: var(--color-accent);
+        }
+
+        .filters-form {
+            display: grid;
+            /* Ajusta las columnas según sea necesario. 4 columnas + espacio para botones */
+            /* O usar auto-fit para responsividad */
+             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px; /* Mayor espacio entre elementos */
+            align-items: end; /* Alinea elementos en la parte inferior de su celda */
+        }
+
+        .filter-group {
+            margin-bottom: 0; /* El gap del grid se encarga del espacio */
+        }
+
+        .filter-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+
+        .filter-actions {
+            /* Ocupa todo el ancho disponible en la última fila del grid si es necesario */
+            grid-column: 1 / -1; /* Ocupa todas las columnas */
+            display: flex;
+            gap: 15px;
+            margin-top: 10px; /* Espacio sobre los botones */
+        }
+
+        .filter-actions .btn {
+            flex: 1; /* Hace que los botones ocupen el espacio equitativamente */
+        }
+        /* --- Fin Estilos Filtros --- */
+
+
+        .sprint-card {
+            background: linear-gradient(145deg, var(--color-background-medium), var(--color-background-light));
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid var(--color-border);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .sprint-card.cerrado {
+            border-left: 4px solid var(--color-success);
+            opacity: 0.9;
+        }
+
+        .sprint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap; /* Para que las fechas bajen si no caben */
+            gap: 15px; /* Espacio entre título/meta y fechas */
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .sprint-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            margin-bottom: 10px;
+        }
+
+        .sprint-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+
+        .sprint-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+        }
+
+        .sprint-dates {
+            display: flex;
+            flex-direction: column; /* Fechas una debajo de otra */
+            gap: 8px; /* Espacio entre fechas */
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            text-align: right; /* Alinea texto de fechas a la derecha */
+        }
+
+        .sprint-dates span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            justify-content: flex-end; /* Alinea icono y texto a la derecha */
+        }
+
+        .sprint-desc {
+            color: var(--color-text-secondary);
+            margin-bottom: 20px;
+            white-space: pre-wrap; /* Respeta saltos de línea y ajusta */
+        }
+
+        .devoluciones-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px; /* Espacio antes de las actualizaciones */
+        }
+
+        .devolucion-item {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid var(--color-accent);
+            transition: all 0.3s ease;
+        }
+
+        .devolucion-item.devolucion-admin {
+            background-color: rgba(76, 175, 145, 0.1);
+            border-left: 4px solid var(--color-accent);
+        }
+
+        .devolucion-item.devolucion-user {
+            background-color: rgba(33, 150, 243, 0.1);
+            border-left: 4px solid var(--color-info);
+        }
+
+        .devolucion-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .devolucion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .devolucion-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--color-text-primary);
+            margin: 0;
+        }
+
+        .devolucion-meta {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .devolucion-user {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .devolucion-desc {
+            margin-bottom: 15px;
+            color: var(--color-text-secondary);
+            white-space: pre-line;
+        }
+
+        .devolucion-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .devolucion-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .no-sprints { /* Estilo para mensaje "No hay sprints" */
+            text-align: center;
+            padding: 40px 20px;
+            background-color: var(--color-background-medium);
+            border-radius: 10px;
+            border: 1px dashed var(--color-border);
+            color: var(--color-text-secondary);
+        }
+        .no-sprints p {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        /* --- Estilos Comunes Formularios (Input, Select, Textarea) --- */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--color-text-primary);
+        }
+
+        .form-control { /* Clase reutilizable para inputs/select/textarea */
+            width: 100%;
+            padding: 10px 15px;
+            background-color: var(--color-background-light);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            color: var(--color-text-primary);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 2px rgba(76, 175, 145, 0.3); /* Sutil resplandor al enfocar */
+        }
+
+        /* Estilo específico para que el input date muestre el icono del calendario */
+        input[type="date"].form-control {
+            position: relative;
+            color-scheme: dark; /* Ayuda a que el picker nativo use tema oscuro */
+        }
+        /* Considerar librerías JS para datepickers si se necesita más personalización */
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+        /* --- Fin Estilos Comunes Formularios --- */
+
+
+        /* --- Estilos Modales --- */
+        .modal {
+            display: none; /* Oculto por defecto */
+            position: fixed;
+            z-index: 1050; /* Asegura que esté sobre otros elementos */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            outline: 0;
+            background-color: rgba(0, 0, 0, 0.7); /* Fondo oscuro semitransparente */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show { /* Clase para mostrar el modal */
+             display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--color-background-medium);
+            border-radius: 10px;
+            padding: 25px;
+            width: 90%;
+            max-width: 600px; /* Ancho máximo del modal */
+            max-height: 90vh; /* Altura máxima, permite scroll si es necesario */
+            overflow-y: auto; /* Scroll vertical si el contenido es muy largo */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            margin: 0;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            font-size: 1.8rem; /* Más grande para facilitar clic */
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+            transition: color 0.3s ease;
+        }
+
+        .close-modal:hover {
+            color: var(--color-text-primary);
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid var(--color-border); /* Línea separadora */
+        }
+        /* --- Fin Estilos Modales --- */
+
+
+        /* --- Estilos Alertas --- */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-success {
+            background-color: rgba(76, 175, 80, 0.15);
+            color: var(--color-success);
+            border-left: 4px solid var(--color-success);
+        }
+
+        .alert-error {
+            background-color: rgba(244, 67, 54, 0.15);
+            color: var(--color-danger);
+            border-left: 4px solid var(--color-danger);
+        }
+         .alert i {
+             font-size: 1.2rem;
+         }
+        /* --- Fin Estilos Alertas --- */
+
+
+        /* --- Estilos Barra de Progreso --- */
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            height: 12px; /* Más delgada */
+            background-color: var(--color-background-light);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--color-success);
+            transition: width 0.5s ease;
+            border-radius: 6px;
+        }
+
+        .progress-text {
+            text-align: right;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+        }
+        /* --- Fin Estilos Barra de Progreso --- */
+
+
+        /* --- Media Queries para Responsividad --- */
+        @media (max-width: 992px) {
+            .filters-form {
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* Columnas más pequeñas */
+                gap: 15px;
+            }
+        }
+
+        @media (max-width: 768px) {
+             .page-header {
+                 flex-direction: column; /* Título arriba, botón abajo */
+                 align-items: flex-start;
+                 gap: 15px;
+             }
+
+            .sprint-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .sprint-dates {
+                text-align: left; /* Alinea fechas a la izquierda en móvil */
+                 width: 100%; /* Ocupa todo el ancho */
+            }
+             .sprint-dates span {
+                 justify-content: flex-start; /* Alinea icono y texto a la izquierda */
+             }
+
+             .devolucion-header, .devolucion-footer {
+                 flex-direction: column;
+                 align-items: flex-start;
+                 gap: 10px;
+             }
+              .devolucion-meta {
+                 width: 100%;
+                 justify-content: space-between; /* Separa usuario y fecha */
+             }
+             .devolucion-actions {
+                width: 100%;
+                justify-content: flex-end; /* Botones a la derecha */
+            }
+
+            .filters-form {
+                grid-template-columns: 1fr; /* Una columna en móvil */
+                gap: 15px;
+            }
+            .filter-actions {
+                 margin-top: 5px; /* Menos espacio arriba */
+                 flex-direction: column; /* Botones uno debajo del otro */
+             }
+            .filter-actions .btn {
+                width: 100%; /* Botones ocupan todo el ancho */
+            }
+
+            .modal-content {
+                max-width: 95%;
+                padding: 20px;
+            }
+            .form-actions {
+                flex-direction: column-reverse; /* Botón principal arriba */
+            }
+             .form-actions .btn {
+                 width: 100%;
+             }
+        }
+        /* --- Fin Media Queries --- */
+
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <div class="container">
+
+        <div class="page-header">
+            <h1 class="page-title">Gestión de <span class="highlight">Sprints</span></h1>
+            <% if (user.role === 'admin') { %>
+                <button class="btn btn-primary" onclick="openModal('sprintModal')">
+                    <i class="fas fa-plus"></i> Nuevo Sprint
+                </button>
+            <% } %>
+        </div>
+
+        <!-- ====================================== -->
+        <!--         Sección de Filtros Nueva     -->
+        <!-- ====================================== -->
+        <div class="filters-section">
+            <h3 class="filters-header">
+                <i class="fas fa-filter"></i>
+                FILTRAR SPRINTS
+            </h3>
+
+            <form id="filtrosForm" class="filters-form" method="GET" action="/sprints">
+
+                <!-- Filtro por título -->
+                <div class="filter-group">
+                    <label for="filtroTitulo" class="filter-label">Título</label>
+                    <input type="text" id="filtroTitulo" name="titulo" value="<%= req.query.titulo || '' %>" class="form-control" placeholder="Buscar por título...">
+                </div>
+
+                <!-- Filtro fecha desde -->
+                <div class="filter-group">
+                    <label for="filtroFechaInicio" class="filter-label">Fecha desde</label>
+                    <input type="date" id="filtroFechaInicio" name="fecha_inicio" value="<%= req.query.fecha_inicio || '' %>" class="form-control">
+                </div>
+
+                <!-- Filtro fecha hasta -->
+                <div class="filter-group">
+                    <label for="filtroFechaFin" class="filter-label">Fecha hasta</label>
+                    <input type="date" id="filtroFechaFin" name="fecha_fin" value="<%= req.query.fecha_fin || '' %>" class="form-control">
+                </div>
+
+                <!-- Filtro asignado a (solo admin) -->
+                <% if (user.role === 'admin') { %>
+                <div class="filter-group">
+                    <label for="filtroAsignado" class="filter-label">Asignado a</label>
+                    <select id="filtroAsignado" name="asignado_a" class="form-control">
+                        <option value="">Todos</option>
+                        <% users.forEach(u => { %>
+                            <option value="<%= u.id %>" <%= req.query.asignado_a == u.id ? 'selected' : '' %>>
+                                <%= u.username %> <%# // Podrías añadir rol si es útil: (u.role) %>
+                            </option>
+                        <% }); %>
+                    </select>
+                </div>
+                <% } %>
+
+                <!-- Botones de acción -->
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Aplicar
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="resetFilters()">
+                        <i class="fas fa-times"></i> Limpiar
+                    </button>
+                </div>
+            </form>
+        </div>
+        <!-- ====================================== -->
+        <!--       Fin Sección de Filtros         -->
+        <!-- ====================================== -->
+
+
+        <!-- Mensajes de éxito/error -->
+        <% if (typeof success !== 'undefined' && success) { %>
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> <%= success %>
+            </div>
+        <% } %>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-circle"></i> <%= error %>
+            </div>
+        <% } %>
+
+        <!-- Lista de Sprints -->
+        <% if (sprints.length === 0) { %>
+            <div class="no-sprints">
+                <p>No se encontraron sprints con los filtros aplicados o no hay sprints creados aún.</p>
+                <% if (user.role === 'admin') { %>
+                    <button class="btn btn-primary" onclick="openModal('sprintModal')">
+                        <i class="fas fa-plus"></i> Crear primer sprint
+                    </button>
+                <% } %>
+            </div>
+        <% } else { %>
+            <% sprints.forEach(sprint => { %>
+                <div class="sprint-card <%= sprint.cerrado ? 'cerrado' : '' %>" id="sprint-<%= sprint.id %>">
+                    <div class="sprint-header">
+                        <div>
+                            <h2 class="sprint-title"><%= sprint.nombre %></h2>
+                            <div class="sprint-meta">
+                                <span><i class="fas fa-user-tag"></i> Asignado a: <strong><%= sprint.asignado_a_username || 'No asignado' %></strong></span>
+                                <span><i class="fas fa-user-shield"></i> Creado por: <strong><%= sprint.created_by_username || 'Admin' %></strong></span>
+                                <% if (sprint.cerrado) { %>
+                                    <span class="sprint-status" style="color: var(--color-success);">
+                                        <i class="fas fa-lock"></i> Cerrado
+                                    </span>
+                                <% } else { %>
+                                    <span class="sprint-status" style="color: var(--color-warning);">
+                                        <i class="fas fa-unlock"></i> En progreso
+                                    </span>
+                                <% } %>
+                            </div>
+                        </div>
+                        <div class="sprint-dates">
+                            <span><i class="far fa-calendar-alt"></i> Inicio: <%= new Date(sprint.fecha_inicio).toLocaleDateString('es-ES') %></span>
+                            <span><i class="far fa-calendar-check"></i> Fin: <%= new Date(sprint.fecha_fin).toLocaleDateString('es-ES') %></span>
+                        </div>
+                    </div>
+
+                    <% if (sprint.descripcion) { %>
+                        <p class="sprint-desc"><%= sprint.descripcion %></p>
+                    <% } %>
+
+                    <% if (sprint.cerrado && sprint.porcentaje_cumplimiento !== null) { %>
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: <%= sprint.porcentaje_cumplimiento %>%"></div>
+                            </div>
+                            <div class="progress-text">Cumplimiento: <%= sprint.porcentaje_cumplimiento %>%</div>
+                        </div>
+                    <% } %>
+
+                    <!-- Botones de Acción Sprint -->
+                    <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                         <% if (user.role === 'admin' && !sprint.cerrado) { %>
+                            <button class="btn btn-primary btn-sm" onclick="openModal('closeSprintModal', { sprintId: <%= sprint.id %> })">
+                                <i class="fas fa-lock"></i> Cerrar Sprint
+                            </button>
+                        <% } %>
+
+                        <% if (!sprint.cerrado && (user.role === 'admin' || user.id === sprint.asignado_a)) { %>
+                            <button class="btn btn-primary btn-sm" onclick="openModal('devolucionModal', { sprintId: <%= sprint.id %> })">
+                                <i class="fas fa-plus"></i> Agregar Actualización
+                            </button>
+                         <% } %>
+                         <!-- Aquí podrías añadir más botones como 'Editar Sprint' (si aplica) -->
+                    </div>
+
+
+                    <!-- Lista de Devoluciones/Actualizaciones -->
+                    <div class="devoluciones-list">
+                        <% if (sprint.devoluciones && sprint.devoluciones.length === 0) { %>
+                            <p style="color: var(--color-text-secondary); font-style: italic; margin-top: 10px;">No hay actualizaciones en este sprint.</p>
+                        <% } else if (sprint.devoluciones) { %>
+                             <% sprint.devoluciones.forEach(devolucion => { %>
+                                <div class="devolucion-item <%= devolucion.user_id === user.id ? 'devolucion-user' : 'devolucion-admin' %>">
+                                    <div class="devolucion-header">
+                                        <h3 class="devolucion-title"><%= devolucion.titulo %></h3>
+                                        <div class="devolucion-meta">
+                                            <span class="devolucion-user">
+                                                <i class="far fa-user"></i> <%= devolucion.user_username || 'Usuario eliminado' %>
+                                            </span>
+                                            <span><i class="far fa-clock"></i> <%= new Date(devolucion.fecha_creacion).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) %></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="devolucion-desc">
+                                        <%= devolucion.descripcion %> <%# No necesitas replace si usas pre-line/pre-wrap %>
+                                    </div>
+
+                                    <% if (devolucion.fecha_limite || (user.role === 'admin' || user.id === devolucion.user_id)) { %>
+                                        <div class="devolucion-footer">
+                                            <% if (devolucion.fecha_limite && !sprint.cerrado) { %>
+                                                <span><i class="far fa-calendar-times"></i> Límite: <%= new Date(devolucion.fecha_limite).toLocaleDateString('es-ES') %></span>
+                                            <% } else { %>
+                                                 <span></span> <%# Placeholder para mantener la estructura flex %>
+                                            <% } %>
+                                            <div class="devolucion-actions">
+                                                 <% if (!sprint.cerrado && (user.role === 'admin' || user.id === devolucion.user_id)) { %>
+                                                    <button class="btn btn-primary btn-sm"
+                                                            onclick="openModal('editDevolucionModal', <%= JSON.stringify(devolucion) %>)">
+                                                        <i class="fas fa-edit"></i> Editar
+                                                    </button>
+                                                <% } %>
+
+                                                <% if (!sprint.cerrado && user.role === 'admin' && devolucion.user_id !== user.id) { %>
+                                                    <button class="btn btn-primary btn-sm"
+                                                            onclick="openModal('respondModal', <%= JSON.stringify(devolucion) %>)">
+                                                        <i class="fas fa-reply"></i> Responder
+                                                    </button>
+                                                <% } %>
+                                                <!-- Podrías añadir botón de eliminar aquí si es necesario -->
+                                            </div>
+                                        </div>
+                                    <% } %>
+                                </div>
+                            <% }); %>
+                        <% } %>
+                    </div> <!-- Fin .devoluciones-list -->
+                </div> <!-- Fin .sprint-card -->
+            <% }); %>
+        <% } %>
+    </div> <!-- Fin .container -->
+
+    <!-- ====================================== -->
+    <!--                 MODALES                -->
+    <!-- ====================================== -->
+
+    <!-- Modal para nuevo sprint (solo admin) -->
+    <% if (user.role === 'admin') { %>
+    <div class="modal" id="sprintModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Nuevo Sprint</h3>
+                <button class="close-modal" onclick="closeModal('sprintModal')">×</button>
+            </div>
+            <form id="sprintForm" action="/sprints" method="POST">
+                 <div class="form-group">
+                    <label class="form-label" for="sprintNombre">Nombre</label>
+                    <input type="text" class="form-control" id="sprintNombre" name="nombre" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="sprintDescripcion">Descripción (Opcional)</label>
+                    <textarea class="form-control" id="sprintDescripcion" name="descripcion" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="sprintAsignado">Asignar a</label>
+                    <select class="form-control" id="sprintAsignado" name="asignado_a" required>
+                        <option value="" disabled selected>Seleccionar usuario...</option>
+                        <% users.forEach(user => { %>
+                            <option value="<%= user.id %>"><%= user.username %> (<%= user.role %>)</option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="sprintInicio">Fecha de Inicio</label>
+                    <input type="date" class="form-control" id="sprintInicio" name="fecha_inicio" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="sprintFin">Fecha de Fin</label>
+                    <input type="date" class="form-control" id="sprintFin" name="fecha_fin" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('sprintModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Sprint</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- Modal para nueva devolución/actualización -->
+    <div class="modal" id="devolucionModal">
+        <div class="modal-content">
+             <div class="modal-header">
+                <h3 class="modal-title">Nueva Actualización</h3>
+                <button class="close-modal" onclick="closeModal('devolucionModal')">×</button>
+            </div>
+            <form id="devolucionForm" action="/devoluciones" method="POST">
+                <input type="hidden" id="devolucionSprintId" name="sprint_id">
+                <div class="form-group">
+                    <label class="form-label" for="devolucionTitulo">Título</label>
+                    <input type="text" class="form-control" id="devolucionTitulo" name="titulo" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="devolucionDescripcion">Descripción</label>
+                    <textarea class="form-control" id="devolucionDescripcion" name="descripcion" rows="5" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="devolucionFechaLimite">Fecha Límite (Opcional)</label>
+                    <input type="date" class="form-control" id="devolucionFechaLimite" name="fecha_limite">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('devolucionModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Actualización</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para editar devolución/actualización -->
+    <div class="modal" id="editDevolucionModal">
+        <div class="modal-content">
+             <div class="modal-header">
+                <h3 class="modal-title">Editar Actualización</h3>
+                <button class="close-modal" onclick="closeModal('editDevolucionModal')">×</button>
+            </div>
+            <form id="editDevolucionForm" onsubmit="event.preventDefault(); saveDevolucionChanges();">
+                <input type="hidden" id="editDevolucionId" name="id">
+                 <div class="form-group">
+                    <label class="form-label" for="editDevolucionTitulo">Título</label>
+                    <input type="text" class="form-control" id="editDevolucionTitulo" name="titulo" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="editDevolucionDescripcion">Descripción</label>
+                    <textarea class="form-control" id="editDevolucionDescripcion" name="descripcion" rows="5" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="editDevolucionFechaLimite">Fecha Límite (Opcional)</label>
+                    <input type="date" class="form-control" id="editDevolucionFechaLimite" name="fecha_limite">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editDevolucionModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para responder devolución (solo admin) -->
+    <% if (user.role === 'admin') { %>
+    <div class="modal" id="respondModal">
+        <div class="modal-content">
+             <div class="modal-header">
+                <h3 class="modal-title">Responder Actualización</h3>
+                <button class="close-modal" onclick="closeModal('respondModal')">×</button>
+            </div>
+             <form id="respondForm" action="/devoluciones" method="POST">
+                <input type="hidden" id="respondSprintId" name="sprint_id">
+                <div class="form-group">
+                    <label class="form-label" for="respondTitulo">Título</label>
+                    <input type="text" class="form-control" id="respondTitulo" name="titulo" value="Re: " required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="respondDescripcion">Respuesta</label>
+                    <textarea class="form-control" id="respondDescripcion" name="descripcion" rows="5" required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('respondModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Enviar Respuesta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- Modal para cerrar sprint (solo admin) -->
+    <% if (user.role === 'admin') { %>
+    <div class="modal" id="closeSprintModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Cerrar Sprint</h3>
+                <button class="close-modal" onclick="closeModal('closeSprintModal')">×</button>
+            </div>
+            <form id="closeSprintForm" onsubmit="event.preventDefault(); submitCloseSprint();">
+                <input type="hidden" name="sprint_id" id="closeSprintId">
+                <div class="form-group">
+                    <label class="form-label" for="sprintPorcentaje">Porcentaje de Cumplimiento (0-100)</label>
+                    <input type="number" class="form-control" id="sprintPorcentaje" name="porcentaje_cumplimiento" min="0" max="100" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="sprintComentarios">Comentarios de Cierre (Opcional)</label>
+                    <textarea class="form-control" id="sprintComentarios" name="comentarios_cierre" rows="4"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('closeSprintModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar Cierre</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- ====================================== -->
+    <!--               SCRIPTS                  -->
+    <!-- ====================================== -->
+    <script>
+        // --- Funciones para manejar modales ---
+        function openModal(modalId, data = null) {
+            const modal = document.getElementById(modalId);
+            if (!modal) return; // Evitar errores si el modal no existe
+
+            // Lógica específica para rellenar datos antes de mostrar
+            if (data) {
+                try {
+                    if (modalId === 'devolucionModal') {
+                        modal.querySelector('#devolucionSprintId').value = data.sprintId;
+                        // Limpiar formulario por si acaso
+                        modal.querySelector('#devolucionForm').reset();
+                    } else if (modalId === 'editDevolucionModal') {
+                        modal.querySelector('#editDevolucionId').value = data.id;
+                        modal.querySelector('#editDevolucionTitulo').value = data.titulo;
+                        modal.querySelector('#editDevolucionDescripcion').value = data.descripcion;
+                        const fechaLimiteInput = modal.querySelector('#editDevolucionFechaLimite');
+                        if (data.fecha_limite) {
+                            // Formatear fecha para input type="date" (YYYY-MM-DD)
+                            fechaLimiteInput.value = new Date(data.fecha_limite).toISOString().split('T')[0];
+                        } else {
+                            fechaLimiteInput.value = ''; // Limpiar si no hay fecha
+                        }
+                    } else if (modalId === 'respondModal') {
+                         modal.querySelector('#respondSprintId').value = data.sprint_id; // Asegúrate que el nombre de la propiedad es correcto
+                         modal.querySelector('#respondTitulo').value = `Re: ${data.titulo}`;
+                         modal.querySelector('#respondForm').reset(); // Limpiar descripción
+                         modal.querySelector('#respondTitulo').value = `Re: ${data.titulo}`; // Re-establecer título
+                    } else if (modalId === 'closeSprintModal') {
+                        modal.querySelector('#closeSprintId').value = data.sprintId;
+                        modal.querySelector('#closeSprintForm').reset(); // Limpiar campos
+                         modal.querySelector('#closeSprintId').value = data.sprintId; // Re-establecer ID
+                    }
+                } catch (error) {
+                    console.error("Error populating modal data:", error);
+                    // Podrías mostrar un mensaje al usuario aquí
+                }
+            }
+
+            modal.classList.add('show'); // Usar clase para mostrar con transiciones CSS si las hay
+            modal.style.display = 'flex'; // Asegurar display flex
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+             if (!modal) return;
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+        }
+
+        // Cerrar modal al hacer clic fuera del contenido (en el backdrop oscuro)
+        window.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                 closeModal(event.target.id);
+            }
+        });
+
+        // Cerrar modal al presionar la tecla Escape
+        window.addEventListener('keydown', function(event) {
+             if (event.key === 'Escape') {
+                 document.querySelectorAll('.modal.show').forEach(modal => closeModal(modal.id));
+             }
+         });
+
+        // --- Funciones AJAX (Ejemplos, ajustar a tu backend) ---
+
+        // Guardar cambios en devolución/actualización
+        function saveDevolucionChanges() {
+            const form = document.getElementById('editDevolucionForm');
+            const devolucionId = form.querySelector('#editDevolucionId').value;
+            const formData = {
+                titulo: form.querySelector('#editDevolucionTitulo').value,
+                descripcion: form.querySelector('#editDevolucionDescripcion').value,
+                fecha_limite: form.querySelector('#editDevolucionFechaLimite').value || null
+            };
+
+            fetch(`/devoluciones/${devolucionId}`, { // Asegúrate que la ruta sea correcta
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Añadir cabeceras de autenticación si son necesarias (CSRF token, etc.)
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // Si la respuesta no es OK, intenta leer el mensaje de error
+                    return response.json().then(err => { throw new Error(err.message || 'Error en el servidor'); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    window.location.reload(); // Recarga para ver los cambios
+                } else {
+                    alert(data.message || 'Error al guardar los cambios');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al guardar los cambios: ' + error.message);
+            });
+        }
+
+        // Enviar formulario de cierre de sprint
+        function submitCloseSprint() {
+            const form = document.getElementById('closeSprintForm');
+            const sprintId = form.querySelector('#closeSprintId').value;
+            const porcentaje = form.querySelector('#sprintPorcentaje').value;
+            const comentarios = form.querySelector('#sprintComentarios').value;
+
+            // Validación básica del porcentaje
+            if (porcentaje === '' || porcentaje < 0 || porcentaje > 100) {
+                alert('El porcentaje de cumplimiento debe estar entre 0 y 100.');
+                return;
+            }
+
+            fetch(`/sprints/${sprintId}/cerrar`, { // Asegúrate que la ruta sea correcta
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                     // Añadir cabeceras de autenticación si son necesarias
+                },
+                body: JSON.stringify({
+                    porcentaje_cumplimiento: porcentaje,
+                    comentarios_cierre: comentarios
+                })
+            })
+            .then(response => {
+                 if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.error || 'Error en la respuesta del servidor'); });
+                 }
+                 return response.json();
+             })
+            .then(data => {
+                if (data.success) {
+                    window.location.reload(); // Recarga para ver el sprint cerrado
+                } else {
+                    alert(data.error || 'Error al cerrar el sprint');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al cerrar el sprint: ' + error.message);
+            });
+        }
+
+        // --- Lógica de Inicialización y Filtros ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+
+            // Configurar fecha mínima para inputs de fecha en modales
+            const dateInputs = document.querySelectorAll('.modal input[type="date"]');
+            dateInputs.forEach(input => {
+                // Permitir fechas pasadas para edición/visualización si es necesario
+                // input.min = today; // Descomentar si siempre deben ser futuras/hoy
+            });
+
+            // Lógica para que la fecha fin no sea anterior a la fecha inicio en modales
+            const sprintInicio = document.getElementById('sprintInicio');
+            const sprintFin = document.getElementById('sprintFin');
+            if(sprintInicio && sprintFin) {
+                 sprintInicio.addEventListener('change', function() {
+                     if (this.value) {
+                         sprintFin.min = this.value;
+                     } else {
+                          sprintFin.min = null; // Resetear si no hay fecha inicio
+                     }
+                 });
+                 // Asegurar que al cargar, la fecha fin no sea menor que la inicio si ya tienen valor
+                 if (sprintInicio.value && sprintFin.value && sprintFin.value < sprintInicio.value) {
+                     sprintFin.value = sprintInicio.value;
+                 }
+            }
+
+
+            // Lógica para filtros de fecha (que fin no sea menor que inicio)
+            const filtroFechaInicio = document.getElementById('filtroFechaInicio');
+            const filtroFechaFin = document.getElementById('filtroFechaFin');
+            if (filtroFechaInicio && filtroFechaFin) {
+                filtroFechaInicio.addEventListener('change', function() {
+                     if (this.value) {
+                         filtroFechaFin.min = this.value;
+                          // Si fecha fin es anterior, limpiarla o igualarla (opcional)
+                          if (filtroFechaFin.value && filtroFechaFin.value < this.value) {
+                             filtroFechaFin.value = ''; // O this.value;
+                          }
+                     } else {
+                         filtroFechaFin.min = null; // Resetear si no hay fecha inicio
+                     }
+                });
+                 // Comprobación inicial al cargar la página
+                 if (filtroFechaInicio.value) {
+                     filtroFechaFin.min = filtroFechaInicio.value;
+                 }
+            }
+        });
+
+        // Función para limpiar/resetear los filtros
+        function resetFilters() {
+            // Opción 1: Redirigir a la URL base sin parámetros
+            window.location.href = '/sprints';
+
+            // Opción 2: Limpiar el formulario y enviarlo (si prefieres recargar con AJAX o similar)
+            // const form = document.getElementById('filtrosForm');
+            // if (form) {
+            //     form.reset(); // Limpia los campos visualmente
+            //     // Eliminar parámetros de la URL actual si se desea una limpieza completa sin recarga total
+            //     const url = new URL(window.location);
+            //     url.search = ''; // Elimina todos los parámetros query
+            //     window.history.pushState({}, '', url);
+            //     // Aquí podrías llamar a una función que recargue la lista de sprints vía AJAX
+            // }
+        }
+
+    </script>
+</body>
+</html>
