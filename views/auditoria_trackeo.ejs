@@ -176,6 +176,11 @@
                          <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-upload"></i> Subir</button>
                      </form>
                  </div>
+                 <!-- Filtro para CSV -->
+                 <div class="manual-filter-container">
+                     <label for="csv-search"><i class="fas fa-filter"></i> Filtrar:</label>
+                     <input type="search" id="csv-search" placeholder="Buscar por tipo nicho, nombre archivo, subido por...">
+                 </div>
                 <% if (locals.uploads && uploads.length > 0) { %>
                     <div class="table-wrapper custom-scrollbar">
                         <table id="csv-history-table" class="history-table">
@@ -239,8 +244,9 @@
             const manualSearchInput = document.getElementById('manual-search');
             const manualTableBody = document.getElementById('manual-niche-table')?.querySelector('tbody');
             const manualNoResultsRow = document.getElementById('manual-no-results-row');
-            // CORRECCIÓN: Selector específico para el tbody de la tabla CSV
+            const csvSearchInput = document.getElementById('csv-search');
             const csvTableBody = document.getElementById('csv-history-table')?.querySelector('tbody');
+            const csvNoDataMessage = document.querySelector('#csv-upload-section .no-data-message');
 
             // Funciones Auxiliares Modales y Feedback
             const showModal = (overlay) => { if (overlay) { overlay.style.display = 'flex'; requestAnimationFrame(() => overlay.classList.add('active')); } };
@@ -269,6 +275,31 @@
                         if (isVisible) visibleCount++;
                     });
                     if (manualNoResultsRow) manualNoResultsRow.style.display = (visibleCount === 0 && rows.length > 0) ? 'table-row' : 'none';
+                });
+            }
+
+            // Filtro Tabla CSV
+            if (csvSearchInput && csvTableBody) {
+                csvSearchInput.addEventListener('input', () => {
+                    const searchTerm = csvSearchInput.value.toLowerCase().trim();
+                    const rows = csvTableBody.querySelectorAll('tr');
+                    let visibleCount = 0;
+                    
+                    rows.forEach(row => {
+                        // Obtener todo el texto de la fila para buscar
+                        const rowText = Array.from(row.cells)
+                            .map(cell => cell.textContent.toLowerCase())
+                            .join(' ');
+                        
+                        const isVisible = !searchTerm || rowText.includes(searchTerm);
+                        row.style.display = isVisible ? '' : 'none';
+                        if (isVisible) visibleCount++;
+                    });
+                    
+                    // Mostrar mensaje si no hay resultados
+                    if (csvNoDataMessage) {
+                        csvNoDataMessage.style.display = (visibleCount === 0 && rows.length > 0) ? 'block' : 'none';
+                    }
                 });
             }
 

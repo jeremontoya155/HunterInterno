@@ -124,8 +124,7 @@
                                             <i class="fas fa-eye toggle-password-vis ml-1" title="Mostrar Contraseña"></i>
                                         </td>
                                         <td class="password-col">
-                                            <span class="password-display">********</span>
-                                            <i class="fas fa-eye toggle-password-vis ml-1" title="Mostrar Contraseña Mail"></i>
+                                            <span class="password-display"><%= cuenta.contrasena_mail || '-' %></span>
                                         </td>
                                         <td class="codigos-col" title="<%= cuenta.codigos_respaldo ? 'Códigos registrados' : 'Sin códigos' %>"><%= cuenta.codigos_respaldo ? 'Registrados' : '-' %></td>
                                         <td class="dias-restantes-col <%= (cuenta.dias_restantes_codigos !== null && cuenta.dias_restantes_codigos <= 2) ? 'text-danger-strong' : (cuenta.dias_restantes_codigos !== null && cuenta.dias_restantes_codigos <= 5 ? 'text-warning-strong' : '') %>">
