@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUNTER - Agendas de Vendedores</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/static/css/navbar.css" />
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Estilos personalizados -->
+    <style>
+        :root {
+            --color-background-dark: #0a0a10;
+            --color-background-medium: #111827;
+            --color-background-light: #1f2937;
+            --color-accent: #4caf91;
+            --color-accent-hover: #5cdb95;
+            --color-text-primary: #e5e7eb;
+            --color-text-secondary: #9ca3af;
+            --color-highlight: #4caf91;
+            --color-border: rgba(76, 175, 145, 0.2);
+            --font-primary: 'Poppins', sans-serif;
+            --font-size-base: 16px;
+            --line-height-base: 1.7;
+            --spacing-unit: 1rem;
+            --border-radius-small: 4px;
+            --border-radius-medium: 8px;
+            --border-radius-large: 16px;
+        }
+        
+        body {
+            font-family: var(--font-primary);
+            background-color: var(--color-background-dark);
+            color: var(--color-text-primary);
+            line-height: var(--line-height-base);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        body::-webkit-scrollbar-track {
+            background: var(--color-background-medium);
+        }
+        
+        body::-webkit-scrollbar-thumb {
+            background-color: var(--color-accent);
+            border-radius: 10px;
+            border: 2px solid var(--color-background-medium);
+        }
+        
+        body::-webkit-scrollbar-thumb:hover {
+            background-color: var(--color-accent-hover);
+        }
+        
+        .container {
+            max-width: 1200px;
+            padding-top: calc(var(--spacing-unit) * 3);
+            padding-bottom: calc(var(--spacing-unit) * 3);
+        }
+        
+        .page-header {
+            margin-bottom: calc(var(--spacing-unit) * 2);
+        }
+        
+        .page-header h1 {
+            font-size: clamp(1.5rem, 4vw, 2.2rem);
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: calc(var(--spacing-unit) * 0.5);
+        }
+        
+        .page-header p {
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+        }
+        
+        .card {
+            background: linear-gradient(145deg, var(--color-background-medium), var(--color-background-light));
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-large);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            margin-bottom: calc(var(--spacing-unit) * 2);
+            transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+        }
+        
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        .card-header {
+            background-color: rgba(31, 41, 55, 0.5);
+            border-bottom: 1px solid var(--color-border);
+            padding: calc(var(--spacing-unit) * 1.25);
+            font-weight: 600;
+            color: var(--color-accent-hover);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-header span {
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .card-body {
+            padding: calc(var(--spacing-unit) * 1.5);
+        }
+        
+        .table {
+            color: var(--color-text-primary);
+            margin-bottom: 0;
+        }
+        
+        .table th {
+            border-bottom: 1px solid var(--color-border);
+            font-weight: 500;
+            color: var(--color-accent);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            padding: 0.75rem 1rem;
+        }
+        
+        .table td {
+            padding: 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--color-border);
+        }
+        
+        .table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .account-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--color-accent);
+            color: var(--color-background-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: var(--spacing-unit);
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        
+        .account-details {
+            display: flex;
+            align-items: center;
+        }
+        
+        .account-name {
+            font-weight: 500;
+        }
+        
+        .badge {
+            font-weight: 500;
+            padding: 0.35em 0.65em;
+            font-size: 0.85em;
+        }
+        
+        .btn {
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            border-radius: var(--border-radius-medium);
+            padding: 0.5rem 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary {
+            background-color: var(--color-accent);
+            border-color: var(--color-accent);
+            color: var(--color-background-dark);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--color-accent-hover);
+            border-color: var(--color-accent-hover);
+            transform: translateY(-2px);
+        }
+        
+        .btn-info {
+            background-color: rgba(76, 175, 145, 0.1);
+            border-color: rgba(76, 175, 145, 0.2);
+            color: var(--color-accent);
+        }
+        
+        .btn-info:hover {
+            background-color: rgba(76, 175, 145, 0.2);
+            border-color: rgba(76, 175, 145, 0.3);
+            color: var(--color-accent-hover);
+        }
+        
+        .btn-outline-primary {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--color-accent);
+            color: var(--color-background-dark);
+        }
+        
+        .form-control, .form-select {
+            background-color: var(--color-background-light);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+            border-radius: var(--border-radius-medium);
+            padding: 0.5rem 1rem;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background-color: var(--color-background-light);
+            border-color: var(--color-accent);
+            color: var(--color-text-primary);
+            box-shadow: 0 0 0 0.25rem rgba(76, 175, 145, 0.25);
+        }
+        
+        .form-label {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .modal-content {
+            background-color: var(--color-background-medium);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-large);
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid var(--color-border);
+            padding: calc(var(--spacing-unit) * 1.5);
+        }
+        
+        .modal-title {
+            color: var(--color-accent);
+            font-weight: 600;
+        }
+        
+        .modal-body {
+            padding: calc(var(--spacing-unit) * 1.5);
+        }
+        
+        .modal-footer {
+            border-top: 1px solid var(--color-border);
+            padding: calc(var(--spacing-unit) * 1.5);
+        }
+        
+        .btn-close {
+            filter: invert(1) brightness(0.7);
+        }
+        
+        .notes-tooltip {
+            position: relative;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        
+        .notes-tooltip:hover {
+            color: var(--color-accent);
+        }
+        
+        .search-filter {
+            margin-bottom: var(--spacing-unit);
+        }
+        
+        .search-filter input {
+            background-color: var(--color-background-light);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+            border-radius: var(--border-radius-medium);
+            padding: 0.5rem 1rem;
+            width: 100%;
+        }
+        
+        .search-filter input:focus {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 0.25rem rgba(76, 175, 145, 0.25);
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: var(--spacing-unit);
+            color: var(--color-text-secondary);
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: calc(var(--spacing-unit) * 1.5);
+            }
+            
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: calc(var(--spacing-unit) * 0.5);
+            }
+            
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .account-details {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .account-avatar {
+                margin-right: 0;
+                margin-bottom: calc(var(--spacing-unit) * 0.5);
+            }
+        }
+        /* Estilos para el modal de agendas */
+#vendedorAgendasModal .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+#modalAgendasTable tbody tr {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#modalAgendasTable tbody tr:hover {
+    background-color: rgba(76, 175, 145, 0.1);
+}
+
+#modalNoResults {
+    display: none;
+    padding: 1rem;
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+    </style>
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-calendar-alt me-2"></i>Agendas de Vendedores</h1>
+            <p class="text-muted">Resumen y detalle de agendas registradas</p>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form id="filtersForm">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label for="dateFrom" class="form-label">Desde</label>
+                            <input type="date" class="form-control" id="dateFrom" value="<%= filters.desde %>">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="dateTo" class="form-label">Hasta</label>
+                            <input type="date" class="form-control" id="dateTo" value="<%= filters.hasta %>">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="sellerSelect" class="form-label">Vendedor</label>
+                            <select class="form-select" id="sellerSelect">
+                                <option value="">Todos los vendedores</option>
+                                <% vendedores.forEach(v => { %>
+                                    <option value="<%= v.id %>" <%= filters.vendedor_id == v.id ? 'selected' : '' %>>
+                                        <%= v.nombre %>
+                                    </option>
+                                <% }) %>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter me-2"></i>Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Resumen General -->
+        <div class="card">
+            <div class="card-header">
+                <span>Resumen General</span>
+                <div>
+                    <button class="btn btn-sm btn-primary me-2" data-bs-toggle="modal" data-bs-target="#newAgendaModal">
+                        <i class="fas fa-plus me-1"></i>Nuevo Registro
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="search-filter">
+                    <input type="text" id="searchResumen" placeholder="Buscar en resumen..." class="form-control">
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="resumenTable">
+                        <thead>
+                            <tr>
+                                <th>Vendedor</th>
+                                <th>Cuentas</th>
+                                <th>Agendas</th>
+                                <th>Último Registro</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% resumen.forEach(item => { %>
+                                <tr class="resumen-row">
+                                    <td class="searchable">
+                                        <div class="account-details">
+                                            <div class="account-avatar"><%= item.vendedor_nombre.charAt(0) %></div>
+                                            <div class="account-name"><%= item.vendedor_nombre %></div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-primary"><%= item.total_cuentas %></span></td>
+                                    <td><strong><%= item.total_agendas %></strong></td>
+                                    <td><%= new Date(item.ultimo_seguimiento).toLocaleDateString() %></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info btn-ver-agendas" 
+                                                data-vendedor-id="<%= item.vendedor_id %>" 
+                                                data-vendedor-nombre="<%= item.vendedor_nombre %>">
+                                            <i class="fas fa-eye me-1"></i>Detalle
+                                        </button>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                    <div id="noResumenResults" class="no-results" style="display: none;">
+                        No se encontraron resultados para tu búsqueda
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detalle por Cuenta -->
+        <div class="card">
+            <div class="card-header">
+                <span>Registros Recientes</span>
+            </div>
+            <div class="card-body">
+                <div class="search-filter">
+                    <input type="text" id="searchDetalle" placeholder="Buscar en registros..." class="form-control">
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="detalleTable">
+                        <thead>
+                            <tr>
+                                <th>Vendedor</th>
+                                <th>Cuenta</th>
+                                <th>Agendas</th>
+                                <th>Notas</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% detalle.forEach(item => { %>
+                                <tr class="detalle-row">
+                                    <td class="searchable"><%= item.vendedor_nombre %></td>
+                                    <td class="searchable">
+                                        <div class="account-details">
+                                            <div class="account-avatar"><%= item.insta_username.charAt(0) %></div>
+                                            <div class="account-name"><%= item.insta_username %></div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-primary"><%= item.agendas_registradas %></span></td>
+                                    <td class="searchable notes-tooltip" data-bs-toggle="tooltip" title="<%= item.notas || 'Sin notas' %>">
+                                        <%= item.notas ? item.notas.substring(0, 30) + (item.notas.length > 30 ? '...' : '') : 'Sin notas' %>
+                                    </td>
+                                    <td><%= new Date(item.fecha).toLocaleDateString() %></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                    <div id="noDetalleResults" class="no-results" style="display: none;">
+                        No se encontraron resultados para tu búsqueda
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para nuevo registro -->
+    <div class="modal fade" id="newAgendaModal" tabindex="-1" aria-labelledby="newAgendaModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newAgendaModalLabel"><i class="fas fa-calendar-plus me-2"></i>Registrar Agendas</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="agendaForm">
+                        <div class="mb-3">
+                            <label for="modalSeller" class="form-label">Vendedor</label>
+                            <select class="form-select" id="modalSeller" required>
+                                <option value="">Seleccionar vendedor</option>
+                                <% vendedores.forEach(v => { %>
+                                    <option value="<%= v.id %>"><%= v.nombre %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="modalAccount" class="form-label">Cuenta</label>
+                            <select class="form-select" id="modalAccount" required>
+                                <option value="">Seleccionar cuenta</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="modalDate" class="form-label">Fecha</label>
+                            <input type="date" class="form-control" id="modalDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="modalAgendas" class="form-label">Número de Agendas</label>
+                            <input type="number" class="form-control" id="modalAgendas" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="modalNotes" class="form-label">Notas</label>
+                            <textarea class="form-control" id="modalNotes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveAgenda">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Modal para detalle de vendedor -->
+<div class="modal fade" id="vendedorAgendasModal" tabindex="-1" aria-labelledby="vendedorAgendasModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="vendedorAgendasModalLabel">
+                    <i class="fas fa-calendar-day me-2"></i>
+                    <span id="modalVendedorTitle">Agendas de </span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="modalDesde" class="form-label">Desde</label>
+                        <input type="date" class="form-control" id="modalDesde">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="modalHasta" class="form-label">Hasta</label>
+                        <input type="date" class="form-control" id="modalHasta">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table" id="modalAgendasTable">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Cuenta</th>
+                                <th>Agendas</th>
+                                <th>Notas</th>
+                                <th>Registrado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalAgendasBody">
+                            <!-- Datos se cargarán aquí -->
+                        </tbody>
+                    </table>
+                    <div id="modalNoResults" class="no-results">
+                        No hay registros para el periodo seleccionado
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="refreshAgendas">
+                    <i class="fas fa-sync-alt me-1"></i>Actualizar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Inicializar fechas
+            document.getElementById('modalDate').value = new Date().toISOString().split('T')[0];
+
+            // Manejar cambio de vendedor para cargar cuentas
+            document.getElementById('modalSeller').addEventListener('change', async function() {
+                const sellerId = this.value;
+                const accountSelect = document.getElementById('modalAccount');
+                
+                // Resetear el select
+                accountSelect.innerHTML = '<option value="">Seleccionar cuenta</option>';
+                accountSelect.disabled = true;
+                
+                if (!sellerId) return;
+                
+                try {
+                    // Mostrar estado de carga
+                    const loadingOption = document.createElement('option');
+                    loadingOption.value = '';
+                    loadingOption.textContent = 'Cargando cuentas...';
+                    loadingOption.disabled = true;
+                    accountSelect.appendChild(loadingOption);
+                    
+                    // Obtener cuentas del vendedor
+                    const response = await fetch(`/api/vendedores/${sellerId}/cuentas`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.cuentas && data.cuentas.length > 0) {
+                        // Limpiar el select
+                        accountSelect.innerHTML = '<option value="">Seleccionar cuenta</option>';
+                        
+                        // Agregar cada cuenta como opción
+                        data.cuentas.forEach(cuenta => {
+                            // Asegurarse de que la cuenta es un string válido
+                            if (typeof cuenta === 'string' && cuenta.trim() !== '') {
+                                const option = document.createElement('option');
+                                option.value = cuenta.trim().toLowerCase();
+                                option.textContent = cuenta.trim();
+                                accountSelect.appendChild(option);
+                            }
+                        });
+                        
+                        accountSelect.disabled = false;
+                    } else {
+                        accountSelect.innerHTML = '<option value="">No hay cuentas asignadas</option>';
+                    }
+                } catch (error) {
+                    console.error('Error al cargar cuentas:', error);
+                    accountSelect.innerHTML = '<option value="">Error al cargar cuentas</option>';
+                }
+            });
+
+            // Manejar envío de formulario de filtros
+            document.getElementById('filtersForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const dateFrom = document.getElementById('dateFrom').value;
+                const dateTo = document.getElementById('dateTo').value;
+                const sellerId = document.getElementById('sellerSelect').value;
+                
+                window.location.href = `/vendedores/agendas?desde=${dateFrom}&hasta=${dateTo}&vendedor_id=${sellerId}`;
+            });
+
+            // Manejar el guardado de nueva agenda
+            document.getElementById('saveAgenda').addEventListener('click', async function() {
+                const sellerId = document.getElementById('modalSeller').value;
+                const account = document.getElementById('modalAccount').value;
+                const date = document.getElementById('modalDate').value;
+                const agendas = document.getElementById('modalAgendas').value;
+                const notes = document.getElementById('modalNotes').value;
+
+                // Validación mejorada
+                if (!sellerId) {
+                    alert('Por favor seleccione un vendedor');
+                    return;
+                }
+                
+                if (!account) {
+                    alert('Por favor seleccione una cuenta');
+                    return;
+                }
+                
+                if (!date) {
+                    alert('Por favor ingrese una fecha válida');
+                    return;
+                }
+                
+                if (!agendas || isNaN(agendas) || parseInt(agendas) < 0) {
+                    alert('Por favor ingrese un número válido de agendas');
+                    return;
+                }
+
+                // Mostrar loading
+                const saveButton = this;
+                const originalText = saveButton.innerHTML;
+                saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Guardando...';
+                saveButton.disabled = true;
+
+                try {
+                    // Enviar datos al servidor
+                    const response = await fetch('/api/vendedores/agendas', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            vendedor_id: sellerId,
+                            insta_username: account.toLowerCase(),
+                            fecha: date,
+                            agendas_registradas: parseInt(agendas),
+                            notas: notes || null
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || 'Error al guardar el registro');
+                    }
+                    
+                    // Cerrar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('newAgendaModal'));
+                    modal.hide();
+                    
+                    // Mostrar mensaje de éxito y recargar
+                    window.location.href = '/api/vendedores/agendas?success=Agenda registrada correctamente';
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert(`Error al guardar: ${error.message}`);
+                    
+                    // Restaurar botón
+                    saveButton.innerHTML = originalText;
+                    saveButton.disabled = false;
+                }
+            });
+
+            // Resetear botón de guardar cuando se cierra el modal
+            document.getElementById('newAgendaModal').addEventListener('hidden.bs.modal', function () {
+                document.getElementById('saveAgenda').innerHTML = '<i class="fas fa-save me-1"></i>Guardar';
+                document.getElementById('saveAgenda').disabled = false;
+            });
+
+            // Filtrado en tiempo real para la tabla de resumen
+            document.getElementById('searchResumen').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#resumenTable .resumen-row');
+                let hasResults = false;
+                
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.searchable');
+                    let rowMatches = false;
+                    
+                    cells.forEach(cell => {
+                        if (cell.textContent.toLowerCase().includes(searchTerm)) {
+                            rowMatches = true;
+                        }
+                    });
+                    
+                    if (rowMatches) {
+                        row.style.display = '';
+                        hasResults = true;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                // Mostrar mensaje si no hay resultados
+                document.getElementById('noResumenResults').style.display = hasResults ? 'none' : 'block';
+            });
+
+            // Filtrado en tiempo real para la tabla de detalle
+            document.getElementById('searchDetalle').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#detalleTable .detalle-row');
+                let hasResults = false;
+                
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('.searchable');
+                    let rowMatches = false;
+                    
+                    cells.forEach(cell => {
+                        if (cell.textContent.toLowerCase().includes(searchTerm)) {
+                            rowMatches = true;
+                        }
+                    });
+                    
+                    if (rowMatches) {
+                        row.style.display = '';
+                        hasResults = true;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                // Mostrar mensaje si no hay resultados
+                document.getElementById('noDetalleResults').style.display = hasResults ? 'none' : 'block';
+            });
+        });
+        // Variables para manejar el estado del modal
+let currentVendedorId = null;
+let currentVendedorNombre = null;
+
+// Manejar clic en botón "Ver Agendas"
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-ver-agendas') || 
+        e.target.closest('.btn-ver-agendas')) {
+        const button = e.target.classList.contains('btn-ver-agendas') ? 
+                      e.target : e.target.closest('.btn-ver-agendas');
+        
+        currentVendedorId = button.getAttribute('data-vendedor-id');
+        currentVendedorNombre = button.getAttribute('data-vendedor-nombre');
+        
+        // Configurar modal
+        document.getElementById('modalVendedorTitle').textContent = 
+            `Agendas de ${currentVendedorNombre}`;
+        
+        // Configurar fechas por defecto (últimos 30 días)
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 30);
+        
+        document.getElementById('modalDesde').value = startDate.toISOString().split('T')[0];
+        document.getElementById('modalHasta').value = endDate.toISOString().split('T')[0];
+        
+        // Cargar datos
+        loadVendedorAgendas();
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('vendedorAgendasModal'));
+        modal.show();
+    }
+});
+
+// Función para cargar las agendas del vendedor
+async function loadVendedorAgendas() {
+    if (!currentVendedorId) return;
+    
+    const desde = document.getElementById('modalDesde').value;
+    const hasta = document.getElementById('modalHasta').value;
+    
+    const loadingRow = `<tr><td colspan="5" class="text-center">Cargando datos...</td></tr>`;
+    document.getElementById('modalAgendasBody').innerHTML = loadingRow;
+    document.getElementById('modalNoResults').style.display = 'none';
+    
+    try {
+        const response = await fetch(`/api/vendedores/${currentVendedorId}/agendas?desde=${desde}&hasta=${hasta}`);
+        const data = await response.json();
+        
+        if (data.success && data.data.length > 0) {
+            let html = '';
+            data.data.forEach(item => {
+                html += `
+                    <tr>
+                        <td>${new Date(item.fecha).toLocaleDateString()}</td>
+                        <td>
+                            <div class="account-details">
+                                <div class="account-avatar">${item.insta_username.charAt(0)}</div>
+                                <div class="account-name">${item.insta_username}</div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-primary">${item.agendas_registradas}</span></td>
+                        <td class="notes-tooltip" data-bs-toggle="tooltip" title="${item.notas || 'Sin notas'}">
+                            ${item.notas ? item.notas.substring(0, 30) + (item.notas.length > 30 ? '...' : '') : 'Sin notas'}
+                        </td>
+                        <td>${new Date(item.created_at).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+            
+            document.getElementById('modalAgendasBody').innerHTML = html;
+            document.getElementById('modalNoResults').style.display = 'none';
+            
+            // Inicializar tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+            
+        } else {
+            document.getElementById('modalAgendasBody').innerHTML = '';
+            document.getElementById('modalNoResults').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error al cargar agendas:', error);
+        document.getElementById('modalAgendasBody').innerHTML = 
+            `<tr><td colspan="5" class="text-center text-danger">Error al cargar los datos</td></tr>`;
+    }
+}
+
+// Manejar actualización de fechas
+document.getElementById('refreshAgendas').addEventListener('click', loadVendedorAgendas);
+
+// Actualizar al cambiar fechas
+document.getElementById('modalDesde').addEventListener('change', loadVendedorAgendas);
+document.getElementById('modalHasta').addEventListener('change', loadVendedorAgendas);
+    </script>
+</body>
+</html>

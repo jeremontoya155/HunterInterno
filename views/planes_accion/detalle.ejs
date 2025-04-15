@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HUNTER - Plan de Acción: <%= plan.titulo %></title>
+
+    <!-- Google Fonts (Poppins) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Dragula para arrastrar y soltar -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.css">
+
+    <!-- Estilos -->
+    <link rel="stylesheet" href="/static/css/navbar.css" />
+    <link rel="stylesheet" href="/static/css/onboarding.css" />
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+
+    <!-- CSS específico para el detalle del plan -->
+    <style>
+        /* Estilos base del onboarding */
+        .onboarding-background {
+            background: var(--color-background-dark) radial-gradient(ellipse at bottom, rgba(76, 175, 145, 0.1), transparent 70%);
+            padding: 2rem 1rem;
+            padding-top: 6rem;
+            min-height: 100vh;
+        }
+
+        /* Contenedor principal */
+        .plan-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: rgba(31, 41, 55, 0.7);
+            border-radius: 16px;
+            border: 1px solid var(--color-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Header del plan */
+        .plan-header {
+            background: var(--color-background-medium);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--color-border);
+        }
+
+        .plan-header h2 {
+            color: var(--color-text-primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .plan-header .badge {
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.4em 0.8em;
+        }
+
+        /* Tablero de fases */
+        .fases-container {
+            display: flex;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+            gap: 1.5rem;
+            min-height: 70vh;
+        }
+
+        .fase-column {
+            min-width: 320px;
+            max-width: 320px;
+            background: var(--color-background-medium);
+            border-radius: 12px;
+            border: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            height: fit-content;
+        }
+
+        .fase-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .fase-header h5 {
+            margin: 0;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .fase-body {
+            padding: 1rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .actividad-card {
+            background: var(--color-background-light);
+            border-radius: 8px;
+            padding: 1rem;
+            border-left: 4px solid var(--color-accent);
+            cursor: grab;
+            transition: all 0.3s ease;
+        }
+
+        .actividad-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .actividad-card h6 {
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .actividad-card p {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .actividad-card .fecha {
+            font-size: 0.8rem;
+            color: var(--color-accent);
+        }
+
+        .actividad-card .responsable {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+        }
+
+        .fase-footer {
+            padding: 1rem;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .fase-footer small {
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* Checkbox personalizado */
+        .form-check-input:checked {
+            background-color: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+
+        /* Colores para las fases */
+        .bg-primary { background-color: #0d6efd !important; }
+        .bg-secondary { background-color: #6c757d !important; }
+        .bg-success { background-color: #198754 !important; }
+        .bg-danger { background-color: #dc3545 !important; }
+        .bg-warning { background-color: #ffc107 !important; color: #000 !important; }
+        .bg-info { background-color: #0dcaf0 !important; }
+        .bg-dark { background-color: #212529 !important; }
+        .bg-purple { background-color: #6f42c1 !important; }
+        .bg-pink { background-color: #d63384 !important; }
+        .bg-orange { background-color: #fd7e14 !important; }
+
+        /* Modales */
+        .modal-content {
+            background-color: var(--color-background-medium);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--color-border);
+        }
+
+        .form-control, .form-select {
+            background-color: var(--color-background-light);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: var(--color-background-light);
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 0.25rem rgba(76, 175, 145, 0.25);
+            color: var(--color-text-primary);
+        }
+
+        /* Footer */
+        .plan-footer {
+            margin-top: 3rem;
+            text-align: center;
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--color-border);
+        }
+
+        /* Scrollbar personalizado para el contenedor de fases */
+        .fases-container::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .fases-container::-webkit-scrollbar-track {
+            background: var(--color-background-dark);
+        }
+
+        .fases-container::-webkit-scrollbar-thumb {
+            background-color: var(--color-accent);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <div class="onboarding-background">
+        <div class="plan-container">
+            <!-- Encabezado del Plan -->
+            <div class="plan-header">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h2><%= plan.titulo %></h2>
+                        <p class="mb-2">Vendedor: <%= plan.vendedor_nombre %></p>
+                        <% if (plan.categoria_nombre) { %>
+                            <span class="badge me-2" style="background-color: <%= plan.categoria_color %>">
+                                <%= plan.categoria_nombre %>
+                            </span>
+                        <% } %>
+                        <span class="badge bg-<%= 
+                            plan.estado === 'activo' ? 'success' : 
+                            plan.estado === 'completado' ? 'primary' : 'warning' %>">
+                            <%= plan.estado %>
+                        </span>
+                    </div>
+                    <div>
+                        <a href="/planes-accion" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Volver
+                        </a>
+                    </div>
+                </div>
+                
+                <% if (plan.descripcion) { %>
+                    <div class="mt-3">
+                        <p class="mb-0"><%= plan.descripcion %></p>
+                    </div>
+                <% } %>
+                
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <small class="text-muted">Fecha inicio:</small>
+                        <p class="mb-0"><%= plan.fecha_inicio ? new Date(plan.fecha_inicio).toLocaleDateString() : 'No definida' %></p>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Fecha límite:</small>
+                        <p class="mb-0"><%= plan.fecha_limite ? new Date(plan.fecha_limite).toLocaleDateString() : 'No definida' %></p>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Última actualización:</small>
+                        <p class="mb-0"><%= new Date(plan.updated_at).toLocaleString() %></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tablero de Fases -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">Fases del Plan</h4>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevaFaseModal">
+                    <i class="fas fa-plus me-1"></i> Nueva Fase
+                </button>
+            </div>
+
+            <% if (fases.length === 0) { %>
+                <div class="alert alert-info">
+                    No hay fases definidas para este plan. Agrega la primera fase para comenzar.
+                </div>
+            <% } else { %>
+                <div class="fases-container" id="fasesContainer">
+                    <% fases.forEach(fase => { %>
+                        <div class="fase-column" data-fase-id="<%= fase.id %>">
+                            <div class="fase-header bg-<%= fase.color %>">
+                                <h5><%= fase.nombre %></h5>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-light p-0 px-1" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <button class="dropdown-item" onclick="editarFase(<%= fase.id %>, '<%= fase.nombre %>', '<%= fase.color %>', '<%= fase.descripcion %>')">
+                                                <i class="fas fa-edit me-2"></i>Editar
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item text-danger" onclick="eliminarFase(<%= fase.id %>)">
+                                                <i class="fas fa-trash me-2"></i>Eliminar
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="fase-body" data-fase-id="<%= fase.id %>">
+                                <% if (fase.descripcion) { %>
+                                    <p class="small text-muted mb-3"><%= fase.descripcion %></p>
+                                <% } %>
+                                
+                                <!-- Actividades -->
+                                <% fase.actividades.forEach(act => { %>
+                                    <div class="actividad-card" data-actividad-id="<%= act.id %>">
+                                        <div class="d-flex justify-content-between">
+                                            <h6 class="mb-1"><%= act.titulo %></h6>
+                                            <div class="form-check">
+                                                <input class="form-check-input toggle-actividad" 
+                                                       type="checkbox" 
+                                                       <%= act.completado ? 'checked' : '' %>
+                                                       data-actividad-id="<%= act.id %>">
+                                            </div>
+                                        </div>
+                                        <% if (act.descripcion) { %>
+                                            <p class="small mb-2"><%= act.descripcion %></p>
+                                        <% } %>
+                                        <% if (act.fecha_limite) { %>
+                                            <p class="small mb-1 fecha">
+                                                <i class="far fa-calendar-alt me-1"></i> 
+                                                <%= new Date(act.fecha_limite).toLocaleDateString() %>
+                                            </p>
+                                        <% } %>
+                                        <% if (act.responsable_username) { %>
+                                            <p class="small mb-0 responsable">
+                                                <i class="fas fa-user me-1"></i> 
+                                                <%= act.responsable_username %>
+                                            </p>
+                                        <% } %>
+                                    </div>
+                                <% }) %>
+                            </div>
+                            
+                            <!-- Footer de la fase -->
+                            <div class="fase-footer">
+                                <small>
+                                    <%= fase.actividades.filter(a => a.completado).length %>/<%= fase.actividades.length %> completadas
+                                </small>
+                                <button class="btn btn-sm btn-outline-primary" onclick="mostrarModalActividad(<%= fase.id %>)">
+                                    <i class="fas fa-plus"></i> Actividad
+                                </button>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } %>
+
+            <footer class="plan-footer">
+                <p>© <%= new Date().getFullYear() %> HUNTER - Plan de Acción</p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Modal Nueva Fase -->
+    <div class="modal fade" id="nuevaFaseModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Agregar Nueva Fase</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="formNuevaFase">
+                    <div class="modal-body">
+                        <input type="hidden" name="plan_id" value="<%= plan.id %>">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" name="nombre" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Color</label>
+                            <select name="color" class="form-select" required>
+                                <option value="primary">Azul</option>
+                                <option value="secondary">Gris</option>
+                                <option value="success">Verde</option>
+                                <option value="danger">Rojo</option>
+                                <option value="warning">Amarillo</option>
+                                <option value="info">Celeste</option>
+                                <option value="dark">Negro</option>
+                                <option value="purple">Morado</option>
+                                <option value="pink">Rosado</option>
+                                <option value="orange">Naranja</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descripción (Opcional)</label>
+                            <textarea name="descripcion" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Fase -->
+    <div class="modal fade" id="editarFaseModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Fase</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="formEditarFase">
+                    <div class="modal-body">
+                        <input type="hidden" name="fase_id" id="editarFaseId">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" name="nombre" id="editarFaseNombre" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Color</label>
+                            <select name="color" id="editarFaseColor" class="form-select" required>
+                                <option value="primary">Azul</option>
+                                <option value="secondary">Gris</option>
+                                <option value="success">Verde</option>
+                                <option value="danger">Rojo</option>
+                                <option value="warning">Amarillo</option>
+                                <option value="info">Celeste</option>
+                                <option value="dark">Negro</option>
+                                <option value="purple">Morado</option>
+                                <option value="pink">Rosado</option>
+                                <option value="orange">Naranja</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descripción (Opcional)</label>
+                            <textarea name="descripcion" id="editarFaseDescripcion" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nueva Actividad -->
+    <div class="modal fade" id="nuevaActividadModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Agregar Nueva Actividad</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="formNuevaActividad">
+                    <div class="modal-body">
+                        <input type="hidden" name="fase_id" id="actividadFaseId">
+                        <div class="mb-3">
+                            <label class="form-label">Título</label>
+                            <input type="text" name="titulo" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descripción (Opcional)</label>
+                            <textarea name="descripcion" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fecha Límite (Opcional)</label>
+                            <input type="date" name="fecha_limite" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Responsable (Opcional)</label>
+                            <select name="responsable_id" class="form-select">
+                                <option value="">Sin asignar</option>
+                                <% usuarios.forEach(user => { %>
+                                    <option value="<%= user.id %>"><%= user.username %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- FontAwesome -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <!-- Dragula para arrastrar y soltar -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.js"></script>
+    
+    <script>
+        // Función para mostrar modal de nueva actividad
+        function mostrarModalActividad(faseId) {
+            document.getElementById('actividadFaseId').value = faseId;
+            const modal = new bootstrap.Modal(document.getElementById('nuevaActividadModal'));
+            modal.show();
+        }
+
+        // Función para editar fase
+        function editarFase(id, nombre, color, descripcion) {
+            document.getElementById('editarFaseId').value = id;
+            document.getElementById('editarFaseNombre').value = nombre;
+            document.getElementById('editarFaseColor').value = color;
+            document.getElementById('editarFaseDescripcion').value = descripcion || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('editarFaseModal'));
+            modal.show();
+        }
+
+        // Función para eliminar fase
+        function eliminarFase(id) {
+            if (confirm('¿Estás seguro de eliminar esta fase? Se eliminarán todas sus actividades.')) {
+                fetch(`/planes-accion/fases/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error al eliminar fase');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al eliminar fase');
+                });
+            }
+        }
+
+        // Formulario nueva fase
+        document.getElementById('formNuevaFase').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                nombre: formData.get('nombre'),
+                color: formData.get('color'),
+                descripcion: formData.get('descripcion')
+            };
+            
+            fetch(`/planes-accion/${formData.get('plan_id')}/fases`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Error al crear fase');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al crear fase');
+            });
+        });
+
+        // Formulario editar fase
+        document.getElementById('formEditarFase').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                nombre: formData.get('nombre'),
+                color: formData.get('color'),
+                descripcion: formData.get('descripcion')
+            };
+            
+            fetch(`/planes-accion/fases/${formData.get('fase_id')}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error al actualizar fase');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al actualizar fase');
+            });
+        });
+
+        // Formulario nueva actividad
+        document.getElementById('formNuevaActividad').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                titulo: formData.get('titulo'),
+                descripcion: formData.get('descripcion'),
+                fecha_limite: formData.get('fecha_limite'),
+                responsable_id: formData.get('responsable_id') || null
+            };
+            
+            fetch(`/planes-accion/fases/${formData.get('fase_id')}/actividades`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error al crear actividad');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al crear actividad');
+            });
+        });
+
+        // Toggle estado de actividad
+        document.querySelectorAll('.toggle-actividad').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const actividadId = this.dataset.actividadId;
+                const completado = this.checked;
+                
+                fetch(`/planes-accion/actividades/${actividadId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        completado: completado
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        this.checked = !completado;
+                        alert('Error al actualizar actividad');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    this.checked = !completado;
+                    alert('Error al actualizar actividad');
+                });
+            });
+        });
+
+        // Inicializar drag and drop (opcional)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Si quieres implementar drag and drop entre fases
+            // dragula([document.getElementById('fasesContainer')]);
+        });
+    </script>
+</body>
+</html>

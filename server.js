@@ -2220,6 +2220,886 @@ app.delete('/closers/:id', isAuthenticated, async (req, res) => {
         }
     });
 
+
+    // --- GET /planes-accion - Listado de planes ---
+app.get('/planes-accion', isAuthenticated, async (req, res) => {
+    try {
+        // Obtener parámetros de filtro
+        const { categoria, estado, vendedor } = req.query;
+        
+        // Construir consulta base
+        let query = `
+            SELECT pa.*, v.nombre as vendedor_nombre, 
+                   cc.nombre as categoria_nombre, cc.color as categoria_color
+            FROM planes_accion pa
+            JOIN vendedores v ON pa.vendedor_id = v.id
+            LEFT JOIN categorias_clientes cc ON pa.categoria_id = cc.id
+            WHERE 1=1
+        `;
+        
+        let params = [];
+        
+        // Aplicar filtros
+        if (categoria) {
+            query += ` AND pa.categoria_id = $${params.length + 1}`;
+            params.push(categoria);
+        }
+        
+        if (estado) {
+            query += ` AND pa.estado = $${params.length + 1}`;
+            params.push(estado);
+        }
+        
+        if (vendedor) {
+            query += ` AND pa.vendedor_id = $${params.length + 1}`;
+            params.push(vendedor);
+        }
+        
+        query += ` ORDER BY pa.updated_at DESC`;
+        
+        const planes = await pool.query(query, params);
+        
+        // Obtener categorías para el filtro
+        const categorias = await pool.query('SELECT * FROM categorias_clientes ORDER BY nombre');
+        
+        // Obtener vendedores para el filtro
+        const vendedores = await pool.query('SELECT id, nombre FROM vendedores ORDER BY nombre');
+        
+        res.render('planes_accion/listado', {
+            user: req.session.user,
+            planes: planes.rows,
+            categorias: categorias.rows,
+            vendedores: vendedores.rows,
+            filters: { categoria, estado, vendedor },
+            success: req.query.success,
+            error: req.query.error
+        });
+
+    } catch (error) {
+        console.error("Error en GET /planes-accion:", error);
+        res.status(500).render('error', {
+            message: 'Error al cargar los planes de acción',
+            error: error,
+            user: req.session.user
+        });
+    }
+});
+
+// --- GET /planes-accion/nuevo - Formulario nuevo plan ---
+app.get('/planes-accion/nuevo', isAuthenticated, async (req, res) => {
+    try {
+        const categorias = await pool.query('SELECT * FROM categorias_clientes ORDER BY nombre');
+        const vendedores = await pool.query('SELECT id, nombre FROM vendedores ORDER BY nombre');
+        
+        res.render('planes_accion/nuevo', {
+            user: req.session.user,
+            categorias: categorias.rows,
+            vendedores: vendedores.rows
+        });
+    } catch (error) {
+        console.error("Error en GET /planes-accion/nuevo:", error);
+        res.redirect('/planes-accion?error=Error al cargar el formulario');
+    }
+});
+
+// --- POST /planes-accion - Crear nuevo plan ---
+app.post('/planes-accion', isAuthenticated, async (req, res) => {
+    const { vendedor_id, categoria_id, titulo, descripcion, fecha_inicio, fecha_limite } = req.body;
+    
+    if (!vendedor_id || !titulo) {
+        return res.redirect('/planes-accion/nuevo?error=Vendedor y título son obligatorios');
+    }
+
+    try {
+        const query = `
+            INSERT INTO planes_accion 
+            (vendedor_id, categoria_id, titulo, descripcion, fecha_inicio, fecha_limite)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id
+        `;
+        const result = await pool.query(query, [
+            vendedor_id,
+            categoria_id || null,
+            titulo.trim(),
+            descripcion || null,
+            fecha_inicio || null,
+            fecha_limite || null
+        ]);
+        
+        const planId = result.rows[0].id;
+        res.redirect(`/planes-accion/${planId}?success=Plan creado correctamente`);
+
+    } catch (error) {
+        console.error("Error en POST /planes-accion:", error);
+        res.redirect('/planes-accion/nuevo?error=Error al crear el plan');
+    }
+});
+
+// --- GET /planes-accion/:id - Detalle del plan ---
+app.get('/planes-accion/:id', isAuthenticated, async (req, res) => {
+    try {
+        const planId = req.params.id;
+        
+        // Obtener información básica del plan
+        const planQuery = `
+            SELECT pa.*, v.nombre as vendedor_nombre, 
+                   cc.nombre as categoria_nombre, cc.color as categoria_color
+            FROM planes_accion pa
+            JOIN vendedores v ON pa.vendedor_id = v.id
+            LEFT JOIN categorias_clientes cc ON pa.categoria_id = cc.id
+            WHERE pa.id = $1
+        `;
+        const planResult = await pool.query(planQuery, [planId]);
+        
+        if (planResult.rows.length === 0) {
+            return res.status(404).render('error', {
+                message: 'Plan no encontrado',
+                error: { status: 404 },
+                user: req.session.user
+            });
+        }
+        
+        const plan = planResult.rows[0];
+        
+        // Obtener fases del plan
+        const fasesQuery = `
+            SELECT * FROM fases_plan 
+            WHERE plan_id = $1
+            ORDER BY orden ASC
+        `;
+        const fasesResult = await pool.query(fasesQuery, [planId]);
+        
+        // Obtener actividades para cada fase
+        const fasesConActividades = await Promise.all(
+            fasesResult.rows.map(async fase => {
+                const actividadesQuery = `
+                    SELECT a.*, u.username as responsable_username
+                    FROM actividades_plan a
+                    LEFT JOIN users u ON a.responsable_id = u.id
+                    WHERE a.fase_id = $1
+                    ORDER BY a.created_at ASC
+                `;
+                const actividadesResult = await pool.query(actividadesQuery, [fase.id]);
+                return {
+                    ...fase,
+                    actividades: actividadesResult.rows
+                };
+            })
+        );
+        
+        // Obtener usuarios para asignar actividades
+        const usuarios = await pool.query('SELECT id, username FROM users ORDER BY username');
+        
+        res.render('planes_accion/detalle', {
+            user: req.session.user,
+            plan: plan,
+            fases: fasesConActividades,
+            usuarios: usuarios.rows,
+            success: req.query.success,
+            error: req.query.error
+        });
+
+    } catch (error) {
+        console.error(`Error en GET /planes-accion/${req.params.id}:`, error);
+        res.status(500).render('error', {
+            message: 'Error al cargar el plan',
+            error: error,
+            user: req.session.user
+        });
+    }
+});
+
+// --- POST /planes-accion/:id/fases - Añadir nueva fase ---
+app.post('/planes-accion/:id/fases', isAuthenticated, async (req, res) => {
+    const planId = req.params.id;
+    const { nombre, color, descripcion } = req.body;
+    
+    if (!nombre || !color) {
+        return res.redirect(`/planes-accion/${planId}?error=Nombre y color son obligatorios`);
+    }
+
+    try {
+        // Verificar que no haya más de 10 fases
+        const countQuery = 'SELECT COUNT(*) FROM fases_plan WHERE plan_id = $1';
+        const countResult = await pool.query(countQuery, [planId]);
+        
+        if (parseInt(countResult.rows[0].count, 10) >= 10) {
+            return res.redirect(`/planes-accion/${planId}?error=No se pueden agregar más de 10 fases por plan`);
+        }
+        
+        // Obtener el siguiente orden
+        const maxOrderQuery = 'SELECT COALESCE(MAX(orden), 0) + 1 as next_order FROM fases_plan WHERE plan_id = $1';
+        const maxOrderResult = await pool.query(maxOrderQuery, [planId]);
+        const nextOrder = maxOrderResult.rows[0].next_order;
+        
+        const insertQuery = `
+            INSERT INTO fases_plan 
+            (plan_id, nombre, color, orden, descripcion)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id
+        `;
+        await pool.query(insertQuery, [
+            planId,
+            nombre.trim(),
+            color,
+            nextOrder,
+            descripcion || null
+        ]);
+        
+        res.redirect(`/planes-accion/${planId}?success=Fase agregada correctamente`);
+
+    } catch (error) {
+        console.error("Error en POST /planes-accion/:id/fases:", error);
+        res.redirect(`/planes-accion/${planId}?error=Error al agregar fase`);
+    }
+});
+
+// --- PUT /planes-accion/fases/:id - Actualizar fase ---
+app.put('/planes-accion/fases/:id', isAuthenticated, async (req, res) => {
+    const faseId = req.params.id;
+    const { nombre, color, descripcion, completado } = req.body;
+    
+    try {
+        const query = `
+            UPDATE fases_plan SET
+                nombre = COALESCE($1, nombre),
+                color = COALESCE($2, color),
+                descripcion = COALESCE($3, descripcion),
+                completado = $4,
+                fecha_completado = CASE WHEN $4 = true THEN CURRENT_TIMESTAMP ELSE NULL END,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $5
+            RETURNING *
+        `;
+        const result = await pool.query(query, [
+            nombre,
+            color,
+            descripcion,
+            completado === 'true',
+            faseId
+        ]);
+        
+        res.json({
+            success: true,
+            message: 'Fase actualizada',
+            fase: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Error en PUT /api/planes-accion/fases/:id:", error);
+        res.status(500).json({ success: false, message: 'Error al actualizar fase' });
+    }
+});
+
+// --- POST /planes-accion/fases/:id/actividades - Añadir actividad ---
+app.post('/api/planes-accion/fases/:id/actividades', isAuthenticated, async (req, res) => {
+    const faseId = req.params.id;
+    const { titulo, descripcion, fecha_limite, responsable_id } = req.body;
+    
+    if (!titulo) {
+        return res.status(400).json({ success: false, message: 'Título es obligatorio' });
+    }
+
+    try {
+        const query = `
+            INSERT INTO actividades_plan 
+            (fase_id, titulo, descripcion, fecha_limite, responsable_id)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *
+        `;
+        const result = await pool.query(query, [
+            faseId,
+            titulo.trim(),
+            descripcion || null,
+            fecha_limite || null,
+            responsable_id || null
+        ]);
+        
+        res.status(201).json({
+            success: true,
+            message: 'Actividad agregada',
+            actividad: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Error en POST /api/planes-accion/fases/:id/actividades:", error);
+        res.status(500).json({ success: false, message: 'Error al agregar actividad' });
+    }
+});
+
+// --- PUT /planes-accion/actividades/:id - Actualizar actividad ---
+app.put('/planes-accion/actividades/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { completado } = req.body;
+        
+        // Actualizar solo el campo completado (y tal vez otros campos que existan)
+        const result = await pool.query(
+            'UPDATE actividades_plan SET completado = $1 WHERE id = $2 RETURNING *',
+            [completado, id]
+        );
+        
+        res.json({ success: true, actividad: result.rows[0] });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+// --- DELETE /api/planes-accion/fases/:id - Eliminar fase ---
+app.delete('/planes-accion/fases/:id', isAuthenticated, async (req, res) => {
+    const faseId = req.params.id;
+    
+    try {
+        // Esto eliminará en cascada las actividades debido a ON DELETE CASCADE
+        await pool.query('DELETE FROM fases_plan WHERE id = $1', [faseId]);
+        
+        res.json({
+            success: true,
+            message: 'Fase eliminada'
+        });
+
+    } catch (error) {
+        console.error("Error en DELETE /api/planes-accion/fases/:id:", error);
+        res.status(500).json({ success: false, message: 'Error al eliminar fase' });
+    }
+});
+
+
+/*FUll fillment*/
+
+
+/**
+ * @api {get} /api/vendedores/:id/agendas/historial Historial de agendas por vendedor
+ * @apiName GetAgendasHistorial
+ * @apiGroup VendedoresAgendas
+ * @apiPermission authenticated
+ * 
+ * @apiParam {Number} id ID del vendedor
+ * @apiParam {String} [desde] Fecha inicial para rango (formato YYYY-MM-DD)
+ * @apiParam {String} [hasta] Fecha final para rango (formato YYYY-MM-DD)
+ * @apiParam {String} [insta_username] Filtrar por cuenta específica
+ * 
+ * @apiSuccess {Object} vendedor Datos del vendedor
+ * @apiSuccess {Object[]} historial Lista de registros de agendas
+ * @apiSuccess {Object} totales Totales de agendas por periodo
+ */
+app.get('/api/vendedores/:id/agendas/historial', isAuthenticated, async (req, res) => {
+    const { id } = req.params;
+    const { desde, hasta, insta_username } = req.query;
+    
+    try {
+        // Obtener datos del vendedor
+        const vendedorQuery = 'SELECT id, nombre FROM vendedores WHERE id = $1';
+        const vendedorResult = await pool.query(vendedorQuery, [id]);
+        
+        if (vendedorResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendedor no encontrado'
+            });
+        }
+
+        const vendedor = vendedorResult.rows[0];
+
+        // Construir consulta para historial
+        let historialQuery = `
+            SELECT 
+                fecha,
+                insta_username,
+                agendas_registradas,
+                notas,
+                created_at
+            FROM vendedor_agendas_diarias
+            WHERE vendedor_id = $1
+        `;
+
+        let params = [id];
+        let paramCount = 1;
+
+        if (desde && hasta) {
+            paramCount += 2;
+            historialQuery += ` AND fecha BETWEEN $${paramCount - 1} AND $${paramCount}`;
+            params.push(desde, hasta);
+        }
+
+        if (insta_username) {
+            paramCount += 1;
+            historialQuery += ` AND insta_username = $${paramCount}`;
+            params.push(insta_username.toLowerCase());
+        }
+
+        historialQuery += ' ORDER BY fecha DESC, insta_username ASC';
+
+        const historialResult = await pool.query(historialQuery, params);
+
+        // Consulta para totales
+        let totalesQuery = `
+            SELECT 
+                SUM(agendas_registradas) as total_agendas,
+                COUNT(DISTINCT fecha) as total_dias,
+                COUNT(DISTINCT insta_username) as total_cuentas
+            FROM vendedor_agendas_diarias
+            WHERE vendedor_id = $1
+        `;
+
+        if (desde && hasta) {
+            totalesQuery += ` AND fecha BETWEEN $2 AND $3`;
+        }
+
+        const totalesResult = await pool.query(
+            totalesQuery, 
+            desde && hasta ? [id, desde, hasta] : [id]
+        );
+
+        res.json({
+            success: true,
+            vendedor: vendedor,
+            historial: historialResult.rows,
+            totales: totalesResult.rows[0] || {
+                total_agendas: 0,
+                total_dias: 0,
+                total_cuentas: 0
+            }
+        });
+
+    } catch (error) {
+        console.error(`Error en GET /api/vendedores/${id}/agendas/historial:`, error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener el historial de agendas'
+        });
+    }
+});
+
+/**
+ * @api {post} /api/vendedores/agendas Registrar o actualizar agendas
+ * @apiName PostAgendas
+ * @apiGroup VendedoresAgendas
+ * @apiPermission authenticated
+ * 
+ * @apiParam {Number} vendedor_id ID del vendedor (requerido)
+ * @apiParam {String} fecha Fecha en formato YYYY-MM-DD (requerido)
+ * @apiParam {String} insta_username Nombre de la cuenta de Instagram (requerido)
+ * @apiParam {Number} agendas_registradas Número de agendas (requerido)
+ * @apiParam {String} [notas] Notas adicionales
+ * 
+ * @apiSuccess {Object} data Datos del registro creado/actualizado
+ * @apiSuccess {String} message Mensaje de confirmación
+ */
+app.post('/api/vendedores/agendas', isAuthenticated, async (req, res) => {
+    const { vendedor_id, insta_username, fecha, agendas_registradas, notas } = req.body;
+    
+    try {
+        // Validar datos requeridos
+        if (!vendedor_id || !insta_username || !fecha || agendas_registradas === undefined) {
+            return res.status(400).json({
+                success: false,
+                message: 'Faltan campos requeridos: vendedor_id, insta_username, fecha o agendas_registradas'
+            });
+        }
+
+        // Verificar que el vendedor existe
+        const vendedorCheck = await pool.query('SELECT id FROM vendedores WHERE id = $1', [vendedor_id]);
+        if (vendedorCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendedor no encontrado'
+            });
+        }
+
+        // Insertar el registro de agenda
+        const query = `
+            INSERT INTO vendedor_agendas_diarias 
+            (vendedor_id, insta_username, fecha, agendas_registradas, notas)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING *`;
+        
+        const values = [
+            vendedor_id,
+            insta_username.toLowerCase(),
+            fecha,
+            parseInt(agendas_registradas) || 0,
+            notas || null
+        ];
+        
+        const result = await pool.query(query, values);
+        
+        // Actualizar el último seguimiento del vendedor
+        await pool.query(
+            'UPDATE vendedores SET ultimo_seguimiento = NOW() WHERE id = $1',
+            [vendedor_id]
+        );
+        
+        res.json({
+            success: true,
+            data: result.rows[0],
+            message: 'Agenda registrada correctamente'
+        });
+    } catch (error) {
+        console.error("Error en POST /api/vendedores/agendas:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al guardar el registro de agenda',
+            error: error.message
+        });
+    }
+});
+
+app.get('/api/vendedores/:id/agendas', isAuthenticated, async (req, res) => {
+    const { id } = req.params;
+    const { desde, hasta } = req.query;
+    
+    try {
+        // Configurar fechas por defecto (últimos 30 días)
+        const defaultEndDate = new Date();
+        const defaultStartDate = new Date();
+        defaultStartDate.setDate(defaultEndDate.getDate() - 30);
+        
+        const startDate = desde || defaultStartDate.toISOString().split('T')[0];
+        const endDate = hasta || defaultEndDate.toISOString().split('T')[0];
+
+        const query = `
+            SELECT 
+                a.id,
+                a.fecha,
+                a.insta_username,
+                a.agendas_registradas,
+                a.notas,
+                a.created_at,
+                v.nombre as vendedor_nombre
+            FROM vendedor_agendas_diarias a
+            JOIN vendedores v ON a.vendedor_id = v.id
+            WHERE a.vendedor_id = $1
+            AND a.fecha BETWEEN $2 AND $3
+            ORDER BY a.fecha DESC
+        `;
+
+        const result = await pool.query(query, [id, startDate, endDate]);
+
+        res.json({
+            success: true,
+            data: result.rows,
+            vendedor_id: id,
+            vendedor_nombre: result.rows[0]?.vendedor_nombre || '',
+            desde: startDate,
+            hasta: endDate
+        });
+
+    } catch (error) {
+        console.error("Error en GET /api/vendedores/:id/agendas:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener las agendas del vendedor'
+        });
+    }
+});
+// Agregar este nuevo endpoint antes de las demás rutas
+app.get('/api/vendedores/:id/cuentas', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const query = 'SELECT cuentas_asignadas FROM vendedores WHERE id = $1';
+        const result = await pool.query(query, [id]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendedor no encontrado'
+            });
+        }
+        
+        // Extraer las cuentas del campo JSONB
+        const cuentas = result.rows[0].cuentas_asignadas || [];
+        
+        res.json({
+            success: true,
+            cuentas: cuentas
+        });
+    } catch (error) {
+        console.error("Error al obtener cuentas del vendedor:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener las cuentas del vendedor'
+        });
+    }
+});
+
+app.get('/api/vendedores/agendas', isAuthenticated, async (req, res) => {
+    const { desde, hasta, vendedor_id } = req.query;
+    
+    try {
+        // 1. Obtener la lista completa de vendedores
+        const vendedoresQuery = 'SELECT id, nombre FROM vendedores ORDER BY nombre ASC';
+        const vendedoresResult = await pool.query(vendedoresQuery);
+        const vendedores = vendedoresResult.rows;
+
+        // 2. Configurar fechas por defecto (últimos 7 días)
+        const defaultEndDate = new Date();
+        const defaultStartDate = new Date();
+        defaultStartDate.setDate(defaultEndDate.getDate() - 7);
+        
+        const initialStartDate = desde || defaultStartDate.toISOString().split('T')[0];
+        const initialEndDate = hasta || defaultEndDate.toISOString().split('T')[0];
+
+        // 3. Obtener datos directamente desde la base de datos
+        const resumenQuery = `
+            SELECT 
+                v.id as vendedor_id,
+                v.nombre as vendedor_nombre,
+                COUNT(DISTINCT a.insta_username) as total_cuentas,
+                SUM(a.agendas_registradas) as total_agendas,
+                MAX(a.created_at) as ultimo_seguimiento
+            FROM vendedores v
+            LEFT JOIN vendedor_agendas_diarias a ON v.id = a.vendedor_id
+            WHERE a.fecha BETWEEN $1 AND $2
+            ${vendedor_id ? 'AND v.id = $3' : ''}
+            GROUP BY v.id, v.nombre
+            ORDER BY v.nombre ASC
+        `;
+
+        const detalleQuery = `
+            SELECT 
+                a.id,
+                a.vendedor_id,
+                v.nombre as vendedor_nombre,
+                a.fecha,
+                a.insta_username,
+                a.agendas_registradas,
+                a.notas,
+                a.created_at
+            FROM vendedor_agendas_diarias a
+            JOIN vendedores v ON a.vendedor_id = v.id
+            WHERE a.fecha BETWEEN $1 AND $2
+            ${vendedor_id ? 'AND a.vendedor_id = $3' : ''}
+            ORDER BY a.fecha DESC
+            LIMIT 10
+        `;
+
+        const queryParams = vendedor_id 
+            ? [initialStartDate, initialEndDate, vendedor_id] 
+            : [initialStartDate, initialEndDate];
+
+        const [resumenResult, detalleResult] = await Promise.all([
+            pool.query(resumenQuery, queryParams),
+            pool.query(detalleQuery, queryParams)
+        ]);
+
+        // 4. Renderizar la vista
+        res.render('vendedores/vendedores_agendas', {
+            user: req.session.user,
+            vendedores: vendedores,
+            resumen: resumenResult.rows,
+            detalle: detalleResult.rows,
+            filters: {
+                desde: initialStartDate,
+                hasta: initialEndDate,
+                vendedor_id: vendedor_id || ''
+            },
+            success: req.query.success,
+            error: req.query.error
+        });
+
+    } catch (error) {
+        console.error("Error en GET /vendedores/agendas:", error);
+        res.redirect('/onboarding?error=Error al cargar las agendas de vendedores');
+    }
+});
+app.get('/api/vendedores/agendas/detalle', isAuthenticated, async (req, res) => {
+    const { insta_username, desde, hasta, vendedor_id, limit = 30 } = req.query;
+    
+    if (!insta_username) {
+        return res.status(400).json({
+            success: false,
+            message: 'El parámetro insta_username es requerido'
+        });
+    }
+
+    try {
+        let query = `
+            SELECT 
+                a.id,
+                a.vendedor_id,
+                v.nombre as vendedor_nombre,
+                a.fecha,
+                a.insta_username,
+                a.agendas_registradas,
+                a.notas,
+                a.created_at
+            FROM vendedor_agendas_diarias a
+            JOIN vendedores v ON a.vendedor_id = v.id
+            WHERE a.insta_username = $1
+        `;
+
+        let params = [insta_username.toLowerCase()];
+        let paramCount = 1;
+
+        if (desde && hasta) {
+            paramCount += 2;
+            query += ` AND a.fecha BETWEEN $${paramCount - 1} AND $${paramCount}`;
+            params.push(desde, hasta);
+        }
+
+        if (vendedor_id) {
+            paramCount += 1;
+            query += ` AND a.vendedor_id = $${paramCount}`;
+            params.push(vendedor_id);
+        }
+
+        query += ` ORDER BY a.fecha DESC LIMIT $${paramCount + 1}`;
+        params.push(parseInt(limit, 10));
+
+        const result = await pool.query(query, params);
+
+        res.json({
+            success: true,
+            data: result.rows
+        });
+
+    } catch (error) {
+        console.error("Error en GET /api/vendedores/agendas/detalle:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener el detalle de agendas'
+        });
+    }
+});
+
+app.put('/api/vendedores/agendas/:id', isAuthenticated, async (req, res) => {
+    const { id } = req.params;
+    const { agendas_registradas, notas } = req.body;
+    
+    try {
+        // Validar datos requeridos
+        if (agendas_registradas === undefined) {
+            return res.status(400).json({
+                success: false,
+                message: 'El campo agendas_registradas es requerido'
+            });
+        }
+
+        const query = `
+            UPDATE vendedor_agendas_diarias 
+            SET 
+                agendas_registradas = $1,
+                notas = $2,
+                updated_at = NOW()
+            WHERE id = $3
+            RETURNING *
+        `;
+        
+        const values = [
+            parseInt(agendas_registradas) || 0,
+            notas || null,
+            id
+        ];
+        
+        const result = await pool.query(query, values);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Registro no encontrado'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: result.rows[0],
+            message: 'Registro actualizado correctamente'
+        });
+    } catch (error) {
+        console.error("Error en PUT /api/vendedores/agendas/:id:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al actualizar el registro'
+        });
+    }
+});
+
+/**
+ * @api {get} /api/vendedores/agendas/resumen Obtener resumen de agendas
+ * @apiName GetAgendasResumen
+ * @apiGroup VendedoresAgendas
+ * @apiPermission authenticated
+ * 
+ * @apiParam {String} [fecha] Fecha en formato YYYY-MM-DD (por defecto hoy)
+ * @apiParam {String} [desde] Fecha inicial para rango (formato YYYY-MM-DD)
+ * @apiParam {String} [hasta] Fecha final para rango (formato YYYY-MM-DD)
+ * @apiParam {Number} [vendedor_id] Filtrar por ID de vendedor específico
+ * 
+ * @apiSuccess {Object[]} data Lista de resúmenes por vendedor
+ * @apiSuccess {Number} data.vendedor_id ID del vendedor
+ * @apiSuccess {String} data.vendedor_nombre Nombre del vendedor
+ * @apiSuccess {Number} data.total_agendas Total de agendas registradas
+ * @apiSuccess {Number} data.total_cuentas Total de cuentas con registros
+ * @apiSuccess {Object[]} data.cuentas Detalle por cuenta
+ * @apiSuccess {String} data.cuentas.insta_username Nombre de la cuenta
+ * @apiSuccess {Number} data.cuentas.agendas Número de agendas
+ * @apiSuccess {String} data.cuentas.notas Notas registradas
+ */
+app.get('/api/vendedores/agendas/resumen', isAuthenticated, async (req, res) => {
+    const { fecha, desde, hasta, vendedor_id } = req.query;
+    
+    try {
+        // Validar fechas
+        let fechaInicio, fechaFin;
+        if (fecha) {
+            fechaInicio = fechaFin = fecha;
+        } else if (desde && hasta) {
+            fechaInicio = desde;
+            fechaFin = hasta;
+        } else {
+            // Por defecto: hoy
+            const hoy = new Date().toISOString().split('T')[0];
+            fechaInicio = fechaFin = hoy;
+        }
+
+        // Construir consulta
+        let query = `
+            SELECT 
+                v.id as vendedor_id,
+                v.nombre as vendedor_nombre,
+                COUNT(DISTINCT a.insta_username) as total_cuentas,
+                SUM(a.agendas_registradas) as total_agendas,
+                jsonb_agg(
+                    jsonb_build_object(
+                        'insta_username', a.insta_username,
+                        'agendas', a.agendas_registradas,
+                        'notas', a.notas
+                    )
+                ) as cuentas
+            FROM vendedores v
+            LEFT JOIN vendedor_agendas_diarias a ON v.id = a.vendedor_id
+            WHERE a.fecha BETWEEN $1 AND $2
+        `;
+
+        let params = [fechaInicio, fechaFin];
+
+        if (vendedor_id) {
+            query += ' AND v.id = $3';
+            params.push(vendedor_id);
+        }
+
+        query += ' GROUP BY v.id, v.nombre ORDER BY v.nombre ASC';
+
+        const result = await pool.query(query, params);
+
+        res.json({
+            success: true,
+            data: result.rows,
+            fecha_inicio: fechaInicio,
+            fecha_fin: fechaFin
+        });
+
+    } catch (error) {
+        console.error("Error en GET /api/vendedores/agendas/resumen:", error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener el resumen de agendas'
+        });
+    }
+});
+
     app.get('/logout', (req, res) => {
     req.session.destroy(() => {
         res.redirect('/login');
