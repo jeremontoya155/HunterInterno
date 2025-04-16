@@ -32,6 +32,23 @@
         .section-header h2 i { font-size: 1.1em; opacity: 0.9; color: var(--color-accent); }
         .section-header .header-actions { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; }
 
+        .form-select {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.9rem;
+    background-color: rgba(0,0,0,0.2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-small);
+    color: var(--color-text-primary);
+    transition: all 0.3s ease;
+    min-width: 200px;
+}
+
+.form-select:focus {
+    background-color: rgba(0,0,0,0.3);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(76, 175, 145, 0.2);
+    outline: none;
+}
         /* --- Alertas --- */
         .alert { border-radius: var(--border-radius-medium); padding: 1rem 1.5rem; margin-bottom: 1.5rem; border: 1px solid transparent; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 1rem; } .alert::before { font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 1.2em; }
         .alert-success { color: #d1fae5; background-color: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); } .alert-success::before { content: "\f058"; color: #6ee7b7; }
@@ -132,7 +149,7 @@
                 <div class="table-wrapper custom-scrollbar">
                     <table id="manual-niche-table" class="history-table">
                         <thead>
-                            <tr> <th>Cuenta a EFECTUARr</th> <th>Cuenta a Trackear</th> <th>Tipo/Keyword</th> <th>Estado</th> <th>Agregado por</th> <th>Fecha</th> <th>Acciones</th> </tr>
+                            <tr> <th>Cuenta Madre</th> <th>Cuenta a Trackear</th> <th>Tipo/Keyword</th> <th>Estado</th> <th>Agregado por</th> <th>Fecha</th> <th>Acciones</th> </tr>
                         </thead>
                         <tbody>
                             <% if (locals.manualNiches && manualNiches.length > 0) { %>
@@ -170,11 +187,23 @@
             <section id="csv-upload-section" class="trackeo-section card-style">
                  <div class="section-header">
                     <h2><i class="fas fa-file-csv icon-header"></i> Archivos CSV Subidos</h2>
-                     <form action="/auditoria/trackeo" method="POST" enctype="multipart/form-data" class="upload-form-inline">
-                         <input type="text" name="tipo_nicho" placeholder="Tipo/Nicho del CSV*" required title="Describe el contenido del CSV">
-                         <label for="csvFile" class="btn btn-secondary btn-sm" title="Seleccionar .csv"> <i class="fas fa-paperclip"></i> Seleccionar* <input type="file" id="csvFile" name="csvFile" accept=".csv, text/csv" required style="display: none;"> </label>
-                         <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-upload"></i> Subir</button>
-                     </form>
+                    <form action="/auditoria/trackeo" method="POST" enctype="multipart/form-data" class="upload-form-inline">
+                        <select name="tipo_nicho" required title="Selecciona una cuenta" class="form-select">
+                            <option value="" disabled selected>Selecciona una cuenta</option>
+                            <% if (cuentas && cuentas.length > 0) { %>
+                                <% cuentas.forEach(cuenta => { %>
+                                    <option value="<%= cuenta %>"><%= cuenta %></option>
+                                <% }); %>
+                            <% } else { %>
+                                <option value="" disabled>No hay cuentas disponibles</option>
+                            <% } %>
+                        </select>
+                        <label for="csvFile" class="btn btn-secondary btn-sm" title="Seleccionar .csv">
+                            <i class="fas fa-paperclip"></i> Seleccionar*
+                            <input type="file" id="csvFile" name="csvFile" accept=".csv, text/csv" required style="display: none;">
+                        </label>
+                        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-upload"></i> Subir</button>
+                    </form>
                  </div>
                  <!-- Filtro para CSV -->
                  <div class="manual-filter-container">
@@ -184,7 +213,7 @@
                 <% if (locals.uploads && uploads.length > 0) { %>
                     <div class="table-wrapper custom-scrollbar">
                         <table id="csv-history-table" class="history-table">
-                            <thead> <tr> <th>Fecha Subida</th> <th>Cuenta a efectuar</th> <th>Nombre Original</th> <th class="numeric">Tamaño</th> <th>Subido por</th> <th class="action-buttons">Acciones</th> </tr> </thead>
+                            <thead> <tr> <th>Fecha Subida</th> <th>Cuenta Madre</th> <th>Nombre Original</th> <th class="numeric">Tamaño</th> <th>Subido por</th> <th class="action-buttons">Acciones</th> </tr> </thead>
                             <tbody> <!-- ID añadido para el selector JS -->
                                 <% uploads.forEach(upload => { %>
                                     <% let fileSizeFormatted; if (upload.size < 1024) fileSizeFormatted = upload.size + ' B'; else if (upload.size < 1024*1024) fileSizeFormatted = (upload.size / 1024).toFixed(1) + ' KB'; else fileSizeFormatted = (upload.size / (1024 * 1024)).toFixed(2) + ' MB'; %>

@@ -186,149 +186,138 @@
 
     // --- GET /auditoria/patrimonio ---
     app.get('/auditoria/patrimonio', isAuthenticated, async (req, res) => {
-        // Verificación de Rol Interna (Solo Admin/Auditoría)
-        const userRole = req.session.user.role;
-        if (userRole !== 'admin' && userRole !== 'auditoria') {
-            return res.status(403).render('error', { message: 'Acceso Denegado', error: { status: 403 }, user: req.session.user });
-        }
-    
-        try {
-            const result = await pool.query(`
-                SELECT 
-                    id, nombre_cliente, usuario, verificacion, correo, celular, 
-                    ultima_carga_celular, celu_abierto, autentificador, 
-                    contrasena as contrasena_ig, dispositivo_abierto, vendedor,
-                    autentificator_cuenta, contrasena_mail, codigos_respaldo,
-                    codigos_actualizados_en, codigos_validez_dias, link, link_original,
-                    tipo_cuenta, created_at, updated_at
-                FROM patrimonio_cuentas 
-                ORDER BY tipo_cuenta, nombre_cliente, usuario
-            `);
-            
-            const cuentas = result.rows;
-            const today = new Date();
-    
-            // Calcular días restantes para códigos de respaldo
-            const cuentasConDiasRestantes = cuentas.map(cuenta => {
-                let dias_restantes = null;
-                if (cuenta.codigos_actualizados_en && cuenta.codigos_validez_dias > 0) {
-                    try {
-                        const fechaActualizacion = new Date(cuenta.codigos_actualizados_en);
-                        if (!isNaN(fechaActualizacion.getTime())) {
-                            const fechaExpiracion = new Date(fechaActualizacion.getTime());
-                            fechaExpiracion.setDate(fechaActualizacion.getDate() + cuenta.codigos_validez_dias);
-                            const diffTime = fechaExpiracion.getTime() - today.getTime();
-                            dias_restantes = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-                        }
-                    } catch (dateError) {
-                        console.error(`Error calculando días restantes para ${cuenta.usuario}:`, dateError);
+    // Verificación de Rol Interna (Solo Admin/Auditoría)
+    const userRole = req.session.user.role;
+    if (userRole !== 'admin' && userRole !== 'auditoria') {
+        return res.status(403).render('error', { message: 'Acceso Denegado', error: { status: 403 }, user: req.session.user });
+    }
+
+    try {
+        const result = await pool.query('SELECT * FROM patrimonio_cuentas ORDER BY tipo_cuenta, nombre_cliente, usuario');
+        const cuentas = result.rows;
+        const today = new Date(); // Fecha de hoy para calcular días restantes
+
+        // Calcular días restantes para códigos de respaldo
+        const cuentasConDiasRestantes = cuentas.map(cuenta => {
+            let dias_restantes = null; // Por defecto es nulo
+            if (cuenta.codigos_actualizados_en && cuenta.codigos_validez_dias > 0) {
+                try {
+                    // Asegurarse que codigos_actualizados_en es un objeto Date
+                    const fechaActualizacion = new Date(cuenta.codigos_actualizados_en);
+                    if (!isNaN(fechaActualizacion.getTime())) { // Validar que la fecha sea válida
+                        // Clonar fecha de actualización y sumar días de validez
+                        const fechaExpiracion = new Date(fechaActualizacion.getTime());
+                        fechaExpiracion.setDate(fechaActualizacion.getDate() + cuenta.codigos_validez_dias);
+
+                        // Calcular diferencia en milisegundos y luego en días (redondear hacia abajo)
+                        const diffTime = fechaExpiracion.getTime() - today.getTime();
+                        // Solo mostrar días restantes positivos o cero
+                        dias_restantes = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+                    } else {
+                        console.warn(`Fecha inválida en codigos_actualizados_en para cuenta ${cuenta.usuario}`);
                     }
+                } catch (dateError) {
+                    console.error(`Error calculando días restantes para ${cuenta.usuario}:`, dateError);
                 }
-                return {
-                    ...cuenta,
-                    dias_restantes_codigos: dias_restantes
-                };
-            });
-    
-            res.render('auditoria_patrimonio', {
-                cuentas: cuentasConDiasRestantes,
-                user: req.session.user,
-                success: req.query.success,
-                error: req.query.error
-            });
-    
-        } catch (error) {
-            console.error("Error en GET /auditoria/patrimonio:", error);
-            res.status(500).render('error', { 
-                message: 'Error al cargar el patrimonio de cuentas', 
-                error, 
-                user: req.session.user 
-            });
-        }
+            }
+            return {
+                ...cuenta,
+                dias_restantes_codigos: dias_restantes // Añadir la propiedad calculada
+            };
+        });
+
+        res.render('auditoria_patrimonio', {
+            cuentas: cuentasConDiasRestantes,
+            user: req.session.user,
+            success: req.query.success,
+            error: req.query.error
+        });
+
+    } catch (error) {
+        console.error("Error en GET /auditoria/patrimonio:", error);
+        res.status(500).render('error', { message: 'Error al cargar el patrimonio de cuentas', error, user: req.session.user });
+    }
     });
 
+    // --- POST /auditoria/patrimonio (Para Agregar/Editar Cuenta) ---
     app.post('/auditoria/patrimonio', isAuthenticated, async (req, res) => {
-        const {
-            cuenta_id,
-            nombre_cliente,
-            usuario,
-            link,
-            tipo_cuenta,
-            correo,
-            contrasena,
-            verificacion,
-            celu_abierto,
-            autentificador,
-            codigos_respaldo,
-            codigos_actualizados_en,
-            codigos_validez_dias,
-            celular,
-            ultima_carga_celular,
-            contrasena_mail,
-            dispositivo_abierto,
-            vendedor,
-            autentificator_cuenta,
-            link_original
-        } = req.body;
+    // Extraer todos los campos del formulario
+    const {
+        cuenta_id,
+        nombre_cliente,
+        usuario,
+        link,
+        tipo_cuenta,
+        correo,
+        contrasena,
+        verificacion,
+        celu_abierto,
+        autentificador,
+        codigos_respaldo,
+        codigos_actualizados_en,
+        codigos_validez_dias,
+        celular, // Nuevo campo
+        ultima_carga_celular, // Nuevo campo
+        contrasena_mail // Nuevo campo
+    } = req.body;
+
+    // Validación básica
+    if (!usuario || !tipo_cuenta) {
+        return res.redirect('/auditoria/patrimonio?error=Usuario y Tipo de Cuenta son obligatorios');
+    }
+
+    // Convertir checkboxes a boolean
+    const esVerificado = verificacion === 'on';
+    const tieneCeluAbierto = celu_abierto === 'on';
+    const tieneAutentificador = autentificador === 'on';
     
-        if (!usuario || !tipo_cuenta) {
-            return res.redirect('/auditoria/patrimonio?error=Usuario y Tipo de Cuenta son obligatorios');
+    // Convertir validez a número, con default
+    const validezDias = parseInt(codigos_validez_dias, 10) || 7;
+
+    try {
+        if (cuenta_id) {
+            // Modo Edición
+            const queryText = `
+                UPDATE patrimonio_cuentas SET
+                    nombre_cliente = $1, usuario = $2, link = $3, tipo_cuenta = $4, 
+                    correo = $5, contrasena = $6, verificacion = $7, celu_abierto = $8, 
+                    autentificador = $9, codigos_respaldo = $10, codigos_actualizados_en = $11, 
+                    codigos_validez_dias = $12, celular = $13, ultima_carga_celular = $14,
+                    contrasena_mail = $15, updated_at = CURRENT_TIMESTAMP
+                WHERE id = $16;
+            `;
+            await pool.query(queryText, [
+                nombre_cliente || null, usuario, link || null, tipo_cuenta, 
+                correo || null, contrasena || null, esVerificado, tieneCeluAbierto, 
+                tieneAutentificador, codigos_respaldo || null, ultima_carga_celular || null, 
+                validezDias, celular || null, ultima_carga_celular || null,
+                contrasena_mail || null, cuenta_id
+            ]);
+            res.redirect('/auditoria/patrimonio?success=Cuenta actualizada correctamente');
+        } else {
+            // Modo Agregar
+            const queryText = `
+                INSERT INTO patrimonio_cuentas (
+                    nombre_cliente, usuario, link, tipo_cuenta, correo, contrasena,
+                    verificacion, celu_abierto, autentificador, codigos_respaldo,
+                    codigos_actualizados_en, codigos_validez_dias, celular,
+                    ultima_carga_celular, contrasena_mail
+                ) VALUES (
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+                ) RETURNING id;
+            `;
+            await pool.query(queryText, [
+                nombre_cliente || null, usuario, link || null, tipo_cuenta, correo || null,
+                contrasena || null, esVerificado, tieneCeluAbierto, tieneAutentificador,
+                codigos_respaldo || null, codigos_actualizados_en || null, validezDias,
+                celular || null, ultima_carga_celular || null, contrasena_mail || null
+            ]);
+            res.redirect('/auditoria/patrimonio?success=Cuenta agregada correctamente');
         }
-    
-        const esVerificado = verificacion === 'on';
-        const tieneCeluAbierto = celu_abierto === 'on';
-        const tieneAutentificador = autentificador === 'on';
-        const validezDias = parseInt(codigos_validez_dias, 10) || 7;
-    
-        try {
-            if (cuenta_id) {
-                // Modo Edición
-                const queryText = `
-                    UPDATE patrimonio_cuentas SET
-                        nombre_cliente = $1, usuario = $2, link = $3, tipo_cuenta = $4, 
-                        correo = $5, contrasena = $6, verificacion = $7, celu_abierto = $8, 
-                        autentificador = $9, codigos_respaldo = $10, codigos_actualizados_en = $11, 
-                        codigos_validez_dias = $12, celular = $13, ultima_carga_celular = $14,
-                        contrasena_mail = $15, dispositivo_abierto = $16, vendedor = $17,
-                        autentificator_cuenta = $18, link_original = $19, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = $20;
-                `;
-                await pool.query(queryText, [
-                    nombre_cliente || null, usuario, link || null, tipo_cuenta, 
-                    correo || null, contrasena || null, esVerificado, tieneCeluAbierto, 
-                    tieneAutentificador, codigos_respaldo || null, codigos_actualizados_en || null, 
-                    validezDias, celular || null, ultima_carga_celular || null,
-                    contrasena_mail || null, dispositivo_abierto || null, vendedor || null,
-                    autentificator_cuenta || null, link_original || null, cuenta_id
-                ]);
-                res.redirect('/auditoria/patrimonio?success=Cuenta actualizada correctamente');
-            } else {
-                // Modo Agregar
-                const queryText = `
-                    INSERT INTO patrimonio_cuentas (
-                        nombre_cliente, usuario, link, tipo_cuenta, correo, contrasena,
-                        verificacion, celu_abierto, autentificador, codigos_respaldo,
-                        codigos_actualizados_en, codigos_validez_dias, celular,
-                        ultima_carga_celular, contrasena_mail, dispositivo_abierto,
-                        vendedor, autentificator_cuenta, link_original
-                    ) VALUES (
-                        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
-                    ) RETURNING id;
-                `;
-                await pool.query(queryText, [
-                    nombre_cliente || null, usuario, link || null, tipo_cuenta, correo || null,
-                    contrasena || null, esVerificado, tieneCeluAbierto, tieneAutentificador,
-                    codigos_respaldo || null, codigos_actualizados_en || null, validezDias,
-                    celular || null, ultima_carga_celular || null, contrasena_mail || null,
-                    dispositivo_abierto || null, vendedor || null, autentificator_cuenta || null,
-                    link_original || null
-                ]);
-                res.redirect('/auditoria/patrimonio?success=Cuenta agregada correctamente');
-            }
-        } catch (error) {
-            console.error("Error en POST /auditoria/patrimonio:", error);
-            res.redirect(`/auditoria/patrimonio?error=Error al guardar la cuenta: ${error.message}`);
-        }
+    } catch (error) {
+        console.error("Error en POST /auditoria/patrimonio:", error);
+        res.redirect(`/auditoria/patrimonio?error=Error al guardar la cuenta: ${error.message}`);
+    }
     });
     // Opcional: Endpoint DELETE (requiere JS con Fetch y método DELETE)
     // app.delete('/auditoria/patrimonio/:id', isAuthenticated, async (req, res) => { ... });
@@ -1160,42 +1149,52 @@
     // GET /auditoria/trackeo - Muestra el formulario y el historial
     // GET /auditoria/trackeo - Muestra AMBOS (Uploads y Manuales)
     app.get('/auditoria/trackeo', isAuthenticated, async (req, res, next) => {
-    console.log("[Trackeo] Accediendo a la vista combinada.");
-    try {
-        // 1. Obtener historial de uploads CSV
-        const uploadQuery = `
-            SELECT t.*, u.username as uploaded_by_username
-            FROM tracking_uploads t
-            LEFT JOIN users u ON t.uploaded_by_user_id = u.id
-            ORDER BY t.uploaded_at DESC;
-        `;
-        const uploadResult = await pool.query(uploadQuery);
-        const uploads = uploadResult.rows;
-
-        // 2. Obtener historial de seguimientos manuales
-        const manualQuery = `
-            SELECT m.*, u.username as added_by_username
-            FROM manual_niche_tracking m
-            LEFT JOIN users u ON m.added_by_user_id = u.id
-            ORDER BY m.created_at DESC;
-        `;
-        const manualResult = await pool.query(manualQuery);
-        const manualNiches = manualResult.rows;
-
-        console.log(`[Trackeo] Encontrados ${uploads.length} uploads y ${manualNiches.length} seguimientos manuales.`);
-
-        res.render('auditoria_trackeo', { // Renderiza el MISMO EJS
-            user: req.session.user,
-            uploads: uploads,
-            manualNiches: manualNiches, // <<< Pasar datos manuales
-            success: res.locals.success_msg, // Usar flash
-            error: res.locals.error_msg
-        });
-
-    } catch (error) {
-        console.error("[Trackeo] Error en GET /auditoria/trackeo:", error);
-        next(error);
-    }
+        console.log("[Trackeo] Accediendo a la vista combinada.");
+        try {
+            // 1. Obtener historial de uploads CSV
+            const uploadQuery = `
+                SELECT t.*, u.username as uploaded_by_username
+                FROM tracking_uploads t
+                LEFT JOIN users u ON t.uploaded_by_user_id = u.id
+                ORDER BY t.uploaded_at DESC;
+            `;
+            const uploadResult = await pool.query(uploadQuery);
+            const uploads = uploadResult.rows;
+    
+            // 2. Obtener historial de seguimientos manuales
+            const manualQuery = `
+                SELECT m.*, u.username as added_by_username
+                FROM manual_niche_tracking m
+                LEFT JOIN users u ON m.added_by_user_id = u.id
+                ORDER BY m.created_at DESC;
+            `;
+            const manualResult = await pool.query(manualQuery);
+            const manualNiches = manualResult.rows;
+    
+            // 3. Obtener cuentas del patrimonio
+            const cuentasQuery = `
+                SELECT usuario 
+                FROM patrimonio_cuentas
+                ORDER BY usuario ASC;
+            `;
+            const cuentasResult = await pool.query(cuentasQuery);
+            const cuentas = cuentasResult.rows.map(row => row.usuario);
+    
+            console.log(`[Trackeo] Encontrados ${uploads.length} uploads, ${manualNiches.length} seguimientos manuales y ${cuentas.length} cuentas.`);
+    
+            res.render('auditoria_trackeo', {
+                user: req.session.user,
+                uploads: uploads,
+                manualNiches: manualNiches,
+                cuentas: cuentas,  // <<< Nuevo dato
+                success: res.locals.success_msg,
+                error: res.locals.error_msg
+            });
+    
+        } catch (error) {
+            console.error("[Trackeo] Error en GET /auditoria/trackeo:", error);
+            next(error);
+        }
     });
 
     // POST /auditoria/trackeo - Maneja la subida del archivo CSV
