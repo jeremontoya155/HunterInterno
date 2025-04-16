@@ -88,7 +88,14 @@
             
           </a>
         <% } %>
-       
+
+        <% if (user && (user.role === 'ventas' || user.role === 'admin')) { %>
+
+        <a href="/closers" >
+          <i class="fas fa-crosshairs"></i> <!-- Icono para Trackeo -->
+          <span>Vendedores</span>
+        </a>
+        <% } %>
 
 
         <a href="/logout" class="logout-link"> <!-- Añadí una clase por si quieres estilizarlo diferente -->
