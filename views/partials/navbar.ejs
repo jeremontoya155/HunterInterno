@@ -69,6 +69,28 @@
           </a>
         <% } %>
 
+        <a href="/vendedores/desempeno" > <!-- URL REAL DASHBOARD -->
+          <i class="fas fa-tachometer-alt fa-fw"></i>
+          <span>Dashboard</span>
+      </a>
+     
+
+        <% if (user && (user.role === 'admin' || user.role === 'fulfillment')) { %>
+          <a href="planes-accion" >
+            <i class="fas fa-users fa-fw"></i>
+            <span>Acciones</span>
+          </a>
+        <% } %>
+        <% if (user && (user.role === 'fulfillment' || user.role === 'admin')) { %>
+          <a href="/api/vendedores/agendas">
+            <i class="fas fa-calendar-check fa-fw"></i>
+            <span>Agendas</span>
+            
+          </a>
+        <% } %>
+       
+
+
         <a href="/logout" class="logout-link"> <!-- Añadí una clase por si quieres estilizarlo diferente -->
           <i class="fas fa-sign-out-alt"></i>
           <span>Logout (<%= user ? user.username : 'Usuario' %>)</span> <!-- Muestra username si está logueado -->

@@ -10,12 +10,12 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/static/css/navbar.css" />
-    <link rel="stylesheet" href="/static/css/scrollbar.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+
     <!-- Estilos personalizados -->
     <style>
         :root {
@@ -449,57 +449,7 @@
             </div>
         </div>
 
-        <!-- Detalle por Cuenta -->
-        <div class="card">
-            <div class="card-header">
-                <span>Registros Recientes</span>
-            </div>
-            <div class="card-body">
-                <div class="search-filter">
-                    <input type="text" id="searchDetalle" placeholder="Buscar en registros..." class="form-control">
-                </div>
-                <div class="table-responsive">
-                    <table class="table" id="detalleTable">
-                        <thead>
-                            <tr>
-                                <th>Vendedor</th>
-                                <th>Cuenta</th>
-                                <th>Agendas</th>
-                                <th>Notas</th>
-                                <th>Fecha</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% detalle.forEach(item => { %>
-                                <tr class="detalle-row">
-                                    <td class="searchable"><%= item.vendedor_nombre %></td>
-                                    <td class="searchable">
-                                        <div class="account-details">
-                                            <div class="account-avatar"><%= item.insta_username.charAt(0) %></div>
-                                            <div class="account-name"><%= item.insta_username %></div>
-                                        </div>
-                                    </td>
-                                    <td><span class="badge bg-primary"><%= item.agendas_registradas %></span></td>
-                                    <td class="searchable notes-tooltip" data-bs-toggle="tooltip" title="<%= item.notas || 'Sin notas' %>">
-                                        <%= item.notas ? item.notas.substring(0, 30) + (item.notas.length > 30 ? '...' : '') : 'Sin notas' %>
-                                    </td>
-                                    <td><%= new Date(item.fecha).toLocaleDateString() %></td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            <% }) %>
-                        </tbody>
-                    </table>
-                    <div id="noDetalleResults" class="no-results" style="display: none;">
-                        No se encontraron resultados para tu búsqueda
-                    </div>
-                </div>
-            </div>
-        </div>
+       
     </div>
 
     <!-- Modal para nuevo registro -->
@@ -669,7 +619,7 @@
                 const dateTo = document.getElementById('dateTo').value;
                 const sellerId = document.getElementById('sellerSelect').value;
                 
-                window.location.href = `/vendedores/agendas?desde=${dateFrom}&hasta=${dateTo}&vendedor_id=${sellerId}`;
+                window.location.href = `/api/vendedores/agendas?desde=${dateFrom}&hasta=${dateTo}&vendedor_id=${sellerId}`;
             });
 
             // Manejar el guardado de nueva agenda
@@ -903,5 +853,6 @@ document.getElementById('refreshAgendas').addEventListener('click', loadVendedor
 document.getElementById('modalDesde').addEventListener('change', loadVendedorAgendas);
 document.getElementById('modalHasta').addEventListener('change', loadVendedorAgendas);
     </script>
+    <script defer src="/static/js/navbar.js"></script>
 </body>
 </html>
