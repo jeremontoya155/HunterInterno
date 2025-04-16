@@ -562,51 +562,74 @@
 
     // --- NUEVO: POST /vendedores/desempeno (Para Registrar Desempeño Diario) ---
     // --- NUEVO: POST /vendedores/desempeno (CORREGIDO para incluir mensajes_manuales) ---
-    app.post('/vendedores/desempeno', isAuthenticated, async (req, res) => { // requireRole añadido por coherencia
-        const { vendedor_id, fecha, desempeno } = req.body; // desempeno ahora debe incluir {cuenta, mensajes, respuestas, mensajes_manuales}
+  // --- POST /vendedores/desempeno (Actualizado para guardar notas_auditoria) ---
+app.post('/vendedores/desempeno', isAuthenticated, async (req, res) => {
+    const { vendedor_id, fecha, desempeno, notas_auditoria } = req.body;
 
-        if (!vendedor_id || !fecha || !Array.isArray(desempeno) || desempeno.length === 0) {
-            return res.status(400).json({ success: false, message: 'Datos incompletos.' });
+    if (!vendedor_id || !fecha || !Array.isArray(desempeno) || desempeno.length === 0) {
+        return res.status(400).json({ success: false, message: 'Datos incompletos.' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Actualizar las notas de auditoría en la tabla vendedores
+        if (notas_auditoria && notas_auditoria.trim() !== '') {
+            await client.query(`
+                UPDATE vendedores 
+                SET notas_auditoria = COALESCE(notas_auditoria || '\n' || $1, $1),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = $2
+            `, [`${fecha}: ${notas_auditoria}`, vendedor_id]);
         }
 
-        const client = await pool.connect();
-        try {
-            await client.query('BEGIN');
+        // 2. Registrar el desempeño diario como antes
+        for (const item of desempeno) {
+            const cuenta = item.cuenta?.trim().toLowerCase();
+            const mensajes = parseInt(item.mensajes, 10) || 0;
+            const respuestas = parseInt(item.respuestas, 10) || 0;
+            const mensajesManuales = parseInt(item.mensajes_manuales, 10) || 0;
 
-            for (const item of desempeno) {
-                const cuenta = item.cuenta?.trim().toLowerCase();
-                const mensajes = parseInt(item.mensajes, 10) || 0;
-                const respuestas = parseInt(item.respuestas, 10) || 0;
-                const mensajesManuales = parseInt(item.mensajes_manuales, 10) || 0; // <<< NUEVO: Obtener mensajes manuales
+            if (!cuenta) continue;
 
-                if (!cuenta) continue;
-
-                // Query actualizada para incluir mensajes_manuales
-                const queryText = `
-                    INSERT INTO vendedor_desempeno_diario
-                        (vendedor_id, fecha, insta_username, mensajes_enviados, respuestas_recibidas, mensajes_manuales)
-                    VALUES ($1, $2, $3, $4, $5, $6) -- Añadido $6
-                    ON CONFLICT (vendedor_id, fecha, insta_username) DO UPDATE SET
-                        mensajes_enviados = EXCLUDED.mensajes_enviados,     -- Sobreescribir
-                        respuestas_recibidas = EXCLUDED.respuestas_recibidas, -- Sobreescribir
-                        mensajes_manuales = EXCLUDED.mensajes_manuales,   -- <<< NUEVO: Sobreescribir mensajes manuales
-                        updated_at = CURRENT_TIMESTAMP;
-                `;
-                // Pasar el nuevo valor a la query
-                await client.query(queryText, [vendedor_id, fecha, cuenta, mensajes, respuestas, mensajesManuales]); // Añadido mensajesManuales
-            }
-
-            await client.query('COMMIT');
-            res.json({ success: true, message: 'Desempeño registrado/actualizado correctamente.' });
-
-        } catch (error) {
-            await client.query('ROLLBACK');
-            console.error("Error en POST /vendedores/desempeno:", error);
-            res.status(500).json({ success: false, message: `Error al registrar desempeño: ${error.message}` });
-        } finally {
-            client.release();
+            const queryText = `
+                INSERT INTO vendedor_desempeno_diario
+                    (vendedor_id, fecha, insta_username, mensajes_enviados, respuestas_recibidas, mensajes_manuales)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT (vendedor_id, fecha, insta_username) DO UPDATE SET
+                    mensajes_enviados = EXCLUDED.mensajes_enviados,
+                    respuestas_recibidas = EXCLUDED.respuestas_recibidas,
+                    mensajes_manuales = EXCLUDED.mensajes_manuales,
+                    updated_at = CURRENT_TIMESTAMP;
+            `;
+            await client.query(queryText, [
+                vendedor_id, 
+                fecha, 
+                cuenta, 
+                mensajes, 
+                respuestas, 
+                mensajesManuales
+            ]);
         }
-    });
+
+        await client.query('COMMIT');
+        res.json({ 
+            success: true, 
+            message: 'Desempeño registrado/actualizado correctamente.' 
+        });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Error en POST /vendedores/desempeno:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: `Error al registrar desempeño: ${error.message}` 
+        });
+    } finally {
+        client.release();
+    }
+});
 
 
     // --- NUEVO: GET /vendedores/:id/historial ---

@@ -69,6 +69,24 @@
             width: 100%;
             border-collapse: collapse;
         }
+        /* Estilos para el textarea de notas en el modal */
+#desempeno_notas {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-medium);
+    background-color: var(--color-background-light);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    resize: vertical;
+    min-height: 60px;
+}
+
+#desempeno_notas:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
         
         .resumen-table th, .resumen-table td {
             padding: 0.8rem 1.2rem;
@@ -412,12 +430,12 @@
     <!-- ============================================= -->
     <!--      MODAL REGISTRAR DESEMPEÑO DIARIO         -->
     <!-- ============================================= -->
-     <div id="desempenoModalOverlay" class="modal-overlay">
-         <div class="modal-content" id="desempenoModalContent">
+    <div id="desempenoModalOverlay" class="modal-overlay">
+        <div class="modal-content" id="desempenoModalContent">
             <form id="desempeno-form" onsubmit="submitDesempeno(event)">
                 <div class="modal-header">
                     <h5 class="modal-title" id="desempenoModalLabel">Registrar Desempeño Diario</h5>
-                     <button type="button" class="modal-close-btn" onclick="closeDesempenoModal()" title="Cerrar">×</button>
+                    <button type="button" class="modal-close-btn" onclick="closeDesempenoModal()" title="Cerrar">×</button>
                 </div>
                 <div class="modal-body custom-scrollbar">
                     <input type="hidden" id="desempeno_vendedor_id" name="vendedor_id">
@@ -425,8 +443,15 @@
                         <label for="desempeno_fecha"><i class="far fa-calendar-alt fa-fw"></i> Fecha del Registro</label>
                         <input type="date" id="desempeno_fecha" name="fecha" value="<%= typeof today !== 'undefined' ? today : new Date().toISOString().slice(0,10) %>" required>
                     </div>
+                    
+                    <!-- Nuevo campo para notas generales -->
+                    <div class="form-group">
+                        <label for="desempeno_notas"><i class="fas fa-clipboard-check fa-fw"></i> Notas de Auditoría</label>
+                        <textarea id="desempeno_notas" name="notas_auditoria" rows="2" placeholder="Observaciones o comentarios relevantes..."></textarea>
+                    </div>
+                    
                     <hr class="modal-hr">
-                     <label class="accounts-title"><i class="fas fa-tasks"></i> Ingresar Datos por Cuenta:</label>
+                    <label class="accounts-title"><i class="fas fa-tasks"></i> Ingresar Datos por Cuenta:</label>
                     <div id="desempeno-accounts-container">
                         <p class="no-data">Seleccione un Cliente para cargar cuentas.</p>
                     </div>
@@ -439,7 +464,6 @@
             </form>
         </div>
     </div>
-
     <!-- Scripts (Navbar, Lógica Vendedores con Chart.js) -->
     <script defer src="/static/js/navbar.js"></script>
     <script defer src="/static/js/vendedores_manager.js"></script>

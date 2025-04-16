@@ -150,56 +150,60 @@ window.closeDesempenoModal = () => { if (desempenoModalOverlay) hideModal(desemp
 
 // Enviar Formulario Desempeño (AJAX)
 window.submitDesempeno = async (event) => {
-    if(event) event.preventDefault(); // Prevenir envío normal
+    if(event) event.preventDefault();
     if (!desempenoForm || !desempenoFeedback || !desempenoVendedorIdInput || !desempenoFechaInput || !desempenoAccountsContainer) {
         console.error("Faltan elementos esenciales para enviar desempeño."); return;
     }
+    
     const vendedorId = desempenoVendedorIdInput.value;
     const fecha = desempenoFechaInput.value;
+    const notasAuditoria = document.getElementById('desempeno_notas').value; // Nuevo: obtener notas
     const accountGroups = desempenoAccountsContainer.querySelectorAll('.account-input-group');
     const submitButton = desempenoForm.querySelector('button[type="submit"]');
 
     desempenoFeedback.textContent = 'Guardando...';
-    desempenoFeedback.className = 'feedback-message info'; // Estilo 'info'
+    desempenoFeedback.className = 'feedback-message info';
 
     const desempenoData = [];
     accountGroups.forEach(group => {
-        const cuentaNombre = group.dataset.accountName; // Leer desde dataset
+        const cuentaNombre = group.dataset.accountName;
         const mensajesInput = group.querySelector('input[name="mensajes"]');
         const respuestasInput = group.querySelector('input[name="respuestas"]');
-        const manualesInput = group.querySelector('input[name="mensajes_manuales"]'); // <<< NUEVO: Seleccionar
+        const manualesInput = group.querySelector('input[name="mensajes_manuales"]');
 
-        // Verificar que todo exista antes de intentar leer 'value'
         if (cuentaNombre && mensajesInput && respuestasInput && manualesInput) {
-             desempenoData.push({
-                 cuenta: cuentaNombre,
-                 mensajes: parseInt(mensajesInput.value, 10) || 0,
-                 respuestas: parseInt(respuestasInput.value, 10) || 0,
-                 mensajes_manuales: parseInt(manualesInput.value, 10) || 0 // <<< NUEVO: Añadir
-             });
-        } else {
-            console.warn(`Faltan inputs para la cuenta: ${cuentaNombre} en el grupo`, group);
+            desempenoData.push({
+                cuenta: cuentaNombre,
+                mensajes: parseInt(mensajesInput.value, 10) || 0,
+                respuestas: parseInt(respuestasInput.value, 10) || 0,
+                mensajes_manuales: parseInt(manualesInput.value, 10) || 0
+            });
         }
     });
 
-    if (!vendedorId || !fecha) { desempenoFeedback.textContent = 'Error: Falta ID de vendedor o fecha.'; desempenoFeedback.className = 'feedback-message error'; return; }
-    // Decidir si enviar aunque no haya cuentas (para limpiar datos?)
-    // if (accountGroups.length > 0 && desempenoData.length === 0) { desempenoFeedback.textContent = 'Error al leer datos.'; desempenoFeedback.className = 'feedback-message error'; return; }
-    if (accountGroups.length === 0) { desempenoFeedback.textContent = 'No hay cuentas asignadas.'; desempenoFeedback.className = 'feedback-message warning'; return; } // No enviar si no hay cuentas
+    if (!vendedorId || !fecha) {
+        desempenoFeedback.textContent = 'Error: Falta ID de vendedor o fecha.';
+        desempenoFeedback.className = 'feedback-message error';
+        return;
+    }
 
-
-    if (submitButton) submitButton.disabled = true; // Deshabilitar botón
+    if (submitButton) submitButton.disabled = true;
 
     try {
         const response = await fetch('/vendedores/desempeno', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', /* Añadir CSRF token si es necesario */ },
-            body: JSON.stringify({ vendedor_id: vendedorId, fecha: fecha, desempeno: desempenoData })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                vendedor_id: vendedorId,
+                fecha: fecha,
+                desempeno: desempenoData,
+                notas_auditoria: notasAuditoria // Nuevo: enviar notas
+            })
         });
-        // Siempre intenta parsear como JSON, incluso si no es 200 OK
+
         const result = await response.json();
 
-        if (!response.ok) { // Chequear status code
+        if (!response.ok) {
             throw new Error(result.message || `Error del servidor: ${response.status}`);
         }
 
@@ -207,8 +211,7 @@ window.submitDesempeno = async (event) => {
         desempenoFeedback.className = 'feedback-message success';
         setTimeout(() => {
             closeDesempenoModal();
-            location.reload(); // Recargar la página para ver cambios (simple)
-            // O podrías implementar una actualización AJAX de la card específica
+            location.reload();
         }, 1500);
 
     } catch (error) {
@@ -216,7 +219,7 @@ window.submitDesempeno = async (event) => {
         desempenoFeedback.textContent = `Error: ${error.message}`;
         desempenoFeedback.className = 'feedback-message error';
     } finally {
-        if (submitButton) submitButton.disabled = false; // Rehabilitar siempre
+        if (submitButton) submitButton.disabled = false;
     }
 };
  // Asociar submitDesempeno al evento submit del formulario si existe
