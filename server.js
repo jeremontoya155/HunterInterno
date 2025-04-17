@@ -185,7 +185,9 @@
     // ... (otros requires, app, pool, isAuthenticated, etc.) ...
 
     // --- GET /auditoria/patrimonio ---
-    app.get('/auditoria/patrimonio', isAuthenticated, async (req, res) => {
+
+    // --- GET /auditoria/patrimonio (Para mostrar todas las cuentas) ---
+app.get('/auditoria/patrimonio', isAuthenticated, async (req, res) => {
     // Verificación de Rol Interna (Solo Admin/Auditoría)
     const userRole = req.session.user.role;
     if (userRole !== 'admin' && userRole !== 'auditoria') {
@@ -237,10 +239,10 @@
         console.error("Error en GET /auditoria/patrimonio:", error);
         res.status(500).render('error', { message: 'Error al cargar el patrimonio de cuentas', error, user: req.session.user });
     }
-    });
+});
 
-    // --- POST /auditoria/patrimonio (Para Agregar/Editar Cuenta) ---
-    app.post('/auditoria/patrimonio', isAuthenticated, async (req, res) => {
+// --- POST /auditoria/patrimonio (Para Agregar/Editar Cuenta) ---
+app.post('/auditoria/patrimonio', isAuthenticated, async (req, res) => {
     // Extraer todos los campos del formulario
     const {
         cuenta_id,
@@ -256,9 +258,14 @@
         codigos_respaldo,
         codigos_actualizados_en,
         codigos_validez_dias,
-        celular, // Nuevo campo
-        ultima_carga_celular, // Nuevo campo
-        contrasena_mail // Nuevo campo
+        celular,
+        ultima_carga_celular,
+        contrasena_mail,
+        dispositivo,
+        vendedor,
+        autentificador_cuenta,
+        duracion_numero,
+        link_original
     } = req.body;
 
     // Validación básica
@@ -283,15 +290,19 @@
                     correo = $5, contrasena = $6, verificacion = $7, celu_abierto = $8, 
                     autentificador = $9, codigos_respaldo = $10, codigos_actualizados_en = $11, 
                     codigos_validez_dias = $12, celular = $13, ultima_carga_celular = $14,
-                    contrasena_mail = $15, updated_at = CURRENT_TIMESTAMP
-                WHERE id = $16;
+                    contrasena_mail = $15, dispositivo = $16, vendedor = $17,
+                    autentificador_cuenta = $18, duracion_numero = $19, link_original = $20,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = $21;
             `;
             await pool.query(queryText, [
                 nombre_cliente || null, usuario, link || null, tipo_cuenta, 
                 correo || null, contrasena || null, esVerificado, tieneCeluAbierto, 
-                tieneAutentificador, codigos_respaldo || null, ultima_carga_celular || null, 
+                tieneAutentificador, codigos_respaldo || null, codigos_actualizados_en || null, 
                 validezDias, celular || null, ultima_carga_celular || null,
-                contrasena_mail || null, cuenta_id
+                contrasena_mail || null, dispositivo || null, vendedor || null,
+                autentificador_cuenta || null, duracion_numero || null, link_original || null,
+                cuenta_id
             ]);
             res.redirect('/auditoria/patrimonio?success=Cuenta actualizada correctamente');
         } else {
@@ -301,16 +312,19 @@
                     nombre_cliente, usuario, link, tipo_cuenta, correo, contrasena,
                     verificacion, celu_abierto, autentificador, codigos_respaldo,
                     codigos_actualizados_en, codigos_validez_dias, celular,
-                    ultima_carga_celular, contrasena_mail
+                    ultima_carga_celular, contrasena_mail, dispositivo,
+                    vendedor, autentificador_cuenta, duracion_numero, link_original
                 ) VALUES (
-                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
                 ) RETURNING id;
             `;
             await pool.query(queryText, [
                 nombre_cliente || null, usuario, link || null, tipo_cuenta, correo || null,
                 contrasena || null, esVerificado, tieneCeluAbierto, tieneAutentificador,
                 codigos_respaldo || null, codigos_actualizados_en || null, validezDias,
-                celular || null, ultima_carga_celular || null, contrasena_mail || null
+                celular || null, ultima_carga_celular || null, contrasena_mail || null,
+                dispositivo || null, vendedor || null, autentificador_cuenta || null,
+                duracion_numero || null, link_original || null
             ]);
             res.redirect('/auditoria/patrimonio?success=Cuenta agregada correctamente');
         }
@@ -318,7 +332,7 @@
         console.error("Error en POST /auditoria/patrimonio:", error);
         res.redirect(`/auditoria/patrimonio?error=Error al guardar la cuenta: ${error.message}`);
     }
-    });
+});
     // Opcional: Endpoint DELETE (requiere JS con Fetch y método DELETE)
     // app.delete('/auditoria/patrimonio/:id', isAuthenticated, async (req, res) => { ... });
 
