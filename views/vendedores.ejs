@@ -204,35 +204,41 @@
         }
 
         /* Verde: Al día / Activo */
-        .tag-estado-Al\ dia {
+        .tag-estado-verde, /* Añadido para simplificar */
+        .tag-estado-Al\ dia,
+        .tag-estado-activo { /* Si usas 'activo' en la BD */
             background-color: rgba(40, 167, 69, 0.2);
             color: #28a745;
             border-color: rgba(40, 167, 69, 0.3);
         }
 
         /* Amarillo: 1 - 5 */
-        .tag-estado-amarillo {
+        .tag-estado-amarillo,
+        .tag-estado-1\ -\ 5 {
             background-color: rgba(255, 193, 7, 0.2);
             color: #ffc107;
             border-color: rgba(255, 193, 7, 0.3);
         }
 
         /* Naranja: 5 a 15 */
-        .tag-estado-naranja {
+        .tag-estado-naranja,
+        .tag-estado-5\ a\ 15 {
             background-color: rgba(253, 126, 20, 0.2);
             color: #fd7e14;
             border-color: rgba(253, 126, 20, 0.3);
         }
 
         /* Rojo: +15 */
-        .tag-estado-rojo {
+        .tag-estado-rojo,
+        .tag-estado-\+15 {
             background-color: rgba(220, 53, 69, 0.2);
             color: #dc3545;
             border-color: rgba(220, 53, 69, 0.3);
         }
 
         /* Gris: Inactivo */
-        .tag-estado-gris {
+        .tag-estado-gris,
+        .tag-estado-inactivo { /* Si usas 'inactivo' en la BD */
             background-color: rgba(108, 117, 125, 0.2);
             color: #6c757d;
             border-color: rgba(108, 117, 125, 0.3);
@@ -264,8 +270,103 @@
             font-size: 0.8rem; /* Tamaño del texto del manager */
         }
 
+        /* Ajustes para el nuevo filtro y responsividad del header */
+        .vendedor-section-header {
+            display: flex;
+            flex-wrap: wrap; /* Permite que los elementos pasen a la siguiente línea */
+            justify-content: space-between;
+            align-items: center; /* Alinea verticalmente los elementos */
+            margin-bottom: 1.5rem; /* Espacio debajo del header completo */
+            gap: 1rem; /* Espacio entre grupos de elementos (título/botón, filtros, mostrar todos) */
+        }
+
+        .header-title-button {
+            display: flex;
+            align-items: center;
+            gap: 1rem; /* Espacio entre título y botón agregar */
+            flex-grow: 1; /* Permite que ocupe espacio disponible */
+        }
+         .header-title-button h2 {
+             margin: 0; /* Quitar margen por defecto del h2 */
+         }
+
+        .seller-filter-container {
+            display: flex;
+            gap: 1rem; /* Espacio entre filtros */
+            align-items: center;
+            flex-wrap: wrap; /* Permitir que los filtros pasen a la siguiente línea si no caben */
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            background-color: var(--color-background-light);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-medium);
+            padding: 0.3rem 0.6rem; /* Menos padding vertical */
+        }
+
+        .filter-item i {
+            margin-right: 0.5rem;
+            color: var(--color-text-secondary);
+        }
+
+        .filter-item input[type="text"],
+        .filter-item select {
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--color-text-primary);
+            font-size: 0.9rem; /* Ajustar tamaño si es necesario */
+            padding: 0.2rem; /* Añadir un poco de padding interno */
+            width: 150px; /* Ancho inicial, puede ajustarse */
+            font-family: 'Poppins', sans-serif; /* Asegurar la misma fuente */
+        }
+
+        .filter-item select {
+            cursor: pointer;
+            appearance: none; /* Quitar estilo nativo */
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236c757d%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 0.65em auto;
+            padding-right: 1.8rem; /* Espacio para la flecha */
+        }
+         .filter-item select option {
+            background-color: var(--color-background-dark); /* Fondo para opciones */
+            color: var(--color-text-primary);
+        }
+
+        #show-all-btn {
+             /* Estilos generales para el botón */
+             /* Si usas Bootstrap, ya tendrá estilos base */
+             /* Puedes añadir margen si es necesario con gap en el contenedor padre */
+             white-space: nowrap; /* Evitar que el texto se parta */
+        }
+
 
         /* Ajustes para responsividad */
+        @media (max-width: 992px) { /* Un punto de quiebre intermedio puede ser útil */
+            .vendedor-section-header {
+                flex-direction: column; /* Apilar los grupos */
+                align-items: stretch; /* Hacer que ocupen el ancho */
+            }
+            .header-title-button {
+                 justify-content: space-between; /* Espaciar título y botón en su línea */
+                 width: 100%; /* Ocupar ancho */
+                 margin-bottom: 1rem; /* Espacio antes de los filtros */
+            }
+             .seller-filter-container {
+                 width: 100%; /* Ocupar ancho */
+                 justify-content: center; /* Centrar filtros si no ocupan todo */
+             }
+             #show-all-btn {
+                  width: 100%; /* Botón ocupa todo el ancho */
+                  margin-top: 1rem; /* Espacio sobre el botón */
+                  margin-left: 0 !important; /* Resetear margen si había */
+             }
+        }
+
         @media (max-width: 768px) {
             .resumen-table th, .resumen-table td {
                 padding: 0.6rem 0.8rem;
@@ -291,25 +392,21 @@
                 grid-template-columns: 1fr; /* Una columna en móvil */
                 gap: 1.5rem; /* Menos espacio entre cards */
             }
-             .vendedor-section-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .header-title-button {
-                margin-bottom: 1rem;
-                width: 100%; /* Ocupar ancho */
-                display: flex;
-                justify-content: space-between; /* Espaciar título y botón */
-                align-items: center;
-            }
+
+            /* Ajustes específicos para filtros en móvil */
             .seller-filter-container {
-                width: 100%; /* Ocupar ancho */
+                 flex-direction: column; /* Apilar filtros */
+                 align-items: stretch; /* Ocupar ancho */
             }
-            #show-all-btn { /* Estilo para el botón 'Mostrar Todos' en móvil */
-                margin-top: 1rem;
-                margin-left: 0 !important; /* Sobreescribir margen izquierdo */
-                width: 100%; /* Ocupar ancho */
+            .filter-item {
+                 width: 100%; /* Ocupar todo el ancho */
+                 margin-bottom: 0.5rem; /* Espacio entre filtros apilados */
             }
+             .filter-item input[type="text"],
+             .filter-item select {
+                 width: 100%; /* Input/select ocupa el espacio restante */
+                 flex-grow: 1;
+             }
         }
     </style>
 </head>
@@ -318,7 +415,7 @@
 
     <div class="vendedor-main-container">
         <!-- ============================================= -->
-        <!--    ENCABEZADO Y FILTRO PARA VENDEDORES      -->
+        <!--    ENCABEZADO Y FILTROS PARA VENDEDORES     -->
         <!-- ============================================= -->
         <div class="vendedor-section-header">
              <div class="header-title-button">
@@ -329,11 +426,31 @@
                     </button>
                 <% } %>
              </div>
+             <!-- Contenedor para ambos filtros -->
              <div class="seller-filter-container">
-                <i class="fas fa-search filter-icon"></i>
-                <input type="text" id="seller-name-filter" placeholder="Filtrar por nombre...">
-            </div>
-             <!-- Botón Mostrar Todos se añadirá aquí por JS -->
+                 <!-- Filtro por Nombre -->
+                 <div class="filter-item">
+                    <i class="fas fa-search filter-icon"></i>
+                    <input type="text" id="seller-name-filter" placeholder="Filtrar por nombre...">
+                 </div>
+                 <!-- Filtro por Plan -->
+                 <div class="filter-item">
+                    <i class="fas fa-tags filter-icon"></i>
+                    <select id="plan-filter">
+                        <option value="">Todos los Planes</option>
+                        <% if (typeof distinctPlans !== 'undefined' && distinctPlans && distinctPlans.length > 0) { %>
+                            <% distinctPlans.forEach(plan => { %>
+                                <%# Asegurarse que el valor sea consistente (ej. lowercase) %>
+                                <option value="<%= plan.toLowerCase() %>"><%= plan %></option>
+                            <% }); %>
+                        <% } %>
+                    </select>
+                 </div>
+             </div>
+             <!-- Botón Mostrar Todos (se moverá aquí por JS) -->
+             <button id="show-all-btn" class="btn btn-info btn-sm" style="display: none;"> <%# Oculto inicialmente, JS lo configura y muestra %>
+                <i class="fas fa-eye"></i> Mostrar Todos
+             </button>
         </div>
 
         <!-- Mensajes de Feedback Globales -->
@@ -372,24 +489,35 @@
                                 <%# --- INICIO: Lógica para determinar la clase CSS del estado --- %>
                                 <%
                                     let estadoClass = 'tag-estado-default'; // Clase por defecto
+                                    let estadoTexto = vendedor.estado || 'Desconocido'; // Texto a mostrar
                                     if (vendedor.estado) {
-                                        const estadoLower = String(vendedor.estado).toLowerCase().trim(); // Asegurar que sea string
+                                        const estadoLower = String(vendedor.estado).toLowerCase().trim();
                                         if (estadoLower === 'al dia' || estadoLower === 'al día' || estadoLower === 'activo') {
                                             estadoClass = 'tag-estado-verde';
+                                            estadoTexto = 'Al día'; // Normalizar texto
                                         } else if (estadoLower === '1 - 5') {
                                             estadoClass = 'tag-estado-amarillo';
+                                            estadoTexto = '1 - 5'; // Mantener formato
                                         } else if (estadoLower === '5 a 15') {
                                             estadoClass = 'tag-estado-naranja';
+                                             estadoTexto = '5 a 15'; // Mantener formato
                                         } else if (estadoLower === '+15') {
                                             estadoClass = 'tag-estado-rojo';
+                                             estadoTexto = '+15'; // Mantener formato
                                         } else if (estadoLower === 'inactivo') {
                                             estadoClass = 'tag-estado-gris';
+                                             estadoTexto = 'Inactivo'; // Normalizar texto
                                         }
+                                        // Si no coincide, se queda con tag-estado-default y el texto original
                                     }
                                 %>
                                 <%# --- FIN: Lógica para determinar la clase CSS del estado --- %>
 
-                                <tr class="resumen-item" data-vendedor-id="<%= vendedor.id %>">
+                                <%# *** Añadido data-plan y data-nombre *** %>
+                                <tr class="resumen-item"
+                                    data-vendedor-id="<%= vendedor.id %>"
+                                    data-plan="<%= vendedor.plan ? vendedor.plan.toLowerCase() : '' %>"
+                                    data-nombre="<%= vendedor.nombre.toLowerCase() %>">
                                     <td class="resumen-nombre">
                                         <span><%= vendedor.nombre %></span>
                                         <% if (vendedor.manager_asignado) { %>
@@ -397,8 +525,7 @@
                                         <% } %>
                                     </td>
                                     <td>
-                                        <%# Aplica la clase determinada dinámicamente %>
-                                        <span class="tag tag-estado <%= estadoClass %>"><%= vendedor.estado %></span>
+                                        <span class="tag tag-estado <%= estadoClass %>"><%= estadoTexto %></span>
                                     </td>
                                     <td><%= vendedor.num_cuentas || 0 %></td>
                                     <td>
@@ -411,9 +538,8 @@
                                     <td>
                                         <div class="mini-progress-container" title="Progreso: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(1) %>%">
                                             <div class="mini-progress-bar"
-                                                 style="width: <%= Math.min(100, parseFloat(vendedor.progreso_mensajes_mes_pct || 0)) %>%; /* Limita al 100% visualmente */
+                                                 style="width: <%= Math.min(100, parseFloat(vendedor.progreso_mensajes_mes_pct || 0)) %>%;
                                                         background-color: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0) >= 100 ? 'var(--color-green-progress)' : (parseFloat(vendedor.progreso_mensajes_mes_pct || 0) > 50 ? 'var(--color-accent)' : 'var(--color-warning)') %>;">
-                                                        <%# Cambia color si supera 50% o 100% %>
                                             </div>
                                             <span class="mini-progress-text"><%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(0) %>%</span>
                                         </div>
@@ -432,30 +558,40 @@
         <div class="vendedor-cards-grid" id="vendedor-cards-container">
             <% if (typeof vendedores !== 'undefined' && vendedores && Array.isArray(vendedores) && vendedores.length > 0) { %>
                 <% vendedores.forEach(vendedor => { %>
-                    <%# --- INICIO: Lógica para determinar la clase CSS del estado (para la tarjeta) --- %>
-                    <%
-                        let estadoCardClass = 'tag-estado-default'; // Clase por defecto
+                     <%# --- Lógica para determinar la clase CSS del estado (para la tarjeta) --- %>
+                     <%
+                        let estadoCardClass = 'tag-estado-default';
+                        let estadoCardTexto = vendedor.estado || 'Desconocido';
                         if (vendedor.estado) {
-                            const estadoLower = String(vendedor.estado).toLowerCase().trim(); // Asegurar que sea string
-                            if (estadoLower === 'al dia' || estadoLower === 'al día' || estadoLower === 'activo') {
-                                estadoCardClass = 'tag-estado-verde';
-                            } else if (estadoLower === '1 - 5') {
-                                estadoCardClass = 'tag-estado-amarillo';
-                            } else if (estadoLower === '5 a 15') {
-                                estadoCardClass = 'tag-estado-naranja';
-                            } else if (estadoLower === '+15') {
-                                estadoCardClass = 'tag-estado-rojo';
-                            } else if (estadoLower === 'inactivo') {
-                                estadoCardClass = 'tag-estado-gris';
-                            }
+                             const estadoLower = String(vendedor.estado).toLowerCase().trim();
+                             if (estadoLower === 'al dia' || estadoLower === 'al día' || estadoLower === 'activo') {
+                                 estadoCardClass = 'tag-estado-verde';
+                                 estadoCardTexto = 'Al día';
+                             } else if (estadoLower === '1 - 5') {
+                                 estadoCardClass = 'tag-estado-amarillo';
+                                 estadoCardTexto = '1 - 5';
+                             } else if (estadoLower === '5 a 15') {
+                                 estadoCardClass = 'tag-estado-naranja';
+                                 estadoCardTexto = '5 a 15';
+                             } else if (estadoLower === '+15') {
+                                 estadoCardClass = 'tag-estado-rojo';
+                                 estadoCardTexto = '+15';
+                             } else if (estadoLower === 'inactivo') {
+                                 estadoCardClass = 'tag-estado-gris';
+                                 estadoCardTexto = 'Inactivo';
+                             }
                         }
-                    %>
-                     <%# --- FIN: Lógica para determinar la clase CSS del estado --- %>
+                     %>
+                    <%# --- FIN: Lógica para determinar la clase CSS del estado --- %>
 
-                    <div class="vendedor-card" id="vendedor-card-<%= vendedor.id %>" data-vendedor='<%- JSON.stringify(vendedor) %>'>
+                    <%# *** Añadido data-plan y data-nombre *** %>
+                    <div class="vendedor-card"
+                         id="vendedor-card-<%= vendedor.id %>"
+                         data-vendedor='<%- JSON.stringify(vendedor) %>'
+                         data-plan="<%= vendedor.plan ? vendedor.plan.toLowerCase() : '' %>"
+                         data-nombre="<%= vendedor.nombre.toLowerCase() %>">
                         <div class="card-header">
-                             <%# Aplica la clase determinada dinámicamente a la tarjeta %>
-                             <span class="tag tag-estado <%= estadoCardClass %>" title="Estado: <%= vendedor.estado %>"><%= vendedor.estado %></span>
+                             <span class="tag tag-estado <%= estadoCardClass %>" title="Estado: <%= estadoCardTexto %>"><%= estadoCardTexto %></span>
                             <h3 class="vendedor-nombre"><%= vendedor.nombre %></h3>
                             <% if (vendedor.manager_asignado) { %><small class="manager"><i class="fas fa-user-tie"></i> Manager: <%= vendedor.manager_asignado %></small><% } %>
                         </div>
@@ -525,7 +661,7 @@
              <% } else { %>
                  <p class="no-data-global" style="padding: 1rem;">No hay Clientes registrados actualmente.</p>
              <% } %>
-             <p id="no-seller-found-message" class="no-data-global" style="display: none; padding: 1rem;">No se encontraron Clientes que coincidan con el filtro.</p>
+             <p id="no-seller-found-message" class="no-data-global" style="display: none; padding: 1rem;">No se encontraron Clientes que coincidan con los filtros.</p>
         </div> <!-- Fin Grid -->
 
     </div> <!-- Fin vendedor-main-container -->
@@ -566,6 +702,16 @@
                             <input type="number" id="modal_objetivo_mensual" name="objetivo_mensual" min="0" step="1" value="0" title="El progreso se calcula con este valor. 0 o vacío para N/A.">
                          </div>
                     </div>
+                     <div class="form-row">
+                         <div class="form-group">
+                             <label for="modal_plan"><i class="fas fa-tag fa-fw"></i> Plan Asignado</label>
+                             <input type="text" id="modal_plan" name="plan" placeholder="Ej: base, premium"> <%# Input para el plan %>
+                         </div>
+                         <div class="form-group">
+                             <label for="modal_tipo_cuenta"><i class="fas fa-briefcase fa-fw"></i> Tipo Cuenta</label>
+                             <input type="text" id="modal_tipo_cuenta" name="tipo_cuenta" value="cliente"> <%# Input para tipo_cuenta %>
+                         </div>
+                     </div>
                     <div class="form-row">
                          <div class="form-group">
                              <label for="modal_fecha_ingreso"><i class="far fa-calendar-alt fa-fw"></i> Fecha Ingreso</label>
@@ -574,13 +720,13 @@
                          <div class="form-group">
                              <label for="modal_estado"><i class="fas fa-toggle-on fa-fw"></i> Estado</label>
                             <select id="modal_estado" name="estado">
-                                <!-- Asegúrate que estos values coincidan exactamente con los textos usados en la lógica EJS y backend -->
+                                <!-- Opciones de estado como estaban, asegurar que coincidan con la lógica EJS -->
                                 <option value="Al dia" selected>Al dia</option>
                                 <option value="1 - 5">1 - 5</option>
                                 <option value="5 a 15">5 a 15</option>
                                 <option value="+15">+15</option>
-                                <option value="ACTIVO">Activo</option> <!-- Añadido si es necesario -->
-                                <option value="INACTIVO">Inactivo</option> <!-- Añadido si es necesario -->
+                                <option value="Activo">Activo</option> <%# Mantener si se usa %>
+                                <option value="Inactivo">Inactivo</option> <%# Mantener si se usa %>
                             </select>
                          </div>
                     </div>
@@ -614,7 +760,6 @@
                         <input type="date" id="desempeno_fecha" name="fecha" value="<%= typeof today !== 'undefined' ? today : new Date().toISOString().slice(0,10) %>" required>
                     </div>
 
-                    <!-- Nuevo campo para notas generales -->
                     <div class="form-group">
                         <label for="desempeno_notas"><i class="fas fa-clipboard-check fa-fw"></i> Notas de Auditoría</label>
                         <textarea id="desempeno_notas" name="notas_auditoria" rows="2" placeholder="Observaciones o comentarios relevantes..."></textarea>
@@ -634,23 +779,26 @@
             </form>
         </div>
     </div>
-    <!-- Scripts (Navbar, Lógica Vendedores con Chart.js) -->
+
+    <!-- Scripts (Navbar, Lógica Vendedores) -->
     <script defer src="/static/js/navbar.js"></script>
-    <script defer src="/static/js/vendedores_manager.js"></script>
 
     <script>
-        // CÓDIGO PARA MANEJAR EL RESUMEN Y CARDS (SIN CAMBIOS, YA ESTABA BIEN)
+        // CÓDIGO JS ACTUALIZADO PARA MANEJAR AMBOS FILTROS
         document.addEventListener('DOMContentLoaded', function() {
             const toggleBtn = document.getElementById('toggle-resumen');
             const resumenList = document.getElementById('resumen-list');
+            const resumenTableBody = resumenList ? resumenList.querySelector('tbody') : null;
             const cardsContainer = document.getElementById('vendedor-cards-container');
-            const sellerFilter = document.getElementById('seller-name-filter');
+            const sellerNameFilter = document.getElementById('seller-name-filter');
+            const planFilter = document.getElementById('plan-filter');
             const noSellerMsg = document.getElementById('no-seller-found-message');
-            const header = document.querySelector('.vendedor-section-header'); // Selecciona el contenedor del header
-            const showAllBtn = document.createElement('button'); // Crea el botón
+            const header = document.querySelector('.vendedor-section-header'); // Contenedor principal del header
+            const showAllBtn = document.getElementById('show-all-btn'); // Obtener el botón existente
 
             // Configuración inicial
-            cardsContainer.style.display = 'none'; // Ocultar cards al inicio
+            if (cardsContainer) cardsContainer.style.display = 'none'; // Ocultar cards al inicio
+            if (showAllBtn) showAllBtn.style.display = 'inline-block'; // Mostrar el botón ahora que JS cargó
 
             // Toggle para expandir/contraer el resumen
             if (toggleBtn && resumenList) {
@@ -659,94 +807,140 @@
                     const icon = this.querySelector('i');
                     const isCollapsed = resumenList.classList.contains('collapsed');
                     icon.className = isCollapsed ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
-                    this.childNodes[1].nodeValue = isCollapsed ? ' Expandir' : ' Contraer'; // Actualiza texto del botón
+                    this.childNodes[1].nodeValue = isCollapsed ? ' Expandir' : ' Contraer'; // El texto está después del icono
                 });
+            }
+
+            // --- FUNCIÓN CENTRALIZADA DE FILTRADO ---
+            function applyFilters() {
+                if (!resumenTableBody && !cardsContainer) return;
+
+                const nameValue = sellerNameFilter.value.toLowerCase().trim();
+                const planValue = planFilter.value.toLowerCase(); // El valor ya debería ser lowercase
+
+                let resumenVisibleCount = 0;
+                let cardsVisibleCount = 0;
+                const cardsAreGloballyVisible = cardsContainer && cardsContainer.style.display === 'grid';
+
+                // 1. Filtrar en el resumen
+                if (resumenTableBody) {
+                    document.querySelectorAll('.resumen-item').forEach(row => {
+                        const nombre = row.dataset.nombre || '';
+                        const plan = row.dataset.plan || '';
+
+                        const nameMatch = nombre.includes(nameValue);
+                        const planMatch = (planValue === '' || plan === planValue);
+
+                        const isVisible = nameMatch && planMatch;
+                        row.style.display = isVisible ? '' : 'none';
+                        if (isVisible) resumenVisibleCount++;
+                    });
+                }
+
+                // 2. Filtrar en las cards (SOLO si el contenedor de cards está visible)
+                if (cardsAreGloballyVisible) {
+                    document.querySelectorAll('.vendedor-card').forEach(card => {
+                        // Verificar si la card estaba específicamente oculta por un clic en resumen
+                        const wasHiddenByClick = card.style.display === 'none' && cardsContainer.dataset.filteredById;
+                        if (wasHiddenByClick && card.id !== cardsContainer.dataset.filteredById) {
+                           // Si estaba oculta por clic y no es la seleccionada, la mantenemos oculta
+                           // a menos que el filtro de nombre o plan la oculte de todas formas
+                           // Esto previene que reaparezcan cards no seleccionadas al cambiar filtros
+                           // (Comentado por ahora, puede ser confuso. La lógica actual es más simple:
+                           // si la card coincide con filtros Y el contenedor está visible, se muestra)
+                        }
+
+                        const nombre = card.dataset.nombre || '';
+                        const plan = card.dataset.plan || '';
+
+                        const nameMatch = nombre.includes(nameValue);
+                        const planMatch = (planValue === '' || plan === planValue);
+
+                        const isVisible = nameMatch && planMatch;
+
+                         // Solo mostrar si coincide Y el contenedor está visible
+                        card.style.display = isVisible ? 'block' : 'none';
+                        if (isVisible) cardsVisibleCount++;
+                    });
+                }
+
+                // 3. Mostrar/Ocultar mensaje "No encontrado"
+                 const showNoSellerMsg = resumenVisibleCount === 0 && (!cardsAreGloballyVisible || cardsVisibleCount === 0);
+                 if (noSellerMsg) {
+                     noSellerMsg.style.display = showNoSellerMsg ? 'block' : 'none';
+                 }
+
+                 // Limpiar el estado de filtrado por ID si se aplican filtros generales
+                 if(cardsContainer) delete cardsContainer.dataset.filteredById;
+            }
+
+            // --- EVENT LISTENERS PARA FILTROS ---
+            if (sellerNameFilter) {
+                sellerNameFilter.addEventListener('input', applyFilters);
+            }
+            if (planFilter) {
+                planFilter.addEventListener('change', applyFilters);
             }
 
             // Clic en item del resumen muestra la card correspondiente
-            document.querySelectorAll('.resumen-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const vendedorId = this.getAttribute('data-vendedor-id');
-                    const card = document.getElementById(`vendedor-card-${vendedorId}`);
+            if (resumenTableBody) {
+                resumenTableBody.addEventListener('click', function(event) {
+                    const targetRow = event.target.closest('.resumen-item');
+                    if (!targetRow) return;
 
-                    if (card) {
-                        // Asegura que el contenedor de cards esté visible (como grid)
+                    const vendedorId = targetRow.getAttribute('data-vendedor-id');
+                    const cardId = `vendedor-card-${vendedorId}`;
+                    const card = document.getElementById(cardId);
+
+                    if (card && cardsContainer) {
                         cardsContainer.style.display = 'grid';
-                        cardsContainer.classList.add('visible'); // Añade clase si usas CSS para mostrar
+                        cardsContainer.classList.add('visible');
+                        cardsContainer.dataset.filteredById = cardId; // Marcar que filtramos por ID
 
-                        // Oculta todas las cards excepto la seleccionada
+                        // Oculta TODAS las cards primero
                         document.querySelectorAll('.vendedor-card').forEach(c => {
-                            c.style.display = (c.id === `vendedor-card-${vendedorId}`) ? 'block' : 'none';
+                            c.style.display = 'none';
                         });
+                         // Muestra SOLO la seleccionada
+                        card.style.display = 'block';
 
                         // Scroll y highlight
-                        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         card.classList.add('highlighted');
                         setTimeout(() => card.classList.remove('highlighted'), 2000);
-                    }
-                });
-            });
 
-            // Filtro por nombre (afecta resumen y cards si están visibles)
-            if (sellerFilter) {
-                sellerFilter.addEventListener('input', function() {
-                    const filterValue = this.value.toLowerCase().trim();
-                    let resumenVisible = false;
-                    let cardsVisible = false; // Para saber si hay alguna card visible
-
-                    // Filtrar en el resumen
-                    document.querySelectorAll('.resumen-item').forEach(row => {
-                        const nombre = row.querySelector('.resumen-nombre span').textContent.toLowerCase();
-                        const matches = nombre.includes(filterValue);
-                        row.style.display = matches ? '' : 'none';
-                        if (matches) resumenVisible = true;
-                    });
-
-                    // Filtrar en las cards (solo si el contenedor de cards está visible)
-                    if (cardsContainer.style.display === 'grid') {
-                         document.querySelectorAll('.vendedor-card').forEach(card => {
-                            const nombre = card.querySelector('.vendedor-nombre').textContent.toLowerCase();
-                            const matches = nombre.includes(filterValue);
-                            // Muestra u oculta basado en el filtro Y si la card no estaba ya oculta por selección
-                            if (card.style.display !== 'none' || filterValue === '') { // Si el filtro está vacío, muestra todas las que no estaban ocultas
-                                card.style.display = matches ? 'block' : 'none';
-                            }
-                            if (matches && card.style.display === 'block') cardsVisible = true;
-                         });
-                    }
-
-                     // Mostrar mensaje "No encontrado" solo si NADA es visible en ambas secciones
-                    const shouldShowNoSellerMsg = !resumenVisible && (!cardsVisible && cardsContainer.style.display === 'grid');
-                    if (noSellerMsg) {
-                         noSellerMsg.style.display = shouldShowNoSellerMsg ? 'block' : 'none';
+                        if (noSellerMsg) noSellerMsg.style.display = 'none';
                     }
                 });
             }
 
-            // Configuración y lógica del botón "Mostrar Todos"
-            if (header) { // Asegura que el header exista
-                showAllBtn.id = 'show-all-btn'; // Asigna ID para estilos si es necesario
-                showAllBtn.className = 'btn btn-info btn-sm';
-                showAllBtn.innerHTML = '<i class="fas fa-eye"></i> Mostrar Todos';
-                showAllBtn.style.marginLeft = '10px'; // Margen por defecto
+            // Lógica del botón "Mostrar Todos"
+            if (showAllBtn) {
                 showAllBtn.addEventListener('click', function() {
-                    cardsContainer.style.display = 'grid'; // Muestra el contenedor
-                    cardsContainer.classList.add('visible');
-                    sellerFilter.value = ''; // Limpia el filtro
-                    const event = new Event('input'); // Dispara evento input para refrescar vista
-                    sellerFilter.dispatchEvent(event);
+                    if (cardsContainer) {
+                         cardsContainer.style.display = 'grid';
+                         cardsContainer.classList.add('visible');
+                         delete cardsContainer.dataset.filteredById; // Quitar filtro por ID
+                    }
+                    if(sellerNameFilter) sellerNameFilter.value = '';
+                    if(planFilter) planFilter.value = ''; // Resetea a "Todos los Planes"
 
-                    document.querySelectorAll('.vendedor-card').forEach(card => {
-                        card.style.display = 'block'; // Muestra todas las cards
-                    });
-                     if (noSellerMsg) noSellerMsg.style.display = 'none'; // Oculta mensaje "no encontrado"
+                    applyFilters(); // Re-aplica filtros (vacíos) para mostrar todo
+
+                    // Asegurar que no quede el mensaje "no encontrado"
+                    if (noSellerMsg) noSellerMsg.style.display = 'none';
                 });
-
-                // Añade el botón al contenedor del header
-                header.appendChild(showAllBtn);
             }
+
+            // Aplicar filtros inicialmente por si acaso (aunque normalmente estarán vacíos)
+            // applyFilters();
 
         });
     </script>
+
+    <%# Incluir el script de vendedores_manager.js DESPUÉS del script inline %>
+    <%# Asegúrate que las funciones openVendedorModal, closeVendedorModal, etc. estén definidas globalmente o en este script %>
+    <script defer src="/static/js/vendedores_manager.js"></script>
+
 </body>
 </html>
