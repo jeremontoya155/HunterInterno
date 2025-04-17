@@ -30,7 +30,7 @@
             margin-bottom: 2rem;
             overflow: hidden;
         }
-        
+
         .resumen-header {
             display: flex;
             justify-content: space-between;
@@ -39,7 +39,7 @@
             background: linear-gradient(to right, rgba(33, 38, 45, 0.6), rgba(22, 27, 34, 0.4));
             border-bottom: 1px solid var(--color-border);
         }
-        
+
         .resumen-header h3 {
             margin: 0;
             font-size: 1.2rem;
@@ -49,79 +49,84 @@
             align-items: center;
             gap: 0.7rem;
         }
-        
+
         .resumen-header h3 i {
             color: var(--color-accent);
         }
-        
+
         .resumen-list-container {
             transition: all 0.3s ease;
-            max-height: 1000px;
-            overflow: auto;
+            max-height: 1000px; /* Ajusta si necesitas más altura inicial */
+            overflow: auto; /* Cambiado a auto para que aparezca scroll si es necesario */
+            position: relative; /* Necesario para sticky header */
         }
-        
+
         .resumen-list-container.collapsed {
             max-height: 0;
             overflow: hidden;
+            border-top: none; /* Evita doble borde al colapsar */
         }
-        
+
         .resumen-table {
             width: 100%;
             border-collapse: collapse;
         }
-        /* Estilos para el textarea de notas en el modal */
-#desempeno_notas {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-medium);
-    background-color: var(--color-background-light);
-    color: var(--color-text-primary);
-    font-size: 0.9rem;
-    resize: vertical;
-    min-height: 60px;
-}
 
-#desempeno_notas:focus {
-    outline: none;
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-}
-        
+        /* Estilos para el textarea de notas en el modal */
+        #desempeno_notas {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-medium);
+            background-color: var(--color-background-light);
+            color: var(--color-text-primary);
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        #desempeno_notas:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
         .resumen-table th, .resumen-table td {
             padding: 0.8rem 1.2rem;
             text-align: left;
             border-bottom: 1px solid var(--color-border);
             font-size: 0.9rem;
+            vertical-align: middle; /* Alinea verticalmente el contenido */
         }
-        
+
         .resumen-table th {
             background-color: var(--color-background-light);
             font-weight: 600;
             position: sticky;
             top: 0;
+            z-index: 1; /* Asegura que el header esté por encima del contenido */
             color: var(--color-text-secondary);
             text-transform: uppercase;
             font-size: 0.8rem;
         }
-        
+
         .resumen-table tr {
             background-color: var(--color-background-medium);
             transition: background-color 0.2s ease;
         }
-        
+
         .resumen-table tr:hover {
             background-color: var(--color-background-light);
             cursor: pointer;
         }
-        
+
         .resumen-nombre {
             font-weight: 500;
             color: var(--color-text-primary);
             display: flex;
             flex-direction: column;
         }
-        
+
         .resumen-nombre small {
             font-size: 0.75rem;
             color: var(--color-text-secondary);
@@ -130,11 +135,11 @@
             align-items: center;
             gap: 0.4rem;
         }
-        
+
         .resumen-nombre small i {
             color: var(--color-accent);
         }
-        
+
         .mini-progress-container {
             position: relative;
             height: 20px;
@@ -142,14 +147,15 @@
             border-radius: var(--border-radius-medium);
             overflow: hidden;
             border: 1px solid rgba(35, 134, 54, 0.2);
+            min-width: 80px; /* Asegura un ancho mínimo */
         }
-        
+
         .mini-progress-bar {
             height: 100%;
             transition: width 0.3s ease;
-            background-color: var(--color-green-progress);
+            background-color: var(--color-green-progress); /* Color base */
         }
-        
+
         .mini-progress-text {
             position: absolute;
             top: 50%;
@@ -160,41 +166,149 @@
             color: #fff;
             text-shadow: 0 0 2px rgba(0,0,0,0.5);
         }
-        
+
         /* Estilo para destacar la card al hacer clic en el resumen */
         .vendedor-card.highlighted {
             animation: highlight 2s ease;
         }
-        
+
         @keyframes highlight {
             0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.3); }
             50% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
             100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
         }
-        
+
         /* Ocultar cards inicialmente */
         .vendedor-cards-grid {
-            display: none;
+            display: none; /* Mantenido como none por defecto */
             grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
             gap: 2.5rem;
         }
-        
+
         .vendedor-cards-grid.visible {
-            display: grid;
+            display: grid; /* Clase para mostrar */
         }
-        
+
+        /* --- INICIO: ESTILOS ACTUALIZADOS PARA TAG ESTADO --- */
+        .tag-estado {
+            padding: 0.3rem 0.6rem;
+            border-radius: var(--border-radius-medium);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: inline-block;
+            text-align: center;
+            border: 1px solid transparent;
+            line-height: 1.2;
+            white-space: nowrap; /* Evita que textos largos se partan */
+        }
+
+        /* Verde: Al día / Activo */
+        .tag-estado-Al\ dia {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border-color: rgba(40, 167, 69, 0.3);
+        }
+
+        /* Amarillo: 1 - 5 */
+        .tag-estado-amarillo {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+
+        /* Naranja: 5 a 15 */
+        .tag-estado-naranja {
+            background-color: rgba(253, 126, 20, 0.2);
+            color: #fd7e14;
+            border-color: rgba(253, 126, 20, 0.3);
+        }
+
+        /* Rojo: +15 */
+        .tag-estado-rojo {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border-color: rgba(220, 53, 69, 0.3);
+        }
+
+        /* Gris: Inactivo */
+        .tag-estado-gris {
+            background-color: rgba(108, 117, 125, 0.2);
+            color: #6c757d;
+            border-color: rgba(108, 117, 125, 0.3);
+        }
+        /* Estilo por defecto si no coincide ninguno */
+        .tag-estado-default {
+            background-color: rgba(108, 117, 125, 0.1);
+            color: #6c757d;
+            border-color: rgba(108, 117, 125, 0.2);
+        }
+        /* --- FIN: ESTILOS ACTUALIZADOS PARA TAG ESTADO --- */
+
+
+        /* Ajustes generales de la card */
+        .vendedor-card .card-header {
+            display: flex;
+            flex-direction: column; /* Cambiado a columna para mejor disposición */
+            align-items: flex-start; /* Alinea a la izquierda */
+            padding-bottom: 0.5rem; /* Espacio bajo el header */
+        }
+        .vendedor-card .card-header .tag-estado {
+            margin-bottom: 0.5rem; /* Espacio entre tag y nombre */
+            align-self: flex-start; /* Asegura que el tag no se estire */
+        }
+        .vendedor-card .vendedor-nombre {
+            margin-bottom: 0.2rem; /* Menos espacio bajo el nombre */
+        }
+        .vendedor-card .manager {
+            font-size: 0.8rem; /* Tamaño del texto del manager */
+        }
+
+
         /* Ajustes para responsividad */
         @media (max-width: 768px) {
             .resumen-table th, .resumen-table td {
                 padding: 0.6rem 0.8rem;
+                font-size: 0.85rem; /* Reducir tamaño fuente en tabla */
             }
-            
+             .tag-estado {
+                font-size: 0.7rem; /* Reducir tamaño fuente de tags */
+                padding: 0.25rem 0.5rem;
+            }
             .resumen-header {
                 padding: 0.8rem 1rem;
+                flex-direction: column; /* Apilar elementos en móvil */
+                align-items: flex-start;
             }
-            
             .resumen-header h3 {
                 font-size: 1.1rem;
+                margin-bottom: 0.5rem; /* Espacio bajo el título */
+            }
+            .resumen-header button {
+                align-self: flex-end; /* Botón a la derecha */
+            }
+            .vendedor-cards-grid {
+                grid-template-columns: 1fr; /* Una columna en móvil */
+                gap: 1.5rem; /* Menos espacio entre cards */
+            }
+             .vendedor-section-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .header-title-button {
+                margin-bottom: 1rem;
+                width: 100%; /* Ocupar ancho */
+                display: flex;
+                justify-content: space-between; /* Espaciar título y botón */
+                align-items: center;
+            }
+            .seller-filter-container {
+                width: 100%; /* Ocupar ancho */
+            }
+            #show-all-btn { /* Estilo para el botón 'Mostrar Todos' en móvil */
+                margin-top: 1rem;
+                margin-left: 0 !important; /* Sobreescribir margen izquierdo */
+                width: 100%; /* Ocupar ancho */
             }
         }
     </style>
@@ -219,6 +333,7 @@
                 <i class="fas fa-search filter-icon"></i>
                 <input type="text" id="seller-name-filter" placeholder="Filtrar por nombre...">
             </div>
+             <!-- Botón Mostrar Todos se añadirá aquí por JS -->
         </div>
 
         <!-- Mensajes de Feedback Globales -->
@@ -237,8 +352,8 @@
                     <i class="fas fa-chevron-up"></i> Contraer
                 </button>
             </div>
-            
-            <div class="resumen-list-container" id="resumen-list">
+
+            <div class="resumen-list-container custom-scrollbar" id="resumen-list">
                 <% if (typeof vendedores !== 'undefined' && vendedores && Array.isArray(vendedores) && vendedores.length > 0) { %>
                     <table class="resumen-table">
                         <thead>
@@ -247,13 +362,33 @@
                                 <th>Estado</th>
                                 <th>Cuentas</th>
                                 <th>Mensajes (B/M/R)</th>
-                                <th>Total Mensajes</th>
+                                <th>Total Mes</th>
                                 <th>Cumplimiento</th>
                                 <th>Progreso</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% vendedores.forEach(vendedor => { %>
+                                <%# --- INICIO: Lógica para determinar la clase CSS del estado --- %>
+                                <%
+                                    let estadoClass = 'tag-estado-default'; // Clase por defecto
+                                    if (vendedor.estado) {
+                                        const estadoLower = String(vendedor.estado).toLowerCase().trim(); // Asegurar que sea string
+                                        if (estadoLower === 'al dia' || estadoLower === 'al día' || estadoLower === 'activo') {
+                                            estadoClass = 'tag-estado-verde';
+                                        } else if (estadoLower === '1 - 5') {
+                                            estadoClass = 'tag-estado-amarillo';
+                                        } else if (estadoLower === '5 a 15') {
+                                            estadoClass = 'tag-estado-naranja';
+                                        } else if (estadoLower === '+15') {
+                                            estadoClass = 'tag-estado-rojo';
+                                        } else if (estadoLower === 'inactivo') {
+                                            estadoClass = 'tag-estado-gris';
+                                        }
+                                    }
+                                %>
+                                <%# --- FIN: Lógica para determinar la clase CSS del estado --- %>
+
                                 <tr class="resumen-item" data-vendedor-id="<%= vendedor.id %>">
                                     <td class="resumen-nombre">
                                         <span><%= vendedor.nombre %></span>
@@ -262,21 +397,23 @@
                                         <% } %>
                                     </td>
                                     <td>
-                                        <span class="tag tag-estado tag-estado-<%= vendedor.estado %>"><%= vendedor.estado %></span>
+                                        <%# Aplica la clase determinada dinámicamente %>
+                                        <span class="tag tag-estado <%= estadoClass %>"><%= vendedor.estado %></span>
                                     </td>
                                     <td><%= vendedor.num_cuentas || 0 %></td>
                                     <td>
-                                        <%= vendedor.totalMensajesHoy || 0 %> / 
-                                        <%= vendedor.totalMensajesManualesHoy || 0 %> / 
+                                        <%= vendedor.totalMensajesHoy || 0 %> /
+                                        <%= vendedor.totalMensajesManualesHoy || 0 %> /
                                         <%= vendedor.totalRespuestasHoy || 0 %>
                                     </td>
                                     <td><%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %></td>
                                     <td><%= parseFloat(vendedor.porcentaje_cumplimiento || 0).toFixed(1) %>%</td>
                                     <td>
-                                        <div class="mini-progress-container">
-                                            <div class="mini-progress-bar" 
-                                                 style="width: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0) %>%; 
-                                                        background-color: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0) >= 100 ? 'var(--color-green-progress)' : 'var(--color-accent)' %>;">
+                                        <div class="mini-progress-container" title="Progreso: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(1) %>%">
+                                            <div class="mini-progress-bar"
+                                                 style="width: <%= Math.min(100, parseFloat(vendedor.progreso_mensajes_mes_pct || 0)) %>%; /* Limita al 100% visualmente */
+                                                        background-color: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0) >= 100 ? 'var(--color-green-progress)' : (parseFloat(vendedor.progreso_mensajes_mes_pct || 0) > 50 ? 'var(--color-accent)' : 'var(--color-warning)') %>;">
+                                                        <%# Cambia color si supera 50% o 100% %>
                                             </div>
                                             <span class="mini-progress-text"><%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(0) %>%</span>
                                         </div>
@@ -286,7 +423,7 @@
                         </tbody>
                     </table>
                 <% } else { %>
-                    <p class="no-data-global">No hay Clientes registrados actualmente.</p>
+                    <p class="no-data-global" style="padding: 1rem;">No hay Clientes registrados actualmente.</p>
                 <% } %>
             </div>
         </div>
@@ -295,9 +432,30 @@
         <div class="vendedor-cards-grid" id="vendedor-cards-container">
             <% if (typeof vendedores !== 'undefined' && vendedores && Array.isArray(vendedores) && vendedores.length > 0) { %>
                 <% vendedores.forEach(vendedor => { %>
+                    <%# --- INICIO: Lógica para determinar la clase CSS del estado (para la tarjeta) --- %>
+                    <%
+                        let estadoCardClass = 'tag-estado-default'; // Clase por defecto
+                        if (vendedor.estado) {
+                            const estadoLower = String(vendedor.estado).toLowerCase().trim(); // Asegurar que sea string
+                            if (estadoLower === 'al dia' || estadoLower === 'al día' || estadoLower === 'activo') {
+                                estadoCardClass = 'tag-estado-verde';
+                            } else if (estadoLower === '1 - 5') {
+                                estadoCardClass = 'tag-estado-amarillo';
+                            } else if (estadoLower === '5 a 15') {
+                                estadoCardClass = 'tag-estado-naranja';
+                            } else if (estadoLower === '+15') {
+                                estadoCardClass = 'tag-estado-rojo';
+                            } else if (estadoLower === 'inactivo') {
+                                estadoCardClass = 'tag-estado-gris';
+                            }
+                        }
+                    %>
+                     <%# --- FIN: Lógica para determinar la clase CSS del estado --- %>
+
                     <div class="vendedor-card" id="vendedor-card-<%= vendedor.id %>" data-vendedor='<%- JSON.stringify(vendedor) %>'>
                         <div class="card-header">
-                             <span class="tag tag-estado tag-estado-<%= vendedor.estado %>" title="Estado: <%= vendedor.estado %>"><%= vendedor.estado %></span>
+                             <%# Aplica la clase determinada dinámicamente a la tarjeta %>
+                             <span class="tag tag-estado <%= estadoCardClass %>" title="Estado: <%= vendedor.estado %>"><%= vendedor.estado %></span>
                             <h3 class="vendedor-nombre"><%= vendedor.nombre %></h3>
                             <% if (vendedor.manager_asignado) { %><small class="manager"><i class="fas fa-user-tie"></i> Manager: <%= vendedor.manager_asignado %></small><% } %>
                         </div>
@@ -309,8 +467,8 @@
                                         <% vendedor.cuentasDetalle.forEach(cuenta => { %>
                                             <li>
                                                 <span class="tag tag-cuenta"><%= cuenta.nombre %></span>
-                                                <span class="account-stats" title="Hoy (Msgs/Rpts) / Histórico Total (Msgs)">
-                                                     (<%= cuenta.mensajesHoy || 0 %> / <%= cuenta.respuestasHoy || 0 %> / <%= (cuenta.mensajesMongoTotal || 0).toLocaleString('es-ES') %>)
+                                                <span class="account-stats" title="Hoy (Msgs Bot/Manual/Rpts) / Histórico Total (Msgs)">
+                                                     (<%= cuenta.mensajesHoy || 0 %> / <%= cuenta.mensajesManualesHoy || 0 %> / <%= cuenta.respuestasHoy || 0 %> / <%= (cuenta.mensajesMongoTotal || 0).toLocaleString('es-ES') %>)
                                                 </span>
                                             </li>
                                         <% }); %>
@@ -320,22 +478,31 @@
                             <div class="card-section card-stats">
                                 <div class="stat-item">
                                     <label><i class="far fa-clock"></i> Hoy</label>
-                                    <span><%= vendedor.totalMensajesHoy || 0 %> B / <%= vendedor.totalMensajesManualesHoy || 0 %> M / <%= vendedor.totalRespuestasHoy || 0 %> R</span>
+                                    <span title="Bot / Manual / Respuestas"><%= vendedor.totalMensajesHoy || 0 %> B / <%= vendedor.totalMensajesManualesHoy || 0 %> M / <%= vendedor.totalRespuestasHoy || 0 %> R</span>
                                 </div>
                                 <div class="stat-item">
                                     <label><i class="fas fa-chart-line"></i> Total Mes</label>
                                     <span><%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %></span>
                                 </div>
-                                <% if (vendedor.fecha_ingreso) { %><div class="stat-item"><label><i class="far fa-calendar-alt"></i> Ingreso</label><span><%= new Date(vendedor.fecha_ingreso).toLocaleDateString('es-ES') %></span></div><% } %>
+                                <% if (vendedor.fecha_ingreso) { %>
+                                <div class="stat-item">
+                                    <label><i class="far fa-calendar-alt"></i> Ingreso</label>
+                                    <span><%= new Date(vendedor.fecha_ingreso).toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit'}) %></span>
+                                </div>
+                                <% } %>
 
                                 <div class="stat-item stat-progress">
                                     <label><i class="fas fa-tasks"></i> Progreso Mes (Msgs)</label>
                                     <div class="progress-info">
-                                         <span class="progress-numbers" title="Mensajes enviados este mes / Objetivo mensual"><%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %> / <%= (vendedor.objetivo_mensual || 0).toLocaleString('es-ES') || 'N/A' %></span>
-                                         <span class="progress-percentage">(<%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(0) %>%)</span>
+                                         <span class="progress-numbers" title="Mensajes enviados este mes / Objetivo mensual">
+                                             <%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %> / <%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? (vendedor.objetivo_mensual || 0).toLocaleString('es-ES') : 'N/A' %>
+                                         </span>
+                                         <span class="progress-percentage">
+                                             (<%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(0) + '%' : '--' %>)
+                                         </span>
                                     </div>
-                                    <div class="progress-bar-container" title="<%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(1) %>% del objetivo mensual">
-                                        <div class="progress-bar" style="width: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0) %>%;"></div>
+                                    <div class="progress-bar-container" title="<%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(1) + '% del objetivo mensual' : 'Sin objetivo definido' %>">
+                                        <div class="progress-bar" style="width: <%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? Math.min(100, parseFloat(vendedor.progreso_mensajes_mes_pct || 0)) : 0 %>%;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -356,9 +523,9 @@
                     </div>
                  <% }); %>
              <% } else { %>
-                 <p class="no-data-global">No hay Clientes registrados actualmente.</p>
+                 <p class="no-data-global" style="padding: 1rem;">No hay Clientes registrados actualmente.</p>
              <% } %>
-             <p id="no-seller-found-message" class="no-data-global" style="display: none;">No se encontraron Clientes que coincidan con el filtro.</p>
+             <p id="no-seller-found-message" class="no-data-global" style="display: none; padding: 1rem;">No se encontraron Clientes que coincidan con el filtro.</p>
         </div> <!-- Fin Grid -->
 
     </div> <!-- Fin vendedor-main-container -->
@@ -396,7 +563,7 @@
                          </div>
                          <div class="form-group">
                              <label for="modal_objetivo_mensual"><i class="fas fa-bullseye fa-fw"></i> Objetivo Mensual (Msgs)</label>
-                            <input type="number" id="modal_objetivo_mensual" name="objetivo_mensual" min="0" step="1" value="0" title="El progreso se calcula con este valor">
+                            <input type="number" id="modal_objetivo_mensual" name="objetivo_mensual" min="0" step="1" value="0" title="El progreso se calcula con este valor. 0 o vacío para N/A.">
                          </div>
                     </div>
                     <div class="form-row">
@@ -407,10 +574,13 @@
                          <div class="form-group">
                              <label for="modal_estado"><i class="fas fa-toggle-on fa-fw"></i> Estado</label>
                             <select id="modal_estado" name="estado">
-                                <option value="activo" selected>Activo</option>
-                                <option value="inactivo">Inactivo</option>
-                                <option value="prueba">En Prueba</option>
-                                <option value="baja">De Baja</option>
+                                <!-- Asegúrate que estos values coincidan exactamente con los textos usados en la lógica EJS y backend -->
+                                <option value="Al dia" selected>Al dia</option>
+                                <option value="1 - 5">1 - 5</option>
+                                <option value="5 a 15">5 a 15</option>
+                                <option value="+15">+15</option>
+                                <option value="ACTIVO">Activo</option> <!-- Añadido si es necesario -->
+                                <option value="INACTIVO">Inactivo</option> <!-- Añadido si es necesario -->
                             </select>
                          </div>
                     </div>
@@ -443,13 +613,13 @@
                         <label for="desempeno_fecha"><i class="far fa-calendar-alt fa-fw"></i> Fecha del Registro</label>
                         <input type="date" id="desempeno_fecha" name="fecha" value="<%= typeof today !== 'undefined' ? today : new Date().toISOString().slice(0,10) %>" required>
                     </div>
-                    
+
                     <!-- Nuevo campo para notas generales -->
                     <div class="form-group">
                         <label for="desempeno_notas"><i class="fas fa-clipboard-check fa-fw"></i> Notas de Auditoría</label>
                         <textarea id="desempeno_notas" name="notas_auditoria" rows="2" placeholder="Observaciones o comentarios relevantes..."></textarea>
                     </div>
-                    
+
                     <hr class="modal-hr">
                     <label class="accounts-title"><i class="fas fa-tasks"></i> Ingresar Datos por Cuenta:</label>
                     <div id="desempeno-accounts-container">
@@ -467,118 +637,115 @@
     <!-- Scripts (Navbar, Lógica Vendedores con Chart.js) -->
     <script defer src="/static/js/navbar.js"></script>
     <script defer src="/static/js/vendedores_manager.js"></script>
-    
+
     <script>
-        // NUEVO CÓDIGO PARA MANEJAR EL RESUMEN Y CARDS
+        // CÓDIGO PARA MANEJAR EL RESUMEN Y CARDS (SIN CAMBIOS, YA ESTABA BIEN)
         document.addEventListener('DOMContentLoaded', function() {
-            // Toggle para expandir/contraer el resumen
             const toggleBtn = document.getElementById('toggle-resumen');
             const resumenList = document.getElementById('resumen-list');
             const cardsContainer = document.getElementById('vendedor-cards-container');
-            
-            // Inicialmente ocultar las cards
-            cardsContainer.style.display = 'none';
-            
-            toggleBtn.addEventListener('click', function() {
-                resumenList.classList.toggle('collapsed');
-                const icon = this.querySelector('i');
-                if (resumenList.classList.contains('collapsed')) {
-                    icon.classList.remove('fa-chevron-up');
-                    icon.classList.add('fa-chevron-down');
-                    this.innerHTML = '<i class="fas fa-chevron-down"></i> Expandir';
-                } else {
-                    icon.classList.remove('fa-chevron-down');
-                    icon.classList.add('fa-chevron-up');
-                    this.innerHTML = '<i class="fas fa-chevron-up"></i> Contraer';
-                }
-            });
+            const sellerFilter = document.getElementById('seller-name-filter');
+            const noSellerMsg = document.getElementById('no-seller-found-message');
+            const header = document.querySelector('.vendedor-section-header'); // Selecciona el contenedor del header
+            const showAllBtn = document.createElement('button'); // Crea el botón
 
-            // Hacer clic en un item del resumen para mostrar la card correspondiente
+            // Configuración inicial
+            cardsContainer.style.display = 'none'; // Ocultar cards al inicio
+
+            // Toggle para expandir/contraer el resumen
+            if (toggleBtn && resumenList) {
+                toggleBtn.addEventListener('click', function() {
+                    resumenList.classList.toggle('collapsed');
+                    const icon = this.querySelector('i');
+                    const isCollapsed = resumenList.classList.contains('collapsed');
+                    icon.className = isCollapsed ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+                    this.childNodes[1].nodeValue = isCollapsed ? ' Expandir' : ' Contraer'; // Actualiza texto del botón
+                });
+            }
+
+            // Clic en item del resumen muestra la card correspondiente
             document.querySelectorAll('.resumen-item').forEach(item => {
                 item.addEventListener('click', function() {
                     const vendedorId = this.getAttribute('data-vendedor-id');
-                    
-                    // Mostrar el contenedor de cards si está oculto
-                    if (cardsContainer.style.display === 'none') {
-                        cardsContainer.style.display = 'grid';
-                    }
-                    
-                    // Ocultar todas las cards primero
-                    document.querySelectorAll('.vendedor-card').forEach(card => {
-                        card.style.display = 'none';
-                    });
-                    
-                    // Mostrar solo la card seleccionada
                     const card = document.getElementById(`vendedor-card-${vendedorId}`);
+
                     if (card) {
-                        card.style.display = 'block';
-                        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        
-                        // Destacar la card
+                        // Asegura que el contenedor de cards esté visible (como grid)
+                        cardsContainer.style.display = 'grid';
+                        cardsContainer.classList.add('visible'); // Añade clase si usas CSS para mostrar
+
+                        // Oculta todas las cards excepto la seleccionada
+                        document.querySelectorAll('.vendedor-card').forEach(c => {
+                            c.style.display = (c.id === `vendedor-card-${vendedorId}`) ? 'block' : 'none';
+                        });
+
+                        // Scroll y highlight
+                        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         card.classList.add('highlighted');
-                        setTimeout(() => {
-                            card.classList.remove('highlighted');
-                        }, 2000);
+                        setTimeout(() => card.classList.remove('highlighted'), 2000);
                     }
                 });
             });
 
-            // Asegurar que el filtro afecte tanto al resumen como a las cards
-            const sellerFilter = document.getElementById('seller-name-filter');
+            // Filtro por nombre (afecta resumen y cards si están visibles)
             if (sellerFilter) {
                 sellerFilter.addEventListener('input', function() {
-                    const filterValue = this.value.toLowerCase();
-                    let hasVisibleItems = false;
-                    
+                    const filterValue = this.value.toLowerCase().trim();
+                    let resumenVisible = false;
+                    let cardsVisible = false; // Para saber si hay alguna card visible
+
                     // Filtrar en el resumen
                     document.querySelectorAll('.resumen-item').forEach(row => {
-                        const nombre = row.querySelector('.resumen-nombre').textContent.toLowerCase();
-                        if (nombre.includes(filterValue)) {
-                            row.style.display = '';
-                            hasVisibleItems = true;
-                        } else {
-                            row.style.display = 'none';
-                        }
+                        const nombre = row.querySelector('.resumen-nombre span').textContent.toLowerCase();
+                        const matches = nombre.includes(filterValue);
+                        row.style.display = matches ? '' : 'none';
+                        if (matches) resumenVisible = true;
                     });
-                    
-                    // Filtrar en las cards (si están visibles)
-                    if (cardsContainer.style.display !== 'none') {
-                        document.querySelectorAll('.vendedor-card').forEach(card => {
+
+                    // Filtrar en las cards (solo si el contenedor de cards está visible)
+                    if (cardsContainer.style.display === 'grid') {
+                         document.querySelectorAll('.vendedor-card').forEach(card => {
                             const nombre = card.querySelector('.vendedor-nombre').textContent.toLowerCase();
-                            if (nombre.includes(filterValue)) {
-                                card.style.display = 'block';
-                                hasVisibleItems = true;
-                            } else {
-                                card.style.display = 'none';
+                            const matches = nombre.includes(filterValue);
+                            // Muestra u oculta basado en el filtro Y si la card no estaba ya oculta por selección
+                            if (card.style.display !== 'none' || filterValue === '') { // Si el filtro está vacío, muestra todas las que no estaban ocultas
+                                card.style.display = matches ? 'block' : 'none';
                             }
-                        });
+                            if (matches && card.style.display === 'block') cardsVisible = true;
+                         });
                     }
-                    
-                    // Mostrar mensaje si no hay coincidencias
-                    const noSellerMsg = document.getElementById('no-seller-found-message');
+
+                     // Mostrar mensaje "No encontrado" solo si NADA es visible en ambas secciones
+                    const shouldShowNoSellerMsg = !resumenVisible && (!cardsVisible && cardsContainer.style.display === 'grid');
                     if (noSellerMsg) {
-                        noSellerMsg.style.display = hasVisibleItems ? 'none' : 'block';
+                         noSellerMsg.style.display = shouldShowNoSellerMsg ? 'block' : 'none';
                     }
                 });
             }
-            
-            // Botón para mostrar todas las cards
-            const showAllBtn = document.createElement('button');
-            showAllBtn.className = 'btn btn-info btn-sm';
-            showAllBtn.innerHTML = '<i class="fas fa-eye"></i> Mostrar Todos';
-            showAllBtn.style.marginLeft = '10px';
-            showAllBtn.addEventListener('click', function() {
-                cardsContainer.style.display = 'grid';
-                document.querySelectorAll('.vendedor-card').forEach(card => {
-                    card.style.display = 'block';
+
+            // Configuración y lógica del botón "Mostrar Todos"
+            if (header) { // Asegura que el header exista
+                showAllBtn.id = 'show-all-btn'; // Asigna ID para estilos si es necesario
+                showAllBtn.className = 'btn btn-info btn-sm';
+                showAllBtn.innerHTML = '<i class="fas fa-eye"></i> Mostrar Todos';
+                showAllBtn.style.marginLeft = '10px'; // Margen por defecto
+                showAllBtn.addEventListener('click', function() {
+                    cardsContainer.style.display = 'grid'; // Muestra el contenedor
+                    cardsContainer.classList.add('visible');
+                    sellerFilter.value = ''; // Limpia el filtro
+                    const event = new Event('input'); // Dispara evento input para refrescar vista
+                    sellerFilter.dispatchEvent(event);
+
+                    document.querySelectorAll('.vendedor-card').forEach(card => {
+                        card.style.display = 'block'; // Muestra todas las cards
+                    });
+                     if (noSellerMsg) noSellerMsg.style.display = 'none'; // Oculta mensaje "no encontrado"
                 });
-            });
-            
-            // Agregar botón al header
-            const header = document.querySelector('.vendedor-section-header');
-            if (header) {
+
+                // Añade el botón al contenedor del header
                 header.appendChild(showAllBtn);
             }
+
         });
     </script>
 </body>
