@@ -2119,6 +2119,7 @@ app.delete('/closers/:id', isAuthenticated, async (req, res) => {
         }
     });
     
+    
     // --- DEVOLUCIONES MODIFICADAS ---
     
     // GET /sprints - Vista principal modificada

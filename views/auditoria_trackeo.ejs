@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/navbar.css">
     <link rel="stylesheet" href="/static/css/scrollbar.css">
+    <!-- Select2 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
     <!-- CSS específico (Opcional si usas <style>) -->
     <!-- <link rel="stylesheet" href="/static/css/auditoria_trackeo.css"> -->
 
@@ -32,23 +34,64 @@
         .section-header h2 i { font-size: 1.1em; opacity: 0.9; color: var(--color-accent); }
         .section-header .header-actions { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; }
 
-        .form-select {
-    padding: 0.5rem 0.9rem;
-    font-size: 0.9rem;
-    background-color: rgba(0,0,0,0.2);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius-small);
-    color: var(--color-text-primary);
-    transition: all 0.3s ease;
-    min-width: 200px;
-}
+        /* Estilos para Select2 */
+        .select2-container--default .select2-selection--single {
+            background-color: rgba(0,0,0,0.2);
+            border: 1px solid var(--color-border) !important;
+            border-radius: var(--border-radius-small) !important;
+            height: auto !important;
+            padding: 0.3rem 0.9rem;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: var(--color-text-primary) !important;
+            line-height: 1.5 !important;
+            padding-left: 0 !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 100% !important;
+        }
+        .select2-container--default .select2-search--dropdown .select2-search__field {
+            background-color: rgba(0,0,0,0.2);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+        }
+        .select2-dropdown {
+            background-color: var(--color-background-medium) !important;
+            border: 1px solid var(--color-border) !important;
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--color-accent) !important;
+            color: var(--color-background-dark) !important;
+        }
+        .select2-container--default .select2-results__option[aria-selected=true] {
+            background-color: rgba(76, 175, 145, 0.2) !important;
+            color: var(--color-text-primary) !important;
+        }
+        .select2-results__option {
+            color: var(--color-text-primary) !important;
+            padding: 6px 12px !important;
+        }
+        .select2-container {
+            min-width: 200px !important;
+        }
 
-.form-select:focus {
-    background-color: rgba(0,0,0,0.3);
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 2px rgba(76, 175, 145, 0.2);
-    outline: none;
-}
+        .form-select {
+            padding: 0.5rem 0.9rem;
+            font-size: 0.9rem;
+            background-color: rgba(0,0,0,0.2);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-small);
+            color: var(--color-text-primary);
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+
+        .form-select:focus {
+            background-color: rgba(0,0,0,0.3);
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 2px rgba(76, 175, 145, 0.2);
+            outline: none;
+        }
         /* --- Alertas --- */
         .alert { border-radius: var(--border-radius-medium); padding: 1rem 1.5rem; margin-bottom: 1.5rem; border: 1px solid transparent; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 1rem; } .alert::before { font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 1.2em; }
         .alert-success { color: #d1fae5; background-color: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); } .alert-success::before { content: "\f058"; color: #6ee7b7; }
@@ -188,7 +231,7 @@
                  <div class="section-header">
                     <h2><i class="fas fa-file-csv icon-header"></i> Archivos CSV Subidos</h2>
                     <form action="/auditoria/trackeo" method="POST" enctype="multipart/form-data" class="upload-form-inline">
-                        <select name="tipo_nicho" required title="Selecciona una cuenta" class="form-select">
+                        <select name="tipo_nicho" required title="Selecciona una cuenta" class="form-select select2-search">
                             <option value="" disabled selected>Selecciona una cuenta</option>
                             <% if (cuentas && cuentas.length > 0) { %>
                                 <% cuentas.forEach(cuenta => { %>
@@ -254,6 +297,9 @@
 
     <!-- Scripts -->
     <script defer src="/static/js/navbar.js"></script>
+    <!-- jQuery y Select2 JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
     <!-- JS específico para esta página -->
     <script>
         // =============================================
@@ -261,6 +307,19 @@
         // =============================================
         document.addEventListener('DOMContentLoaded', () => {
             console.log("Auditoría Trackeo Manager JS Cargado.");
+
+            // Inicializar Select2
+            $('.select2-search').select2({
+                placeholder: "Selecciona una cuenta o escribe para buscar",
+                allowClear: true,
+                width: '100%',
+                dropdownAutoWidth: true,
+                language: {
+                    noResults: function() {
+                        return "No se encontraron resultados";
+                    }
+                }
+            });
 
             // Referencias DOM
             const manualModalOverlay = document.getElementById('manualNicheModalOverlay');
