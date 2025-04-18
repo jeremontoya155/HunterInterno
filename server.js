@@ -187,59 +187,76 @@
     // --- GET /auditoria/patrimonio ---
 
     // --- GET /auditoria/patrimonio (Para mostrar todas las cuentas) ---
-app.get('/auditoria/patrimonio', isAuthenticated, async (req, res) => {
-    // Verificación de Rol Interna (Solo Admin/Auditoría)
-    const userRole = req.session.user.role;
-    if (userRole !== 'admin' && userRole !== 'auditoria') {
-        return res.status(403).render('error', { message: 'Acceso Denegado', error: { status: 403 }, user: req.session.user });
-    }
-
-    try {
-        const result = await pool.query('SELECT * FROM patrimonio_cuentas ORDER BY tipo_cuenta, nombre_cliente, usuario');
-        const cuentas = result.rows;
-        const today = new Date(); // Fecha de hoy para calcular días restantes
-
-        // Calcular días restantes para códigos de respaldo
-        const cuentasConDiasRestantes = cuentas.map(cuenta => {
-            let dias_restantes = null; // Por defecto es nulo
-            if (cuenta.codigos_actualizados_en && cuenta.codigos_validez_dias > 0) {
-                try {
-                    // Asegurarse que codigos_actualizados_en es un objeto Date
-                    const fechaActualizacion = new Date(cuenta.codigos_actualizados_en);
-                    if (!isNaN(fechaActualizacion.getTime())) { // Validar que la fecha sea válida
-                        // Clonar fecha de actualización y sumar días de validez
-                        const fechaExpiracion = new Date(fechaActualizacion.getTime());
-                        fechaExpiracion.setDate(fechaActualizacion.getDate() + cuenta.codigos_validez_dias);
-
-                        // Calcular diferencia en milisegundos y luego en días (redondear hacia abajo)
-                        const diffTime = fechaExpiracion.getTime() - today.getTime();
-                        // Solo mostrar días restantes positivos o cero
-                        dias_restantes = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-                    } else {
-                        console.warn(`Fecha inválida en codigos_actualizados_en para cuenta ${cuenta.usuario}`);
+    app.get('/auditoria/patrimonio', isAuthenticated, async (req, res) => {
+        // Verificación de Rol Interna (Solo Admin/Auditoría)
+        const userRole = req.session.user.role;
+        if (userRole !== 'admin' && userRole !== 'auditoria') {
+            return res.status(403).render('error', { 
+                message: 'Acceso Denegado', 
+                error: { status: 403 }, 
+                user: req.session.user 
+            });
+        }
+    
+        try {
+            // Obtener solo cuentas no archivadas
+            const result = await pool.query(`
+                SELECT * FROM patrimonio_cuentas 
+                WHERE archivada = false 
+                ORDER BY tipo_cuenta, nombre_cliente, usuario
+            `);
+            
+            const cuentas = result.rows;
+            const today = new Date(); // Fecha de hoy para calcular días restantes
+    
+            // Calcular días restantes para códigos de respaldo
+            const cuentasConDiasRestantes = cuentas.map(cuenta => {
+                let dias_restantes = null; // Por defecto es nulo
+                
+                if (cuenta.codigos_actualizados_en && cuenta.codigos_validez_dias > 0) {
+                    try {
+                        // Asegurarse que codigos_actualizados_en es un objeto Date
+                        const fechaActualizacion = new Date(cuenta.codigos_actualizados_en);
+                        
+                        if (!isNaN(fechaActualizacion.getTime())) { // Validar que la fecha sea válida
+                            // Clonar fecha de actualización y sumar días de validez
+                            const fechaExpiracion = new Date(fechaActualizacion.getTime());
+                            fechaExpiracion.setDate(fechaActualizacion.getDate() + cuenta.codigos_validez_dias);
+    
+                            // Calcular diferencia en milisegundos y luego en días (redondear hacia abajo)
+                            const diffTime = fechaExpiracion.getTime() - today.getTime();
+                            // Solo mostrar días restantes positivos o cero
+                            dias_restantes = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+                        } else {
+                            console.warn(`Fecha inválida en codigos_actualizados_en para cuenta ${cuenta.usuario}`);
+                        }
+                    } catch (dateError) {
+                        console.error(`Error calculando días restantes para ${cuenta.usuario}:`, dateError);
                     }
-                } catch (dateError) {
-                    console.error(`Error calculando días restantes para ${cuenta.usuario}:`, dateError);
                 }
-            }
-            return {
-                ...cuenta,
-                dias_restantes_codigos: dias_restantes // Añadir la propiedad calculada
-            };
-        });
-
-        res.render('auditoria_patrimonio', {
-            cuentas: cuentasConDiasRestantes,
-            user: req.session.user,
-            success: req.query.success,
-            error: req.query.error
-        });
-
-    } catch (error) {
-        console.error("Error en GET /auditoria/patrimonio:", error);
-        res.status(500).render('error', { message: 'Error al cargar el patrimonio de cuentas', error, user: req.session.user });
-    }
-});
+                
+                return {
+                    ...cuenta,
+                    dias_restantes_codigos: dias_restantes // Añadir la propiedad calculada
+                };
+            });
+    
+            res.render('auditoria_patrimonio', {
+                cuentas: cuentasConDiasRestantes,
+                user: req.session.user,
+                success: req.query.success,
+                error: req.query.error
+            });
+    
+        } catch (error) {
+            console.error("Error en GET /auditoria/patrimonio:", error);
+            res.status(500).render('error', { 
+                message: 'Error al cargar el patrimonio de cuentas', 
+                error, 
+                user: req.session.user 
+            });
+        }
+    });
 
 // --- POST /auditoria/patrimonio (Para Agregar/Editar Cuenta) ---
 app.post('/auditoria/patrimonio', isAuthenticated, async (req, res) => {
@@ -331,6 +348,24 @@ app.post('/auditoria/patrimonio', isAuthenticated, async (req, res) => {
     } catch (error) {
         console.error("Error en POST /auditoria/patrimonio:", error);
         res.redirect(`/auditoria/patrimonio?error=Error al guardar la cuenta: ${error.message}`);
+    }
+});
+
+
+// --- PATCH /auditoria/patrimonio/archivar (Para archivar cuentas) ---
+app.patch('/auditoria/patrimonio/archivar', isAuthenticated, async (req, res) => {
+    const { cuenta_id } = req.body;
+
+    if (!cuenta_id) {
+        return res.status(400).json({ success: false, error: 'ID de cuenta requerido' });
+    }
+
+    try {
+        await pool.query('UPDATE patrimonio_cuentas SET archivada = true WHERE id = $1', [cuenta_id]);
+        res.json({ success: true, message: 'Cuenta archivada correctamente' });
+    } catch (error) {
+        console.error("Error al archivar cuenta:", error);
+        res.status(500).json({ success: false, error: 'Error al archivar la cuenta' });
     }
 });
     // Opcional: Endpoint DELETE (requiere JS con Fetch y método DELETE)
