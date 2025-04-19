@@ -18,15 +18,17 @@
     <link rel="stylesheet" href="/static/css/scrollbar.css" />
     <style>
         :root {
+            --color-evaluacion-user: #2196f3;  /* Azul para evaluaciones de usuarios */
+            --color-evaluacion-admin: #4caf50; /* Verde para evaluación de admin */
             --color-background-dark: #0a0a10;
-            --color-background-medium: #111827; /* Fondo para filtros y cards */
-            --color-background-light: #1f2937;  /* Fondo para inputs */
-            --color-accent: #4caf91; /* Verde principal */
+            --color-background-medium: #111827;
+            --color-background-light: #1f2937;
+            --color-accent: #4caf91;
             --color-accent-hover: #5cdb95;
             --color-text-primary: #e5e7eb;
             --color-text-secondary: #9ca3af;
             --color-highlight: #4caf91;
-            --color-border: rgba(76, 175, 145, 0.2); /* Borde sutil */
+            --color-border: rgba(76, 175, 145, 0.2);
             --color-success: #4caf50;
             --color-warning: #ff9800;
             --color-danger: #f44336;
@@ -38,7 +40,7 @@
             background-color: var(--color-background-dark);
             color: var(--color-text-primary);
             line-height: 1.7;
-            padding-top: 70px; /* Espacio para la navbar fija */
+            padding-top: 70px;
         }
 
         .container {
@@ -51,14 +53,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px; /* Espacio antes de los filtros */
+            margin-bottom: 30px;
         }
 
         .page-title {
             font-size: 2rem;
             font-weight: 600;
             color: var(--color-text-primary);
-            margin: 0; /* Reset margin */
+            margin: 0;
         }
 
         .page-title .highlight {
@@ -80,7 +82,7 @@
 
         .btn-primary {
             background-color: var(--color-accent);
-            color: var(--color-background-dark); /* Texto oscuro para contraste con verde */
+            color: var(--color-background-dark);
         }
 
         .btn-primary:hover {
@@ -89,29 +91,28 @@
             box-shadow: 0 4px 8px rgba(76, 175, 145, 0.3);
         }
 
-        .btn-secondary { /* Estilo para el botón Limpiar */
+        .btn-secondary {
              background-color: var(--color-background-light);
              color: var(--color-text-primary);
              border: 1px solid var(--color-border);
         }
          .btn-secondary:hover {
-             background-color: #2a3a4a; /* Un poco más claro que background-light */
+             background-color: #2a3a4a;
              border-color: var(--color-accent);
          }
-
 
         .btn-sm {
             padding: 6px 12px;
             font-size: 0.85rem;
         }
 
-        /* --- Estilos para la NUEVA sección de Filtros --- */
+        /* --- Estilos para la sección de Filtros --- */
         .filters-section {
             background: var(--color-background-medium);
             border: 1px solid var(--color-border);
             border-radius: 10px;
             padding: 20px;
-            margin-bottom: 30px; /* Espacio antes de la lista de sprints */
+            margin-bottom: 30px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
@@ -132,15 +133,13 @@
 
         .filters-form {
             display: grid;
-            /* Ajusta las columnas según sea necesario. 4 columnas + espacio para botones */
-            /* O usar auto-fit para responsividad */
              grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 20px; /* Mayor espacio entre elementos */
-            align-items: end; /* Alinea elementos en la parte inferior de su celda */
+            gap: 20px;
+            align-items: end;
         }
 
         .filter-group {
-            margin-bottom: 0; /* El gap del grid se encarga del espacio */
+            margin-bottom: 0;
         }
 
         .filter-label {
@@ -152,19 +151,17 @@
         }
 
         .filter-actions {
-            /* Ocupa todo el ancho disponible en la última fila del grid si es necesario */
-            grid-column: 1 / -1; /* Ocupa todas las columnas */
+            grid-column: 1 / -1;
             display: flex;
             gap: 15px;
-            margin-top: 10px; /* Espacio sobre los botones */
+            margin-top: 10px;
         }
 
         .filter-actions .btn {
-            flex: 1; /* Hace que los botones ocupen el espacio equitativamente */
+            flex: 1;
         }
-        /* --- Fin Estilos Filtros --- */
 
-
+        /* --- Estilos para las tarjetas de sprint --- */
         .sprint-card {
             background: linear-gradient(145deg, var(--color-background-medium), var(--color-background-light));
             border-radius: 10px;
@@ -183,8 +180,8 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            flex-wrap: wrap; /* Para que las fechas bajen si no caben */
-            gap: 15px; /* Espacio entre título/meta y fechas */
+            flex-wrap: wrap;
+            gap: 15px;
             margin-bottom: 20px;
             padding-bottom: 15px;
             border-bottom: 1px solid var(--color-border);
@@ -214,31 +211,75 @@
 
         .sprint-dates {
             display: flex;
-            flex-direction: column; /* Fechas una debajo de otra */
-            gap: 8px; /* Espacio entre fechas */
+            flex-direction: column;
+            gap: 8px;
             color: var(--color-text-secondary);
             font-size: 0.9rem;
-            text-align: right; /* Alinea texto de fechas a la derecha */
+            text-align: right;
         }
 
         .sprint-dates span {
             display: flex;
             align-items: center;
             gap: 5px;
-            justify-content: flex-end; /* Alinea icono y texto a la derecha */
+            justify-content: flex-end;
         }
 
         .sprint-desc {
             color: var(--color-text-secondary);
             margin-bottom: 20px;
-            white-space: pre-wrap; /* Respeta saltos de línea y ajusta */
+            white-space: pre-wrap;
         }
 
+        /* --- Estilos para las evaluaciones --- */
+        .evaluaciones-container {
+            margin-top: 25px;
+        }
+
+        .evaluaciones-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--color-accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .evaluaciones-usuarios {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .evaluacion-item {
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 3px solid var(--color-accent);
+        }
+
+        .evaluacion-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .evaluacion-comentario {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--color-border);
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* --- Estilos para devoluciones --- */
         .devoluciones-list {
             display: flex;
             flex-direction: column;
             gap: 15px;
-            margin-top: 20px; /* Espacio antes de las actualizaciones */
+            margin-top: 20px;
         }
 
         .devolucion-item {
@@ -315,7 +356,7 @@
             gap: 10px;
         }
 
-        .no-sprints { /* Estilo para mensaje "No hay sprints" */
+        .no-sprints {
             text-align: center;
             padding: 40px 20px;
             background-color: var(--color-background-medium);
@@ -340,7 +381,7 @@
             color: var(--color-text-primary);
         }
 
-        .form-control { /* Clase reutilizable para inputs/select/textarea */
+        .form-control {
             width: 100%;
             padding: 10px 15px;
             background-color: var(--color-background-light);
@@ -355,15 +396,13 @@
         .form-control:focus {
             outline: none;
             border-color: var(--color-accent);
-            box-shadow: 0 0 0 2px rgba(76, 175, 145, 0.3); /* Sutil resplandor al enfocar */
+            box-shadow: 0 0 0 2px rgba(76, 175, 145, 0.3);
         }
 
-        /* Estilo específico para que el input date muestre el icono del calendario */
         input[type="date"].form-control {
             position: relative;
-            color-scheme: dark; /* Ayuda a que el picker nativo use tema oscuro */
+            color-scheme: dark;
         }
-        /* Considerar librerías JS para datepickers si se necesita más personalización */
 
         textarea.form-control {
             min-height: 120px;
@@ -371,24 +410,23 @@
         }
         /* --- Fin Estilos Comunes Formularios --- */
 
-
         /* --- Estilos Modales --- */
         .modal {
-            display: none; /* Oculto por defecto */
+            display: none;
             position: fixed;
-            z-index: 1050; /* Asegura que esté sobre otros elementos */
+            z-index: 1050;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
             outline: 0;
-            background-color: rgba(0, 0, 0, 0.7); /* Fondo oscuro semitransparente */
+            background-color: rgba(0, 0, 0, 0.7);
             justify-content: center;
             align-items: center;
         }
 
-        .modal.show { /* Clase para mostrar el modal */
+        .modal.show {
              display: flex;
         }
 
@@ -397,9 +435,9 @@
             border-radius: 10px;
             padding: 25px;
             width: 90%;
-            max-width: 600px; /* Ancho máximo del modal */
-            max-height: 90vh; /* Altura máxima, permite scroll si es necesario */
-            overflow-y: auto; /* Scroll vertical si el contenido es muy largo */
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             position: relative;
             display: flex;
@@ -426,7 +464,7 @@
             background: none;
             border: none;
             color: var(--color-text-secondary);
-            font-size: 1.8rem; /* Más grande para facilitar clic */
+            font-size: 1.8rem;
             line-height: 1;
             cursor: pointer;
             padding: 0;
@@ -443,10 +481,9 @@
             gap: 15px;
             margin-top: 25px;
             padding-top: 20px;
-            border-top: 1px solid var(--color-border); /* Línea separadora */
+            border-top: 1px solid var(--color-border);
         }
         /* --- Fin Estilos Modales --- */
-
 
         /* --- Estilos Alertas --- */
         .alert {
@@ -475,14 +512,13 @@
          }
         /* --- Fin Estilos Alertas --- */
 
-
         /* --- Estilos Barra de Progreso --- */
         .progress-container {
             margin: 20px 0;
         }
 
         .progress-bar {
-            height: 12px; /* Más delgada */
+            height: 12px;
             background-color: var(--color-background-light);
             border-radius: 6px;
             overflow: hidden;
@@ -504,18 +540,17 @@
         }
         /* --- Fin Estilos Barra de Progreso --- */
 
-
         /* --- Media Queries para Responsividad --- */
         @media (max-width: 992px) {
             .filters-form {
-                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); /* Columnas más pequeñas */
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
                 gap: 15px;
             }
         }
 
         @media (max-width: 768px) {
              .page-header {
-                 flex-direction: column; /* Título arriba, botón abajo */
+                 flex-direction: column;
                  align-items: flex-start;
                  gap: 15px;
              }
@@ -527,11 +562,11 @@
             }
 
             .sprint-dates {
-                text-align: left; /* Alinea fechas a la izquierda en móvil */
-                 width: 100%; /* Ocupa todo el ancho */
+                text-align: left;
+                 width: 100%;
             }
              .sprint-dates span {
-                 justify-content: flex-start; /* Alinea icono y texto a la izquierda */
+                 justify-content: flex-start;
              }
 
              .devolucion-header, .devolucion-footer {
@@ -541,23 +576,23 @@
              }
               .devolucion-meta {
                  width: 100%;
-                 justify-content: space-between; /* Separa usuario y fecha */
+                 justify-content: space-between;
              }
              .devolucion-actions {
                 width: 100%;
-                justify-content: flex-end; /* Botones a la derecha */
+                justify-content: flex-end;
             }
 
             .filters-form {
-                grid-template-columns: 1fr; /* Una columna en móvil */
+                grid-template-columns: 1fr;
                 gap: 15px;
             }
             .filter-actions {
-                 margin-top: 5px; /* Menos espacio arriba */
-                 flex-direction: column; /* Botones uno debajo del otro */
+                 margin-top: 5px;
+                 flex-direction: column;
              }
             .filter-actions .btn {
-                width: 100%; /* Botones ocupan todo el ancho */
+                width: 100%;
             }
 
             .modal-content {
@@ -565,7 +600,7 @@
                 padding: 20px;
             }
             .form-actions {
-                flex-direction: column-reverse; /* Botón principal arriba */
+                flex-direction: column-reverse;
             }
              .form-actions .btn {
                  width: 100%;
@@ -573,6 +608,25 @@
         }
         /* --- Fin Media Queries --- */
 
+        /* Estilos para evaluaciones de usuarios */
+.evaluacion-user {
+    border-left: 3px solid var(--color-evaluacion-user);
+    background-color: rgba(33, 150, 243, 0.05);
+}
+
+.evaluacion-user .progress-fill {
+    background-color: var(--color-evaluacion-user);
+}
+
+/* Estilo para evaluación de admin */
+.evaluacion-admin {
+    border-left: 3px solid var(--color-evaluacion-admin);
+    background-color: rgba(76, 175, 80, 0.05);
+}
+
+.evaluacion-admin .progress-fill {
+    background-color: var(--color-evaluacion-admin);
+}
     </style>
 </head>
 <body>
@@ -590,7 +644,7 @@
         </div>
 
         <!-- ====================================== -->
-        <!--         Sección de Filtros Nueva     -->
+        <!--         Sección de Filtros           -->
         <!-- ====================================== -->
         <div class="filters-section">
             <h3 class="filters-header">
@@ -626,7 +680,7 @@
                         <option value="">Todos</option>
                         <% users.forEach(u => { %>
                             <option value="<%= u.id %>" <%= req.query.asignado_a == u.id ? 'selected' : '' %>>
-                                <%= u.username %> <%# // Podrías añadir rol si es útil: (u.role) %>
+                                <%= u.username %>
                             </option>
                         <% }); %>
                     </select>
@@ -647,7 +701,6 @@
         <!-- ====================================== -->
         <!--       Fin Sección de Filtros         -->
         <!-- ====================================== -->
-
 
         <!-- Mensajes de éxito/error -->
         <% if (typeof success !== 'undefined' && success) { %>
@@ -702,18 +755,49 @@
                         <p class="sprint-desc"><%= sprint.descripcion %></p>
                     <% } %>
 
+                    <!-- Evaluación del Admin -->
                     <% if (sprint.cerrado && sprint.porcentaje_cumplimiento !== null) { %>
                         <div class="progress-container">
+                            <h4>Evaluación del Administrador</h4>
                             <div class="progress-bar">
                                 <div class="progress-fill" style="width: <%= sprint.porcentaje_cumplimiento %>%"></div>
                             </div>
                             <div class="progress-text">Cumplimiento: <%= sprint.porcentaje_cumplimiento %>%</div>
+                            <% if (sprint.comentarios_cierre) { %>
+                                <p class="sprint-desc"><%= sprint.comentarios_cierre %></p>
+                            <% } %>
+                        </div>
+                    <% } %>
+
+                    <!-- Evaluaciones de Usuarios -->
+                    <% if (sprint.cerrado && sprint.evaluaciones_usuario) { %>
+                        <div class="evaluaciones-container">
+                            <h4 class="evaluaciones-title">
+                                <i class="fas fa-users"></i> Evaluaciones del Equipo
+                            </h4>
+                            <div class="evaluaciones-usuarios">
+                                <% Object.entries(sprint.evaluaciones_usuario).forEach(([userId, evaluacion]) => { %>
+                                    <div class="evaluacion-item evaluacion-user">
+                                        <div class="evaluacion-header">
+                                            <span><strong><%= evaluacion.username %></strong></span>
+                                            <span><%= new Date(evaluacion.fecha).toLocaleDateString('es-ES') %></span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: <%= evaluacion.porcentaje %>%"></div>
+                                        </div>
+                                        <div class="progress-text">Cumplimiento: <%= evaluacion.porcentaje %>%</div>
+                                        <% if (evaluacion.comentarios) { %>
+                                            <p class="evaluacion-comentario"><%= evaluacion.comentarios %></p>
+                                        <% } %>
+                                    </div>
+                                <% }); %>
+                            </div>
                         </div>
                     <% } %>
 
                     <!-- Botones de Acción Sprint -->
                     <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                         <% if (user.role === 'admin' && !sprint.cerrado) { %>
+                        <% if (user.role === 'admin' && !sprint.cerrado) { %>
                             <button class="btn btn-primary btn-sm" onclick="openModal('closeSprintModal', { sprintId: <%= sprint.id %> })">
                                 <i class="fas fa-lock"></i> Cerrar Sprint
                             </button>
@@ -723,17 +807,21 @@
                             <button class="btn btn-primary btn-sm" onclick="openModal('devolucionModal', { sprintId: <%= sprint.id %> })">
                                 <i class="fas fa-plus"></i> Agregar Actualización
                             </button>
-                         <% } %>
-                         <!-- Aquí podrías añadir más botones como 'Editar Sprint' (si aplica) -->
-                    </div>
+                        <% } %>
 
+                        <% if (sprint.cerrado && user.role !== 'admin' && (!sprint.evaluaciones_usuario || !sprint.evaluaciones_usuario[user.id])) { %>
+                            <button class="btn btn-primary btn-sm" onclick="openModal('evaluarSprintModal', { sprintId: <%= sprint.id %> })">
+                                <i class="fas fa-star"></i> Evaluar Sprint
+                            </button>
+                        <% } %>
+                    </div>
 
                     <!-- Lista de Devoluciones/Actualizaciones -->
                     <div class="devoluciones-list">
                         <% if (sprint.devoluciones && sprint.devoluciones.length === 0) { %>
                             <p style="color: var(--color-text-secondary); font-style: italic; margin-top: 10px;">No hay actualizaciones en este sprint.</p>
                         <% } else if (sprint.devoluciones) { %>
-                             <% sprint.devoluciones.forEach(devolucion => { %>
+                            <% sprint.devoluciones.forEach(devolucion => { %>
                                 <div class="devolucion-item <%= devolucion.user_id === user.id ? 'devolucion-user' : 'devolucion-admin' %>">
                                     <div class="devolucion-header">
                                         <h3 class="devolucion-title"><%= devolucion.titulo %></h3>
@@ -746,7 +834,7 @@
                                     </div>
 
                                     <div class="devolucion-desc">
-                                        <%= devolucion.descripcion %> <%# No necesitas replace si usas pre-line/pre-wrap %>
+                                        <%= devolucion.descripcion %>
                                     </div>
 
                                     <% if (devolucion.fecha_limite || (user.role === 'admin' || user.id === devolucion.user_id)) { %>
@@ -754,10 +842,10 @@
                                             <% if (devolucion.fecha_limite && !sprint.cerrado) { %>
                                                 <span><i class="far fa-calendar-times"></i> Límite: <%= new Date(devolucion.fecha_limite).toLocaleDateString('es-ES') %></span>
                                             <% } else { %>
-                                                 <span></span> <%# Placeholder para mantener la estructura flex %>
+                                                <span></span>
                                             <% } %>
                                             <div class="devolucion-actions">
-                                                 <% if (!sprint.cerrado && (user.role === 'admin' || user.id === devolucion.user_id)) { %>
+                                                <% if (!sprint.cerrado && (user.role === 'admin' || user.id === devolucion.user_id)) { %>
                                                     <button class="btn btn-primary btn-sm"
                                                             onclick="openModal('editDevolucionModal', <%= JSON.stringify(devolucion) %>)">
                                                         <i class="fas fa-edit"></i> Editar
@@ -770,18 +858,17 @@
                                                         <i class="fas fa-reply"></i> Responder
                                                     </button>
                                                 <% } %>
-                                                <!-- Podrías añadir botón de eliminar aquí si es necesario -->
                                             </div>
                                         </div>
                                     <% } %>
                                 </div>
                             <% }); %>
                         <% } %>
-                    </div> <!-- Fin .devoluciones-list -->
-                </div> <!-- Fin .sprint-card -->
+                    </div>
+                </div>
             <% }); %>
         <% } %>
-    </div> <!-- Fin .container -->
+    </div>
 
     <!-- ====================================== -->
     <!--                 MODALES                -->
@@ -796,7 +883,7 @@
                 <button class="close-modal" onclick="closeModal('sprintModal')">×</button>
             </div>
             <form id="sprintForm" action="/sprints" method="POST">
-                 <div class="form-group">
+                <div class="form-group">
                     <label class="form-label" for="sprintNombre">Nombre</label>
                     <input type="text" class="form-control" id="sprintNombre" name="nombre" required>
                 </div>
@@ -833,7 +920,7 @@
     <!-- Modal para nueva devolución/actualización -->
     <div class="modal" id="devolucionModal">
         <div class="modal-content">
-             <div class="modal-header">
+            <div class="modal-header">
                 <h3 class="modal-title">Nueva Actualización</h3>
                 <button class="close-modal" onclick="closeModal('devolucionModal')">×</button>
             </div>
@@ -862,13 +949,13 @@
     <!-- Modal para editar devolución/actualización -->
     <div class="modal" id="editDevolucionModal">
         <div class="modal-content">
-             <div class="modal-header">
+            <div class="modal-header">
                 <h3 class="modal-title">Editar Actualización</h3>
                 <button class="close-modal" onclick="closeModal('editDevolucionModal')">×</button>
             </div>
             <form id="editDevolucionForm" onsubmit="event.preventDefault(); saveDevolucionChanges();">
                 <input type="hidden" id="editDevolucionId" name="id">
-                 <div class="form-group">
+                <div class="form-group">
                     <label class="form-label" for="editDevolucionTitulo">Título</label>
                     <input type="text" class="form-control" id="editDevolucionTitulo" name="titulo" required>
                 </div>
@@ -892,11 +979,11 @@
     <% if (user.role === 'admin') { %>
     <div class="modal" id="respondModal">
         <div class="modal-content">
-             <div class="modal-header">
+            <div class="modal-header">
                 <h3 class="modal-title">Responder Actualización</h3>
                 <button class="close-modal" onclick="closeModal('respondModal')">×</button>
             </div>
-             <form id="respondForm" action="/devoluciones" method="POST">
+            <form id="respondForm" action="/devoluciones" method="POST">
                 <input type="hidden" id="respondSprintId" name="sprint_id">
                 <div class="form-group">
                     <label class="form-label" for="respondTitulo">Título</label>
@@ -942,6 +1029,31 @@
     </div>
     <% } %>
 
+    <!-- Modal para evaluar sprint (usuarios no admin) -->
+    <div class="modal" id="evaluarSprintModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Evaluar Sprint</h3>
+                <button class="close-modal" onclick="closeModal('evaluarSprintModal')">×</button>
+            </div>
+            <form id="evaluarSprintForm" onsubmit="event.preventDefault(); submitEvaluarSprint();">
+                <input type="hidden" name="sprint_id" id="evaluarSprintId">
+                <div class="form-group">
+                    <label class="form-label" for="evaluacionPorcentaje">Porcentaje de Cumplimiento (0-100)</label>
+                    <input type="number" class="form-control" id="evaluacionPorcentaje" name="porcentaje" min="0" max="100" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="evaluacionComentarios">Comentarios (Opcional)</label>
+                    <textarea class="form-control" id="evaluacionComentarios" name="comentarios" rows="4"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('evaluarSprintModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Enviar Evaluación</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- ====================================== -->
     <!--               SCRIPTS                  -->
     <!-- ====================================== -->
@@ -949,14 +1061,12 @@
         // --- Funciones para manejar modales ---
         function openModal(modalId, data = null) {
             const modal = document.getElementById(modalId);
-            if (!modal) return; // Evitar errores si el modal no existe
+            if (!modal) return;
 
-            // Lógica específica para rellenar datos antes de mostrar
             if (data) {
                 try {
                     if (modalId === 'devolucionModal') {
                         modal.querySelector('#devolucionSprintId').value = data.sprintId;
-                        // Limpiar formulario por si acaso
                         modal.querySelector('#devolucionForm').reset();
                     } else if (modalId === 'editDevolucionModal') {
                         modal.querySelector('#editDevolucionId').value = data.id;
@@ -964,29 +1074,30 @@
                         modal.querySelector('#editDevolucionDescripcion').value = data.descripcion;
                         const fechaLimiteInput = modal.querySelector('#editDevolucionFechaLimite');
                         if (data.fecha_limite) {
-                            // Formatear fecha para input type="date" (YYYY-MM-DD)
                             fechaLimiteInput.value = new Date(data.fecha_limite).toISOString().split('T')[0];
                         } else {
-                            fechaLimiteInput.value = ''; // Limpiar si no hay fecha
+                            fechaLimiteInput.value = '';
                         }
                     } else if (modalId === 'respondModal') {
-                         modal.querySelector('#respondSprintId').value = data.sprint_id; // Asegúrate que el nombre de la propiedad es correcto
+                         modal.querySelector('#respondSprintId').value = data.sprint_id;
                          modal.querySelector('#respondTitulo').value = `Re: ${data.titulo}`;
-                         modal.querySelector('#respondForm').reset(); // Limpiar descripción
-                         modal.querySelector('#respondTitulo').value = `Re: ${data.titulo}`; // Re-establecer título
+                         modal.querySelector('#respondForm').reset();
+                         modal.querySelector('#respondTitulo').value = `Re: ${data.titulo}`;
                     } else if (modalId === 'closeSprintModal') {
                         modal.querySelector('#closeSprintId').value = data.sprintId;
-                        modal.querySelector('#closeSprintForm').reset(); // Limpiar campos
-                         modal.querySelector('#closeSprintId').value = data.sprintId; // Re-establecer ID
+                        modal.querySelector('#closeSprintForm').reset();
+                         modal.querySelector('#closeSprintId').value = data.sprintId;
+                    } else if (modalId === 'evaluarSprintModal') {
+                        modal.querySelector('#evaluarSprintId').value = data.sprintId;
+                        modal.querySelector('#evaluarSprintForm').reset();
                     }
                 } catch (error) {
                     console.error("Error populating modal data:", error);
-                    // Podrías mostrar un mensaje al usuario aquí
                 }
             }
 
-            modal.classList.add('show'); // Usar clase para mostrar con transiciones CSS si las hay
-            modal.style.display = 'flex'; // Asegurar display flex
+            modal.classList.add('show');
+            modal.style.display = 'flex';
         }
 
         function closeModal(modalId) {
@@ -996,23 +1107,20 @@
             modal.style.display = 'none';
         }
 
-        // Cerrar modal al hacer clic fuera del contenido (en el backdrop oscuro)
         window.addEventListener('click', function(event) {
             if (event.target.classList.contains('modal')) {
                  closeModal(event.target.id);
             }
         });
 
-        // Cerrar modal al presionar la tecla Escape
         window.addEventListener('keydown', function(event) {
              if (event.key === 'Escape') {
                  document.querySelectorAll('.modal.show').forEach(modal => closeModal(modal.id));
              }
          });
 
-        // --- Funciones AJAX (Ejemplos, ajustar a tu backend) ---
+        // --- Funciones AJAX ---
 
-        // Guardar cambios en devolución/actualización
         function saveDevolucionChanges() {
             const form = document.getElementById('editDevolucionForm');
             const devolucionId = form.querySelector('#editDevolucionId').value;
@@ -1022,24 +1130,22 @@
                 fecha_limite: form.querySelector('#editDevolucionFechaLimite').value || null
             };
 
-            fetch(`/devoluciones/${devolucionId}`, { // Asegúrate que la ruta sea correcta
+            fetch(`/devoluciones/${devolucionId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    // Añadir cabeceras de autenticación si son necesarias (CSRF token, etc.)
                 },
                 body: JSON.stringify(formData)
             })
             .then(response => {
                 if (!response.ok) {
-                    // Si la respuesta no es OK, intenta leer el mensaje de error
                     return response.json().then(err => { throw new Error(err.message || 'Error en el servidor'); });
                 }
                 return response.json();
             })
             .then(data => {
                 if (data.success) {
-                    window.location.reload(); // Recarga para ver los cambios
+                    window.location.reload();
                 } else {
                     alert(data.message || 'Error al guardar los cambios');
                 }
@@ -1050,24 +1156,21 @@
             });
         }
 
-        // Enviar formulario de cierre de sprint
         function submitCloseSprint() {
             const form = document.getElementById('closeSprintForm');
             const sprintId = form.querySelector('#closeSprintId').value;
             const porcentaje = form.querySelector('#sprintPorcentaje').value;
             const comentarios = form.querySelector('#sprintComentarios').value;
 
-            // Validación básica del porcentaje
             if (porcentaje === '' || porcentaje < 0 || porcentaje > 100) {
                 alert('El porcentaje de cumplimiento debe estar entre 0 y 100.');
                 return;
             }
 
-            fetch(`/sprints/${sprintId}/cerrar`, { // Asegúrate que la ruta sea correcta
+            fetch(`/sprints/${sprintId}/cerrar`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                     // Añadir cabeceras de autenticación si son necesarias
                 },
                 body: JSON.stringify({
                     porcentaje_cumplimiento: porcentaje,
@@ -1082,7 +1185,7 @@
              })
             .then(data => {
                 if (data.success) {
-                    window.location.reload(); // Recarga para ver el sprint cerrado
+                    window.location.reload();
                 } else {
                     alert(data.error || 'Error al cerrar el sprint');
                 }
@@ -1093,18 +1196,56 @@
             });
         }
 
+        function submitEvaluarSprint() {
+            const form = document.getElementById('evaluarSprintForm');
+            const sprintId = form.querySelector('#evaluarSprintId').value;
+            const porcentaje = form.querySelector('#evaluacionPorcentaje').value;
+            const comentarios = form.querySelector('#evaluacionComentarios').value;
+
+            if (porcentaje === '' || porcentaje < 0 || porcentaje > 100) {
+                alert('El porcentaje de cumplimiento debe estar entre 0 y 100.');
+                return;
+            }
+
+            fetch(`/sprints/${sprintId}/evaluar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    porcentaje: porcentaje,
+                    comentarios: comentarios
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.error || 'Error en la respuesta del servidor'); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || 'Error al enviar la evaluación');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al enviar la evaluación: ' + error.message);
+            });
+        }
+
         // --- Lógica de Inicialización y Filtros ---
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date().toISOString().split('T')[0];
 
-            // Configurar fecha mínima para inputs de fecha en modales
             const dateInputs = document.querySelectorAll('.modal input[type="date"]');
             dateInputs.forEach(input => {
                 // Permitir fechas pasadas para edición/visualización si es necesario
-                // input.min = today; // Descomentar si siempre deben ser futuras/hoy
+                // input.min = today;
             });
 
-            // Lógica para que la fecha fin no sea anterior a la fecha inicio en modales
             const sprintInicio = document.getElementById('sprintInicio');
             const sprintFin = document.getElementById('sprintFin');
             if(sprintInicio && sprintFin) {
@@ -1112,53 +1253,35 @@
                      if (this.value) {
                          sprintFin.min = this.value;
                      } else {
-                          sprintFin.min = null; // Resetear si no hay fecha inicio
+                          sprintFin.min = null;
                      }
                  });
-                 // Asegurar que al cargar, la fecha fin no sea menor que la inicio si ya tienen valor
                  if (sprintInicio.value && sprintFin.value && sprintFin.value < sprintInicio.value) {
                      sprintFin.value = sprintInicio.value;
                  }
             }
 
-
-            // Lógica para filtros de fecha (que fin no sea menor que inicio)
             const filtroFechaInicio = document.getElementById('filtroFechaInicio');
             const filtroFechaFin = document.getElementById('filtroFechaFin');
             if (filtroFechaInicio && filtroFechaFin) {
                 filtroFechaInicio.addEventListener('change', function() {
                      if (this.value) {
                          filtroFechaFin.min = this.value;
-                          // Si fecha fin es anterior, limpiarla o igualarla (opcional)
                           if (filtroFechaFin.value && filtroFechaFin.value < this.value) {
-                             filtroFechaFin.value = ''; // O this.value;
+                             filtroFechaFin.value = '';
                           }
                      } else {
-                         filtroFechaFin.min = null; // Resetear si no hay fecha inicio
+                         filtroFechaFin.min = null;
                      }
                 });
-                 // Comprobación inicial al cargar la página
                  if (filtroFechaInicio.value) {
                      filtroFechaFin.min = filtroFechaInicio.value;
                  }
             }
         });
 
-        // Función para limpiar/resetear los filtros
         function resetFilters() {
-            // Opción 1: Redirigir a la URL base sin parámetros
             window.location.href = '/sprints';
-
-            // Opción 2: Limpiar el formulario y enviarlo (si prefieres recargar con AJAX o similar)
-            // const form = document.getElementById('filtrosForm');
-            // if (form) {
-            //     form.reset(); // Limpia los campos visualmente
-            //     // Eliminar parámetros de la URL actual si se desea una limpieza completa sin recarga total
-            //     const url = new URL(window.location);
-            //     url.search = ''; // Elimina todos los parámetros query
-            //     window.history.pushState({}, '', url);
-            //     // Aquí podrías llamar a una función que recargue la lista de sprints vía AJAX
-            // }
         }
 
     </script>

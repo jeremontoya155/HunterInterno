@@ -2027,340 +2027,404 @@ app.delete('/closers/:id', isAuthenticated, async (req, res) => {
 
 
 
-    // --- RUTAS PARA SPRINTS ---
+        // --- RUTAS PARA SPRINTS ---
 
-    // GET /sprints - Vista principal de sprints
-    // --- SPRINTS MODIFICADOS ---
+        // GET /sprints - Vista principal de sprints
+        // --- SPRINTS MODIFICADOS ---
 
-    // POST /sprints - Crear nuevo sprint (solo admin)
-    app.post('/sprints', isAuthenticated, async (req, res) => {
-        if (req.session.user.role !== 'admin') {
-        return res.status(403).redirect('/sprints?error=Acceso no autorizado');
-        }
-    
-        const { nombre, fecha_inicio, fecha_fin, descripcion, asignado_a } = req.body;
+        // POST /sprints - Crear nuevo sprint (solo admin)
+        app.post('/sprints', isAuthenticated, async (req, res) => {
+            if (req.session.user.role !== 'admin') {
+            return res.status(403).redirect('/sprints?error=Acceso no autorizado');
+            }
         
-        if (!nombre || !fecha_inicio || !fecha_fin || !asignado_a) {
-        return res.redirect('/sprints?error=Nombre, fechas y asignación son obligatorios');
-        }
-    
-        try {
-        const query = `
-            INSERT INTO sprints (nombre, fecha_inicio, fecha_fin, descripcion, created_by, asignado_a)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id
-        `;
-        await pool.query(query, [
-            nombre.trim(),
-            fecha_inicio,
-            fecha_fin,
-            descripcion || null,
-            req.session.user.id,
-            asignado_a
-        ]);
-    
-        res.redirect('/sprints?success=Sprint creado y asignado correctamente');
-        } catch (error) {
-        console.error("Error en POST /sprints:", error);
-        res.redirect('/sprints?error=Error al crear el sprint');
-        }
-    });
-    
-    // POST /sprints/:id/cerrar - Cerrar sprint con porcentaje (solo admin)
-    // --- POST /sprints/:id/cerrar - Cerrar sprint con porcentaje (solo admin) ---
-    app.post('/sprints/:id/cerrar', isAuthenticated, async (req, res) => {
-        if (req.session.user.role !== 'admin') {
-            return res.status(403).json({ success: false, error: 'Acceso no autorizado' });
-        }
-
-        const { id } = req.params;
-        const { porcentaje_cumplimiento, comentarios_cierre } = req.body;
+            const { nombre, fecha_inicio, fecha_fin, descripcion, asignado_a } = req.body;
+            
+            if (!nombre || !fecha_inicio || !fecha_fin || !asignado_a) {
+            return res.redirect('/sprints?error=Nombre, fechas y asignación son obligatorios');
+            }
         
-        // Validación del porcentaje
-        const porcentaje = parseInt(porcentaje_cumplimiento, 10);
-        if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Porcentaje inválido. Debe ser un número entre 0 y 100' 
-            });
-        }
-
-        try {
+            try {
             const query = `
-                UPDATE sprints SET
-                    porcentaje_cumplimiento = $1,
-                    cerrado = TRUE,
-                    descripcion = COALESCE($2, descripcion),
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = $3
+                INSERT INTO sprints (nombre, fecha_inicio, fecha_fin, descripcion, created_by, asignado_a)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 RETURNING id
             `;
-            const result = await pool.query(query, [
-                porcentaje,
-                comentarios_cierre || null,
-                id
+            await pool.query(query, [
+                nombre.trim(),
+                fecha_inicio,
+                fecha_fin,
+                descripcion || null,
+                req.session.user.id,
+                asignado_a
             ]);
-
-            if (result.rowCount === 0) {
-                return res.status(404).json({ success: false, error: 'Sprint no encontrado' });
-            }
-
-            res.json({ 
-                success: true,
-                message: 'Sprint cerrado correctamente',
-                sprintId: id
-            });
-        } catch (error) {
-            console.error("Error en POST /sprints/:id/cerrar:", error);
-            res.status(500).json({ 
-                success: false, 
-                error: 'Error interno al cerrar el sprint' 
-            });
-        }
-    });
-    
-    
-    // --- DEVOLUCIONES MODIFICADAS ---
-    
-    // GET /sprints - Vista principal modificada
-    // --- GET /sprints - Vista principal con filtros ---
-    app.get('/sprints', isAuthenticated, async (req, res) => {
-        try {
-            // Obtener parámetros de filtro
-            const { titulo, fecha_inicio, fecha_fin, asignado_a } = req.query;
-            
-            // Construir consulta base
-            let sprintsQuery;
-            let queryParams = [];
-            let whereClauses = [];
-            
-            // Filtro por rol (no admin solo ve sus sprints asignados)
-            if (req.session.user.role !== 'admin') {
-                whereClauses.push(`s.asignado_a = $${queryParams.length + 1}`);
-                queryParams.push(req.session.user.id);
-            }
-            
-            // Aplicar filtros
-            if (titulo) {
-                whereClauses.push(`s.nombre ILIKE $${queryParams.length + 1}`);
-                queryParams.push(`%${titulo}%`);
-            }
-            
-            if (fecha_inicio) {
-                whereClauses.push(`s.fecha_inicio >= $${queryParams.length + 1}`);
-                queryParams.push(fecha_inicio);
-            }
-            
-            if (fecha_fin) {
-                whereClauses.push(`s.fecha_fin <= $${queryParams.length + 1}`);
-                queryParams.push(fecha_fin);
-            }
-            
-            if (asignado_a && req.session.user.role === 'admin') {
-                whereClauses.push(`s.asignado_a = $${queryParams.length + 1}`);
-                queryParams.push(asignado_a);
-            }
-            
-            // Construir consulta final
-            sprintsQuery = `
-                SELECT s.*, u.username as created_by_username, ua.username as asignado_a_username
-                FROM sprints s
-                LEFT JOIN users u ON s.created_by = u.id
-                LEFT JOIN users ua ON s.asignado_a = ua.id
-                ${whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : ''}
-                ORDER BY s.fecha_inicio DESC
-            `;
-            
-            const sprintsResult = await pool.query(sprintsQuery, queryParams);
-            
-            // Resto del código para obtener devoluciones y usuarios...
-            const devolucionesQuery = `
-                SELECT d.*, u.username as user_username 
-                FROM devoluciones d
-                LEFT JOIN users u ON d.user_id = u.id
-                WHERE d.sprint_id = $1
-                ORDER BY d.fecha_creacion DESC
-            `;
-            
-            const sprintsWithDevoluciones = await Promise.all(
-                sprintsResult.rows.map(async sprint => {
-                    const devoluciones = await pool.query(devolucionesQuery, [sprint.id]);
-                    return { ...sprint, devoluciones: devoluciones.rows };
-                })
-            );
-
-            // Obtener usuarios para filtro (solo admin)
-            let users = [];
-            if (req.session.user.role === 'admin') {
-                const usersResult = await pool.query(`
-                    SELECT id, username, role 
-                    FROM users 
-                    WHERE role IN ('auditoria', 'ventas', 'fulfillment')
-                    ORDER BY username ASC
-                `);
-                users = usersResult.rows;
-            }
-
-            res.render('devoluciones', {
-                user: req.session.user,
-                sprints: sprintsWithDevoluciones,
-                users,
-                success: req.query.success,
-                error: req.query.error,
-                req: req // Pasamos req para acceder a los query params en la vista
-            });
-
-        } catch (error) {
-            console.error("Error en GET /sprints:", error);
-            res.status(500).render('error', {
-                message: 'Error al cargar los sprints',
-                error: error,
-                user: req.session.user
-            });
-        }
-    });
-    
-    // --- RUTAS PARA DEVOLUCIONES ---
-    
-    // POST /devoluciones - Crear nueva devolución
-    app.post('/devoluciones', isAuthenticated, async (req, res) => {
-        const { sprint_id, titulo, descripcion, prioridad, fecha_limite } = req.body;
         
-        if (!sprint_id || !titulo || !descripcion) {
-        return res.redirect('/sprints?error=Título y descripción son obligatorios');
-        }
+            res.redirect('/sprints?success=Sprint creado y asignado correctamente');
+            } catch (error) {
+            console.error("Error en POST /sprints:", error);
+            res.redirect('/sprints?error=Error al crear el sprint');
+            }
+        });
+        
+        // POST /sprints/:id/cerrar - Cerrar sprint con porcentaje (solo admin)
+        // --- POST /sprints/:id/cerrar - Cerrar sprint con porcentaje (solo admin) ---
+ // POST /sprints/:id/cerrar - Cerrar sprint con porcentaje (solo admin)
+app.post('/sprints/:id/cerrar', isAuthenticated, async (req, res) => {
+    if (req.session.user.role !== 'admin') {
+        return res.status(403).json({ success: false, error: 'Acceso no autorizado' });
+    }
+
+    const { id } = req.params;
+    const { porcentaje_cumplimiento, comentarios_cierre } = req.body;
     
-        try {
+    // Validación del porcentaje
+    const porcentaje = parseInt(porcentaje_cumplimiento, 10);
+    if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+        return res.status(400).json({ 
+            success: false, 
+            error: 'Porcentaje inválido. Debe ser un número entre 0 y 100' 
+        });
+    }
+
+    try {
         const query = `
-            INSERT INTO devoluciones 
-            (sprint_id, user_id, titulo, descripcion, prioridad, fecha_limite)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            UPDATE sprints SET
+                porcentaje_cumplimiento = $1,
+                cerrado = TRUE,
+                descripcion = COALESCE($2, descripcion),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $3
             RETURNING id
         `;
-        await pool.query(query, [
-            sprint_id,
-            req.session.user.id,
-            titulo.trim(),
-            descripcion.trim(),
-            prioridad || 'media',
-            fecha_limite || null
+        const result = await pool.query(query, [
+            porcentaje,
+            comentarios_cierre || null,
+            id
         ]);
-    
-        res.redirect(`/sprints?success=Devolución agregada correctamente#sprint-${sprint_id}`);
-        } catch (error) {
-        console.error("Error en POST /devoluciones:", error);
-        res.redirect('/sprints?error=Error al crear la devolución');
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, error: 'Sprint no encontrado' });
         }
-    });
-    
-    // PUT /devoluciones/:id/estado - Actualizar estado de devolución
-    app.put('/devoluciones/:id/estado', isAuthenticated, async (req, res) => {
-        const { id } = req.params;
-        const { estado, comentarios_completado } = req.body;
-    
-        if (!id || !estado) {
-        return res.status(400).json({ success: false, message: 'Datos incompletos' });
-        }
-    
-        try {
-        // Verificar que la devolución existe y pertenece al usuario o es admin
-        const verifyQuery = `
-            SELECT * FROM devoluciones 
-            WHERE id = $1 AND (user_id = $2 OR $3 = 'admin')
-        `;
-        const verifyResult = await pool.query(verifyQuery, [
-            id, 
-            req.session.user.id,
-            req.session.user.role
-        ]);
-    
-        if (verifyResult.rows.length === 0) {
-            return res.status(403).json({ success: false, message: 'No tienes permiso para modificar esta devolución' });
-        }
-    
-        const updateQuery = `
-            UPDATE devoluciones SET
-            estado = $1,
-            ${estado === 'completado' ? 
-                'completado_por = $2, fecha_completado = CURRENT_TIMESTAMP, comentarios_completado = $3' : 
-                'completado_por = NULL, fecha_completado = NULL, comentarios_completado = NULL'}
-            WHERE id = $4
-            RETURNING *
-        `;
-        
-        const updateParams = estado === 'completado' ? 
-            [estado, req.session.user.id, comentarios_completado || null, id] :
-            [estado, id];
-    
-        const updateResult = await pool.query(updateQuery, updateParams);
-    
+
         res.json({ 
-            success: true, 
-            message: 'Estado actualizado',
-            devolucion: updateResult.rows[0]
+            success: true,
+            message: 'Sprint cerrado correctamente',
+            sprintId: id
         });
+    } catch (error) {
+        console.error("Error en POST /sprints/:id/cerrar:", error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Error interno al cerrar el sprint' 
+        });
+    }
+});
+
+// POST /sprints/:id/evaluar - Evaluar sprint como usuario
+app.post('/sprints/:id/evaluar', isAuthenticated, async (req, res) => {
+    if (req.session.user.role === 'admin') {
+        return res.status(403).json({ success: false, error: 'Los administradores deben usar el formulario de cierre' });
+    }
+
+    const { id } = req.params;
+    const { porcentaje, comentarios } = req.body;
     
-        } catch (error) {
-        console.error("Error en PUT /devoluciones/:id/estado:", error);
-        res.status(500).json({ success: false, message: 'Error al actualizar el estado' });
+    // Validación del porcentaje
+    const porcentajeNum = parseInt(porcentaje, 10);
+    if (isNaN(porcentajeNum) || porcentajeNum < 0 || porcentajeNum > 100) {
+        return res.status(400).json({ 
+            success: false, 
+            error: 'Porcentaje inválido. Debe ser un número entre 0 y 100' 
+        });
+    }
+
+    try {
+        // Primero obtenemos el sprint actual
+        const sprintResult = await pool.query('SELECT evaluaciones_usuario FROM sprints WHERE id = $1', [id]);
+        
+        if (sprintResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Sprint no encontrado' });
         }
-    });
-    
-    // PUT /devoluciones/:id - Editar devolución
-    app.put('/devoluciones/:id', isAuthenticated, async (req, res) => {
-        const { id } = req.params;
-        const { titulo, descripcion, prioridad, fecha_limite } = req.body;
-    
-        if (!id || !titulo || !descripcion) {
-        return res.status(400).json({ success: false, message: 'Datos incompletos' });
-        }
-    
-        try {
-        // Verificar que la devolución existe y pertenece al usuario o es admin
-        const verifyQuery = `
-            SELECT * FROM devoluciones 
-            WHERE id = $1 AND (user_id = $2 OR $3 = 'admin')
-        `;
-        const verifyResult = await pool.query(verifyQuery, [
-            id, 
-            req.session.user.id,
-            req.session.user.role
-        ]);
-    
-        if (verifyResult.rows.length === 0) {
-            return res.status(403).json({ success: false, message: 'No tienes permiso para modificar esta devolución' });
-        }
-    
+
+        const evaluacionesActuales = sprintResult.rows[0].evaluaciones_usuario || {};
+        
+        // Actualizamos con la nueva evaluación
+        evaluacionesActuales[req.session.user.id] = {
+            porcentaje: porcentajeNum,
+            comentarios: comentarios || null,
+            fecha: new Date().toISOString(),
+            username: req.session.user.username
+        };
+
+        // Actualizamos en la base de datos
         const updateQuery = `
-            UPDATE devoluciones SET
-            titulo = $1,
-            descripcion = $2,
-            prioridad = $3,
-            fecha_limite = $4,
-            updated_at = CURRENT_TIMESTAMP
-            WHERE id = $5
-            RETURNING *
+            UPDATE sprints SET
+                evaluaciones_usuario = $1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $2
+            RETURNING id
         `;
         
         const updateResult = await pool.query(updateQuery, [
-            titulo.trim(),
-            descripcion.trim(),
-            prioridad || 'media',
-            fecha_limite || null,
+            evaluacionesActuales,
             id
         ]);
-    
+
         res.json({ 
-            success: true, 
-            message: 'Devolución actualizada',
-            devolucion: updateResult.rows[0]
+            success: true,
+            message: 'Evaluación guardada correctamente',
+            sprintId: id
         });
-    
-        } catch (error) {
-        console.error("Error en PUT /devoluciones/:id:", error);
-        res.status(500).json({ success: false, message: 'Error al actualizar la devolución' });
-        }
-    });
+    } catch (error) {
+        console.error("Error en POST /sprints/:id/evaluar:", error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Error interno al guardar la evaluación' 
+        });
+    }
+});
+        
+        // --- DEVOLUCIONES MODIFICADAS ---
+        
+        // GET /sprints - Vista principal modificada
+        // --- GET /sprints - Vista principal con filtros ---
+        app.get('/sprints', isAuthenticated, async (req, res) => {
+            try {
+                // Obtener parámetros de filtro
+                const { titulo, fecha_inicio, fecha_fin, asignado_a } = req.query;
+                
+                // Construir consulta base
+                let sprintsQuery;
+                let queryParams = [];
+                let whereClauses = [];
+                
+                // Filtro por rol (no admin solo ve sus sprints asignados)
+                if (req.session.user.role !== 'admin') {
+                    whereClauses.push(`s.asignado_a = $${queryParams.length + 1}`);
+                    queryParams.push(req.session.user.id);
+                }
+                
+                // Aplicar filtros
+                if (titulo) {
+                    whereClauses.push(`s.nombre ILIKE $${queryParams.length + 1}`);
+                    queryParams.push(`%${titulo}%`);
+                }
+                
+                if (fecha_inicio) {
+                    whereClauses.push(`s.fecha_inicio >= $${queryParams.length + 1}`);
+                    queryParams.push(fecha_inicio);
+                }
+                
+                if (fecha_fin) {
+                    whereClauses.push(`s.fecha_fin <= $${queryParams.length + 1}`);
+                    queryParams.push(fecha_fin);
+                }
+                
+                if (asignado_a && req.session.user.role === 'admin') {
+                    whereClauses.push(`s.asignado_a = $${queryParams.length + 1}`);
+                    queryParams.push(asignado_a);
+                }
+                
+                // Construir consulta final
+                sprintsQuery = `
+                    SELECT s.*, u.username as created_by_username, ua.username as asignado_a_username
+                    FROM sprints s
+                    LEFT JOIN users u ON s.created_by = u.id
+                    LEFT JOIN users ua ON s.asignado_a = ua.id
+                    ${whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : ''}
+                    ORDER BY s.fecha_inicio DESC
+                `;
+                
+                const sprintsResult = await pool.query(sprintsQuery, queryParams);
+                
+                // Resto del código para obtener devoluciones y usuarios...
+                const devolucionesQuery = `
+                    SELECT d.*, u.username as user_username 
+                    FROM devoluciones d
+                    LEFT JOIN users u ON d.user_id = u.id
+                    WHERE d.sprint_id = $1
+                    ORDER BY d.fecha_creacion DESC
+                `;
+                
+                const sprintsWithDevoluciones = await Promise.all(
+                    sprintsResult.rows.map(async sprint => {
+                        const devoluciones = await pool.query(devolucionesQuery, [sprint.id]);
+                        return { ...sprint, devoluciones: devoluciones.rows };
+                    })
+                );
+
+                // Obtener usuarios para filtro (solo admin)
+                let users = [];
+                if (req.session.user.role === 'admin') {
+                    const usersResult = await pool.query(`
+                        SELECT id, username, role 
+                        FROM users 
+                        WHERE role IN ('auditoria', 'ventas', 'fulfillment')
+                        ORDER BY username ASC
+                    `);
+                    users = usersResult.rows;
+                }
+
+                res.render('devoluciones', {
+                    user: req.session.user,
+                    sprints: sprintsWithDevoluciones,
+                    users,
+                    success: req.query.success,
+                    error: req.query.error,
+                    req: req // Pasamos req para acceder a los query params en la vista
+                });
+
+            } catch (error) {
+                console.error("Error en GET /sprints:", error);
+                res.status(500).render('error', {
+                    message: 'Error al cargar los sprints',
+                    error: error,
+                    user: req.session.user
+                });
+            }
+        });
+        
+        // --- RUTAS PARA DEVOLUCIONES ---
+        
+        // POST /devoluciones - Crear nueva devolución
+        app.post('/devoluciones', isAuthenticated, async (req, res) => {
+            const { sprint_id, titulo, descripcion, prioridad, fecha_limite } = req.body;
+            
+            if (!sprint_id || !titulo || !descripcion) {
+            return res.redirect('/sprints?error=Título y descripción son obligatorios');
+            }
+        
+            try {
+            const query = `
+                INSERT INTO devoluciones 
+                (sprint_id, user_id, titulo, descripcion, prioridad, fecha_limite)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING id
+            `;
+            await pool.query(query, [
+                sprint_id,
+                req.session.user.id,
+                titulo.trim(),
+                descripcion.trim(),
+                prioridad || 'media',
+                fecha_limite || null
+            ]);
+        
+            res.redirect(`/sprints?success=Devolución agregada correctamente#sprint-${sprint_id}`);
+            } catch (error) {
+            console.error("Error en POST /devoluciones:", error);
+            res.redirect('/sprints?error=Error al crear la devolución');
+            }
+        });
+        
+        // PUT /devoluciones/:id/estado - Actualizar estado de devolución
+        app.put('/devoluciones/:id/estado', isAuthenticated, async (req, res) => {
+            const { id } = req.params;
+            const { estado, comentarios_completado } = req.body;
+        
+            if (!id || !estado) {
+            return res.status(400).json({ success: false, message: 'Datos incompletos' });
+            }
+        
+            try {
+            // Verificar que la devolución existe y pertenece al usuario o es admin
+            const verifyQuery = `
+                SELECT * FROM devoluciones 
+                WHERE id = $1 AND (user_id = $2 OR $3 = 'admin')
+            `;
+            const verifyResult = await pool.query(verifyQuery, [
+                id, 
+                req.session.user.id,
+                req.session.user.role
+            ]);
+        
+            if (verifyResult.rows.length === 0) {
+                return res.status(403).json({ success: false, message: 'No tienes permiso para modificar esta devolución' });
+            }
+        
+            const updateQuery = `
+                UPDATE devoluciones SET
+                estado = $1,
+                ${estado === 'completado' ? 
+                    'completado_por = $2, fecha_completado = CURRENT_TIMESTAMP, comentarios_completado = $3' : 
+                    'completado_por = NULL, fecha_completado = NULL, comentarios_completado = NULL'}
+                WHERE id = $4
+                RETURNING *
+            `;
+            
+            const updateParams = estado === 'completado' ? 
+                [estado, req.session.user.id, comentarios_completado || null, id] :
+                [estado, id];
+        
+            const updateResult = await pool.query(updateQuery, updateParams);
+        
+            res.json({ 
+                success: true, 
+                message: 'Estado actualizado',
+                devolucion: updateResult.rows[0]
+            });
+        
+            } catch (error) {
+            console.error("Error en PUT /devoluciones/:id/estado:", error);
+            res.status(500).json({ success: false, message: 'Error al actualizar el estado' });
+            }
+        });
+        
+        // PUT /devoluciones/:id - Editar devolución
+        app.put('/devoluciones/:id', isAuthenticated, async (req, res) => {
+            const { id } = req.params;
+            const { titulo, descripcion, prioridad, fecha_limite } = req.body;
+        
+            if (!id || !titulo || !descripcion) {
+            return res.status(400).json({ success: false, message: 'Datos incompletos' });
+            }
+        
+            try {
+            // Verificar que la devolución existe y pertenece al usuario o es admin
+            const verifyQuery = `
+                SELECT * FROM devoluciones 
+                WHERE id = $1 AND (user_id = $2 OR $3 = 'admin')
+            `;
+            const verifyResult = await pool.query(verifyQuery, [
+                id, 
+                req.session.user.id,
+                req.session.user.role
+            ]);
+        
+            if (verifyResult.rows.length === 0) {
+                return res.status(403).json({ success: false, message: 'No tienes permiso para modificar esta devolución' });
+            }
+        
+            const updateQuery = `
+                UPDATE devoluciones SET
+                titulo = $1,
+                descripcion = $2,
+                prioridad = $3,
+                fecha_limite = $4,
+                updated_at = CURRENT_TIMESTAMP
+                WHERE id = $5
+                RETURNING *
+            `;
+            
+            const updateResult = await pool.query(updateQuery, [
+                titulo.trim(),
+                descripcion.trim(),
+                prioridad || 'media',
+                fecha_limite || null,
+                id
+            ]);
+        
+            res.json({ 
+                success: true, 
+                message: 'Devolución actualizada',
+                devolucion: updateResult.rows[0]
+            });
+        
+            } catch (error) {
+            console.error("Error en PUT /devoluciones/:id:", error);
+            res.status(500).json({ success: false, message: 'Error al actualizar la devolución' });
+            }
+        });
 
 
     // --- GET /planes-accion - Listado de planes ---
