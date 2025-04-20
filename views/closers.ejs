@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/navbar.css" />
     <link rel="stylesheet" href="/static/css/scrollbar.css" />
-    <link rel="stylesheet" href="/static/css/vendedores.css" />
+    <!-- <link rel="stylesheet" href="/static/css/vendedores.css" /> -->
     <style>
         :root {
             --color-background-dark: #0a0a10; --color-background-medium: #111827;
@@ -372,94 +372,149 @@
 
     <script defer src="/static/js/navbar.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const closerModalOverlay = document.getElementById('closerModalOverlay');
+        // Funciones para manejar los modales
+        function openCloserModal(closerIdToEdit = null) {
             const closerForm = document.getElementById('closer-form');
             const closerModalLabel = document.getElementById('closerModalLabel');
             const closerIdInput = document.getElementById('closer_id');
-            const closerNombreInput = document.getElementById('modal_closer_nombre');
-            const closerCuentasInput = document.getElementById('modal_closer_cuentas');
-            const closerEstadoSelect = document.getElementById('modal_closer_estado');
-            const closerObjetivoInput = document.getElementById('modal_closer_objetivo');
-            const closerManagerInput = document.getElementById('modal_closer_manager');
-            const closerFechaIngresoInput = document.getElementById('modal_closer_fecha_ingreso');
-            const closerNotasInput = document.getElementById('modal_closer_notas');
-
-            window.openCloserModal = function(closerIdToEdit = null) {
-                closerForm.reset();
-                closerIdInput.value = '';
-                if (closerIdToEdit) {
-                    closerModalLabel.textContent = 'Editar Closer';
-                    const card = document.getElementById(`closer-card-${closerIdToEdit}`);
-                    if (card) {
-                        try {
-                            const closerData = JSON.parse(card.getAttribute('data-closer'));
-                            closerIdInput.value = closerData.id;
-                            closerNombreInput.value = closerData.nombre || '';
-                            closerCuentasInput.value = Array.isArray(closerData.cuentas_asignadas) ? closerData.cuentas_asignadas.join(', ') : '';
-                            closerEstadoSelect.value = closerData.estado || 'activo';
-                            closerObjetivoInput.value = closerData.objetivo_mensual || 0;
-                            closerManagerInput.value = closerData.manager_asignado || '';
-                            closerFechaIngresoInput.value = closerData.fecha_ingreso ? new Date(closerData.fecha_ingreso).toISOString().split('T')[0] : '';
-                            closerNotasInput.value = closerData.notas_auditoria || '';
-                        } catch (e) { console.error("Error parsing closer data:", e); alert("Error al cargar datos."); return; }
-                    } else { alert("No se encontró info para editar."); return; }
-                } else { closerModalLabel.textContent = 'Agregar Closer'; }
-                closerModalOverlay.style.display = 'flex';
+            
+            closerForm.reset();
+            closerIdInput.value = '';
+            
+            if (closerIdToEdit) {
+                closerModalLabel.textContent = 'Editar Closer';
+                const card = document.getElementById(`closer-card-${closerIdToEdit}`);
+                
+                if (card) {
+                    try {
+                        const closerData = JSON.parse(card.getAttribute('data-closer'));
+                        closerIdInput.value = closerData.id;
+                        document.getElementById('modal_closer_nombre').value = closerData.nombre || '';
+                        document.getElementById('modal_closer_cuentas').value = Array.isArray(closerData.cuentas_asignadas) ? 
+                            closerData.cuentas_asignadas.join(', ') : '';
+                        document.getElementById('modal_closer_estado').value = closerData.estado || 'activo';
+                        document.getElementById('modal_closer_objetivo').value = closerData.objetivo_mensual || 0;
+                        document.getElementById('modal_closer_manager').value = closerData.manager_asignado || '';
+                        
+                        if (closerData.fecha_ingreso) {
+                            document.getElementById('modal_closer_fecha_ingreso').value = 
+                                new Date(closerData.fecha_ingreso).toISOString().split('T')[0];
+                        }
+                        
+                        document.getElementById('modal_closer_notas').value = closerData.notas_auditoria || '';
+                    } catch (e) { 
+                        console.error("Error parsing closer data:", e); 
+                        alert("Error al cargar datos."); 
+                        return; 
+                    }
+                } else { 
+                    alert("No se encontró info para editar."); 
+                    return; 
+                }
+            } else { 
+                closerModalLabel.textContent = 'Agregar Closer'; 
             }
-            window.closeCloserModal = function() { closerModalOverlay.style.display = 'none'; }
+            
+            document.getElementById('closerModalOverlay').style.display = 'flex';
+        }
 
-            const agendasModalOverlay = document.getElementById('agendasModalOverlay');
+        function closeCloserModal() { 
+            document.getElementById('closerModalOverlay').style.display = 'none'; 
+        }
+
+        function openAgendasModal(closerId) {
             const agendasForm = document.getElementById('agendas-form');
+            const agendasFeedbackDiv = document.getElementById('agendas-feedback');
+            
+            agendasForm.reset();
+            agendasFeedbackDiv.textContent = '';
+            agendasFeedbackDiv.className = 'feedback-message';
+            
+            document.getElementById('agendas_closer_id').value = closerId;
+            const closerCard = document.getElementById(`closer-card-${closerId}`);
+            const closerName = closerCard ? closerCard.querySelector('.closer-nombre').textContent : `ID ${closerId}`;
+            
+            document.getElementById('agendasModalLabel').textContent = `Registrar Agendas - ${closerName}`;
+            document.getElementById('agendas_fecha').value = new Date().toISOString().slice(0, 10);
+            
+            if (closerCard) {
+                document.getElementById('agendas_registradas').value = parseInt(closerCard.getAttribute('data-agendas-hoy') || '0', 10);
+                document.getElementById('agendas_notas').value = closerCard.getAttribute('data-notas-hoy') || '';
+            }
+            
+            document.getElementById('agendasModalOverlay').style.display = 'flex';
+        }
+
+        function closeAgendasModal() { 
+            document.getElementById('agendasModalOverlay').style.display = 'none'; 
+        }
+
+        async function submitAgendas(event) {
+            event.preventDefault();
+            const agendasFeedbackDiv = document.getElementById('agendas-feedback');
             const agendasCloserIdInput = document.getElementById('agendas_closer_id');
             const agendasFechaInput = document.getElementById('agendas_fecha');
             const agendasRegistradasInput = document.getElementById('agendas_registradas');
             const agendasNotasInput = document.getElementById('agendas_notas');
-            const agendasFeedbackDiv = document.getElementById('agendas-feedback');
-
-            window.openAgendasModal = async function(closerId) {
-                agendasForm.reset();
-                agendasFeedbackDiv.textContent = '';
-                agendasFeedbackDiv.className = 'feedback-message';
-                agendasCloserIdInput.value = closerId;
-                const closerCard = document.getElementById(`closer-card-${closerId}`);
-                const closerName = closerCard ? closerCard.querySelector('.closer-nombre').textContent : `ID ${closerId}`;
-                document.getElementById('agendasModalLabel').textContent = `Registrar Agendas - ${closerName}`;
-                const todayStr = new Date().toISOString().slice(0, 10);
-                agendasFechaInput.value = todayStr;
-                const todayAgendas = closerCard ? parseInt(closerCard.getAttribute('data-agendas-hoy') || '0', 10) : 0;
-                const todayNotes = closerCard ? closerCard.getAttribute('data-notas-hoy') || '' : '';
-                agendasRegistradasInput.value = todayAgendas;
-                agendasNotasInput.value = todayNotes;
-                agendasModalOverlay.style.display = 'flex';
-            }
-            window.closeAgendasModal = function() { agendasModalOverlay.style.display = 'none'; }
-
-            window.submitAgendas = async function(event) {
-                event.preventDefault();
-                agendasFeedbackDiv.textContent = 'Guardando...';
-                agendasFeedbackDiv.className = 'feedback-message info';
-                const formData = {
-                    closer_id: agendasCloserIdInput.value, fecha: agendasFechaInput.value,
-                    agendas_registradas: agendasRegistradasInput.value, notas: agendasNotasInput.value
-                };
-                try {
-                    const response = await fetch('/closers/agendas', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formData)
-                    });
-                    const result = await response.json();
-                    if (response.ok && result.success) {
-                        agendasFeedbackDiv.textContent = result.message; agendasFeedbackDiv.className = 'feedback-message success';
-                        setTimeout(() => { closeAgendasModal(); window.location.reload(); }, 1200);
-                    } else { throw new Error(result.message || 'Error desconocido'); }
-                } catch (error) {
-                    console.error("Error al guardar agendas:", error);
-                    agendasFeedbackDiv.textContent = `Error: ${error.message}`;
-                    agendasFeedbackDiv.className = 'feedback-message error';
+            
+            agendasFeedbackDiv.textContent = 'Guardando...';
+            agendasFeedbackDiv.className = 'feedback-message info';
+            const formData = {
+                closer_id: agendasCloserIdInput.value, 
+                fecha: agendasFechaInput.value,
+                agendas_registradas: agendasRegistradasInput.value, 
+                notas: agendasNotasInput.value
+            };
+            
+            try {
+                const response = await fetch('/closers/agendas', {
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    agendasFeedbackDiv.textContent = result.message; 
+                    agendasFeedbackDiv.className = 'feedback-message success';
+                    setTimeout(() => { 
+                        closeAgendasModal(); 
+                        window.location.reload(); 
+                    }, 1200);
+                } else { 
+                    throw new Error(result.message || 'Error desconocido'); 
                 }
+            } catch (error) {
+                console.error("Error al guardar agendas:", error);
+                agendasFeedbackDiv.textContent = `Error: ${error.message}`;
+                agendasFeedbackDiv.className = 'feedback-message error';
             }
+        }
 
+        document.addEventListener('DOMContentLoaded', function() {
+            // Event listeners para cerrar modales al hacer clic fuera o presionar ESC
+            window.addEventListener('click', function(event) {
+                if (event.target === document.getElementById('closerModalOverlay')) {
+                    closeCloserModal();
+                }
+                if (event.target === document.getElementById('agendasModalOverlay')) {
+                    closeAgendasModal();
+                }
+            });
+
+            window.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    if(document.getElementById('closerModalOverlay').style.display === 'flex') {
+                        closeCloserModal();
+                    }
+                    if(document.getElementById('agendasModalOverlay').style.display === 'flex') {
+                        closeAgendasModal();
+                    }
+                }
+            });
+
+            // Filtro de closers
             const closerFilterInput = document.getElementById('closer-name-filter');
             const closerCardsContainer = document.getElementById('closer-cards-container');
             const noCloserFoundMessage = document.getElementById('no-closer-found-message');
@@ -468,7 +523,9 @@
             if (closerFilterInput && (closerCardsContainer || resumenTableBody)) {
                 closerFilterInput.addEventListener('input', function() {
                     const filterValue = this.value.toLowerCase().trim();
-                    let visibleCount = 0; let totalCount = 0;
+                    let visibleCount = 0; 
+                    let totalCount = 0;
+                    
                     if(closerCardsContainer) {
                         const cards = closerCardsContainer.querySelectorAll('.closer-card');
                         totalCount = cards.length;
@@ -479,36 +536,27 @@
                             if(isVisible) visibleCount++;
                         });
                     }
+                    
                     if(resumenTableBody) {
                         const rows = resumenTableBody.querySelectorAll('.resumen-item');
-                        if(totalCount === 0) totalCount = rows.length; // Count only once
+                        if(totalCount === 0) totalCount = rows.length;
                         rows.forEach(row => {
                             const nombre = row.querySelector('.resumen-nombre span')?.textContent.toLowerCase() || '';
                             const isVisible = !filterValue || nombre.includes(filterValue);
                             row.style.display = isVisible ? '' : 'none';
-                            // Update visibleCount only if cards weren't counted or filter is active
                             if (!closerCardsContainer || filterValue) {
-                                 if(isVisible && visibleCount === 0) visibleCount++; // Avoid double count
+                                if(isVisible && visibleCount === 0) visibleCount++;
                             }
                         });
                     }
+                    
                     if (noCloserFoundMessage) {
-                         noCloserFoundMessage.style.display = (visibleCount === 0 && totalCount > 0) ? 'block' : 'none';
+                        noCloserFoundMessage.style.display = (visibleCount === 0 && totalCount > 0) ? 'block' : 'none';
                     }
                 });
             }
 
-            window.addEventListener('click', function(event) {
-                if (event.target === closerModalOverlay) closeCloserModal();
-                if (event.target === agendasModalOverlay) closeAgendasModal();
-            });
-            window.addEventListener('keydown', function(event) {
-                 if (event.key === 'Escape') {
-                     if(closerModalOverlay.style.display === 'flex') closeCloserModal();
-                     if(agendasModalOverlay.style.display === 'flex') closeAgendasModal();
-                 }
-            });
-
+            // Toggle para contraer/expandir resumen
             const toggleBtn = document.getElementById('toggle-resumen');
             const resumenList = document.getElementById('resumen-list');
             const cardsContainer = document.getElementById('closer-cards-container');
@@ -539,12 +587,13 @@
                                 card.style.display = 'none';
                             }
                         });
-                         if (noCloserFoundMessage) noCloserFoundMessage.style.display = 'none';
-                         if (closerFilterInput) closerFilterInput.value = ''; // Clear filter on specific selection
+                        
+                        if (noCloserFoundMessage) noCloserFoundMessage.style.display = 'none';
+                        if (closerFilterInput) closerFilterInput.value = '';
                     });
                 });
 
-                 if (showAllBtn) {
+                if (showAllBtn) {
                     showAllBtn.addEventListener('click', function() {
                         cardsContainer.style.display = 'grid';
                         let hasCards = false;
@@ -552,16 +601,20 @@
                             card.style.display = 'block';
                             hasCards = true;
                         });
+                        
                         if(closerFilterInput) closerFilterInput.value = '';
                         if(noCloserFoundMessage) noCloserFoundMessage.style.display = 'none';
+                        
                         if(!hasCards && noCloserFoundMessage) {
-                            noCloserFoundMessage.textContent = "No hay Closers registrados."; // Adjust message if needed
-                             noCloserFoundMessage.style.display = 'block';
+                            noCloserFoundMessage.textContent = "No hay Closers registrados.";
+                            noCloserFoundMessage.style.display = 'block';
                         }
                     });
                 }
             }
         });
     </script>
+        <script defer src="/static/js/vendedores_manager.js"></script>
+
 </body>
 </html>

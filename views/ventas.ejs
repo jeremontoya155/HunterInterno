@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auditoria actividades</title>
+    <!-- FontAwesome y Google Fonts (Poppins) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- CSS de la Navbar y Scrollbar -->
+    <link rel="stylesheet" href="/static/css/navbar.css" />
+    <link rel="stylesheet" href="/static/css/scrollbar.css" />
+    <!-- CSS específico y completo para Vendedores -->
+    <link rel="stylesheet" href="/static/css/vendedores.css" />
+    <!-- Chart.js y Adaptador de Fecha (desde CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <%# Pasar datos iniciales a JS de forma segura %>
+    <script>
+      // Define la variable global ANTES de que se cargue vendedores_manager.js
+      const initialDashboardDataForChart = <%- JSON.stringify(initialDashboard || { chartData: [], totalMensajes: 0 }) %>;
+    </script>
+    <style>
+        /* ESTILOS PARA LA NUEVA SECCIÓN DE RESUMEN - AJUSTADOS AL TEMA */
+        .resumen-vendedores-container {
+            background: var(--color-background-medium);
+            border-radius: var(--border-radius-large);
+            border: 1px solid var(--color-border);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .resumen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background: linear-gradient(to right, rgba(33, 38, 45, 0.6), rgba(22, 27, 34, 0.4));
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .resumen-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .resumen-header h3 i {
+            color: var(--color-accent);
+        }
+
+        .resumen-list-container {
+            transition: all 0.3s ease;
+            max-height: 1000px; /* Ajusta si necesitas más altura inicial */
+            overflow: auto; /* Cambiado a auto para que aparezca scroll si es necesario */
+            position: relative; /* Necesario para sticky header */
+        }
+
+        .resumen-list-container.collapsed {
+            max-height: 0;
+            overflow: hidden;
+            border-top: none; /* Evita doble borde al colapsar */
+        }
+
+        .resumen-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        /* Estilos para el textarea de notas en el modal */
+        #desempeno_notas {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-medium);
+            background-color: var(--color-background-light);
+            color: var(--color-text-primary);
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        #desempeno_notas:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .resumen-table th, .resumen-table td {
+            padding: 0.8rem 1.2rem;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 0.9rem;
+            vertical-align: middle; /* Alinea verticalmente el contenido */
+        }
+
+        .resumen-table th {
+            background-color: var(--color-background-light);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1; /* Asegura que el header esté por encima del contenido */
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .resumen-table tr {
+            background-color: var(--color-background-medium);
+            transition: background-color 0.2s ease;
+        }
+
+        .resumen-table tr:hover {
+            background-color: var(--color-background-light);
+            cursor: pointer;
+        }
+
+        .resumen-nombre {
+            font-weight: 500;
+            color: var(--color-text-primary);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .resumen-nombre small {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            margin-top: 0.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .resumen-nombre small i {
+            color: var(--color-accent);
+        }
+
+        .mini-progress-container {
+            position: relative;
+            height: 20px;
+            background: rgba(35, 134, 54, 0.15);
+            border-radius: var(--border-radius-medium);
+            overflow: hidden;
+            border: 1px solid rgba(35, 134, 54, 0.2);
+            min-width: 80px; /* Asegura un ancho mínimo */
+        }
+
+        .mini-progress-bar {
+            height: 100%;
+            transition: width 0.3s ease;
+            background-color: var(--color-green-progress); /* Color base */
+        }
+
+        .mini-progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+
+        /* Estilo para destacar la card al hacer clic en el resumen */
+        .vendedor-card.highlighted {
+            animation: highlight 2s ease;
+        }
+
+        @keyframes highlight {
+            0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.3); }
+            50% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
+        }
+
+        /* Ocultar cards inicialmente */
+        .vendedor-cards-grid {
+            display: none; /* Mantenido como none por defecto */
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .vendedor-cards-grid.visible {
+            display: grid; /* Clase para mostrar */
+        }
+
+        /* --- INICIO: ESTILOS ACTUALIZADOS PARA TAG ESTADO --- */
+        .tag-estado {
+            padding: 0.3rem 0.6rem;
+            border-radius: var(--border-radius-medium);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: inline-block;
+            text-align: center;
+            border: 1px solid transparent;
+            line-height: 1.2;
+            white-space: nowrap; /* Evita que textos largos se partan */
+        }
+
+        /* Verde: Al día / Activo */
+        .tag-estado-verde, /* Añadido para simplificar */
+        .tag-estado-Al\ dia,
+        .tag-estado-activo { /* Si usas 'activo' en la BD */
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+            border-color: rgba(40, 167, 69, 0.3);
+        }
+
+        /* Amarillo: 1 - 5 */
+        .tag-estado-amarillo,
+        .tag-estado-1\ -\ 5 {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+
+        /* Naranja: 5 a 15 */
+        .tag-estado-naranja,
+        .tag-estado-5\ a\ 15 {
+            background-color: rgba(253, 126, 20, 0.2);
+            color: #fd7e14;
+            border-color: rgba(253, 126, 20, 0.3);
+        }
+
+        /* Rojo: +15 */
+        .tag-estado-rojo,
+        .tag-estado-\+15 {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+            border-color: rgba(220, 53, 69, 0.3);
+        }
+
+        /* Gris: Inactivo */
+        .tag-estado-gris,
+        .tag-estado-inactivo { /* Si usas 'inactivo' en la BD */
+            background-color: rgba(108, 117, 125, 0.2);
+            color: #6c757d;
+            border-color: rgba(108, 117, 125, 0.3);
+        }
+        /* Estilo por defecto si no coincide ninguno */
+        .tag-estado-default {
+            background-color: rgba(108, 117, 125, 0.1);
+            color: #6c757d;
+            border-color: rgba(108, 117, 125, 0.2);
+        }
+        /* --- FIN: ESTILOS ACTUALIZADOS PARA TAG ESTADO --- */
+
+
+        /* Ajustes generales de la card */
+        .vendedor-card .card-header {
+            display: flex;
+            flex-direction: column; /* Cambiado a columna para mejor disposición */
+            align-items: flex-start; /* Alinea a la izquierda */
+            padding-bottom: 0.5rem; /* Espacio bajo el header */
+        }
+        .vendedor-card .card-header .tag-estado {
+            margin-bottom: 0.5rem; /* Espacio entre tag y nombre */
+            align-self: flex-start; /* Asegura que el tag no se estire */
+        }
+        .vendedor-card .vendedor-nombre {
+            margin-bottom: 0.2rem; /* Menos espacio bajo el nombre */
+        }
+        .vendedor-card .manager {
+            font-size: 0.8rem; /* Tamaño del texto del manager */
+        }
+
+        /* Ajustes para el nuevo filtro y responsividad del header */
+        .vendedor-section-header {
+            display: flex;
+            flex-wrap: wrap; /* Permite que los elementos pasen a la siguiente línea */
+            justify-content: space-between;
+            align-items: center; /* Alinea verticalmente los elementos */
+            margin-bottom: 1.5rem; /* Espacio debajo del header completo */
+            gap: 1rem; /* Espacio entre grupos de elementos (título/botón, filtros, mostrar todos) */
+        }
+
+        .header-title-button {
+            display: flex;
+            align-items: center;
+            gap: 1rem; /* Espacio entre título y botón agregar */
+            flex-grow: 1; /* Permite que ocupe espacio disponible */
+        }
+         .header-title-button h2 {
+             margin: 0; /* Quitar margen por defecto del h2 */
+         }
+
+        .seller-filter-container {
+            display: flex;
+            gap: 1rem; /* Espacio entre filtros */
+            align-items: center;
+            flex-wrap: wrap; /* Permitir que los filtros pasen a la siguiente línea si no caben */
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            background-color: var(--color-background-light);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-medium);
+            padding: 0.3rem 0.6rem; /* Menos padding vertical */
+        }
+
+        .filter-item i {
+            margin-right: 0.5rem;
+            color: var(--color-text-secondary);
+        }
+
+        .filter-item input[type="text"],
+        .filter-item select {
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--color-text-primary);
+            font-size: 0.9rem; /* Ajustar tamaño si es necesario */
+            padding: 0.2rem; /* Añadir un poco de padding interno */
+            width: 150px; /* Ancho inicial, puede ajustarse */
+            font-family: 'Poppins', sans-serif; /* Asegurar la misma fuente */
+        }
+
+        .filter-item select {
+            cursor: pointer;
+            appearance: none; /* Quitar estilo nativo */
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236c757d%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 0.65em auto;
+            padding-right: 1.8rem; /* Espacio para la flecha */
+        }
+         .filter-item select option {
+            background-color: var(--color-background-dark); /* Fondo para opciones */
+            color: var(--color-text-primary);
+        }
+
+        #show-all-btn {
+             /* Estilos generales para el botón */
+             /* Si usas Bootstrap, ya tendrá estilos base */
+             /* Puedes añadir margen si es necesario con gap en el contenedor padre */
+             white-space: nowrap; /* Evitar que el texto se parta */
+        }
+
+
+        /* Ajustes para responsividad */
+        @media (max-width: 992px) { /* Un punto de quiebre intermedio puede ser útil */
+            .vendedor-section-header {
+                flex-direction: column; /* Apilar los grupos */
+                align-items: stretch; /* Hacer que ocupen el ancho */
+            }
+            .header-title-button {
+                 justify-content: space-between; /* Espaciar título y botón en su línea */
+                 width: 100%; /* Ocupar ancho */
+                 margin-bottom: 1rem; /* Espacio antes de los filtros */
+            }
+             .seller-filter-container {
+                 width: 100%; /* Ocupar ancho */
+                 justify-content: center; /* Centrar filtros si no ocupan todo */
+             }
+             #show-all-btn {
+                  width: 100%; /* Botón ocupa todo el ancho */
+                  margin-top: 1rem; /* Espacio sobre el botón */
+                  margin-left: 0 !important; /* Resetear margen si había */
+             }
+        }
+
+        @media (max-width: 768px) {
+            .resumen-table th, .resumen-table td {
+                padding: 0.6rem 0.8rem;
+                font-size: 0.85rem; /* Reducir tamaño fuente en tabla */
+            }
+             .tag-estado {
+                font-size: 0.7rem; /* Reducir tamaño fuente de tags */
+                padding: 0.25rem 0.5rem;
+            }
+            .resumen-header {
+                padding: 0.8rem 1rem;
+                flex-direction: column; /* Apilar elementos en móvil */
+                align-items: flex-start;
+            }
+            .resumen-header h3 {
+                font-size: 1.1rem;
+                margin-bottom: 0.5rem; /* Espacio bajo el título */
+            }
+            .resumen-header button {
+                align-self: flex-end; /* Botón a la derecha */
+            }
+            .vendedor-cards-grid {
+                grid-template-columns: 1fr; /* Una columna en móvil */
+                gap: 1.5rem; /* Menos espacio entre cards */
+            }
+
+            /* Ajustes específicos para filtros en móvil */
+            .seller-filter-container {
+                 flex-direction: column; /* Apilar filtros */
+                 align-items: stretch; /* Ocupar ancho */
+            }
+            .filter-item {
+                 width: 100%; /* Ocupar todo el ancho */
+                 margin-bottom: 0.5rem; /* Espacio entre filtros apilados */
+            }
+             .filter-item input[type="text"],
+             .filter-item select {
+                 width: 100%; /* Input/select ocupa el espacio restante */
+                 flex-grow: 1;
+             }
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <div class="vendedor-main-container">
+        <!-- ============================================= -->
+        <!--    ENCABEZADO Y FILTROS PARA VENDEDORES     -->
+        <!-- ============================================= -->
+        <div class="vendedor-section-header">
+             <div class="header-title-button">
+                <h2><i class="fas fa-id-card-alt icon-header"></i> Auditoria Individuales</h2>
+                <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'auditoria')) { %>
+                    <button class="btn btn-primary btn-add-vendedor" onclick="openVendedorModal()">
+                        <i class="fas fa-user-plus"></i> Agregar Cliente
+                    </button>
+                <% } %>
+             </div>
+             <!-- Contenedor para ambos filtros -->
+             <div class="seller-filter-container">
+                 <!-- Filtro por Nombre -->
+                 <div class="filter-item">
+                    <i class="fas fa-search filter-icon"></i>
+                    <input type="text" id="seller-name-filter" placeholder="Filtrar por nombre...">
+                 </div>
+                 <!-- Filtro por Plan -->
+                 <div class="filter-item">
+                    <i class="fas fa-tags filter-icon"></i>
+                    <select id="plan-filter">
+                        <option value="">Todos los Planes</option>
+                        <% if (typeof distinctPlans !== 'undefined' && distinctPlans && distinctPlans.length > 0) { %>
+                            <% distinctPlans.forEach(plan => { %>
+                                <%# Asegurarse que el valor sea consistente (ej. lowercase) %>
+                                <option value="<%= plan.toLowerCase() %>"><%= plan %></option>
+                            <% }); %>
+                        <% } %>
+                    </select>
+                 </div>
+             </div>
+             <!-- Botón Mostrar Todos (se moverá aquí por JS) -->
+             <button id="show-all-btn" class="btn btn-info btn-sm" style="display: none;"> <%# Oculto inicialmente, JS lo configura y muestra %>
+                <i class="fas fa-eye"></i> Mostrar Todos
+             </button>
+        </div>
+
+        <!-- Mensajes de Feedback Globales -->
+        <% if (typeof success !== 'undefined' && success) { %><div class="alert alert-success global-feedback" role="alert"><%= success %></div><% } %>
+        <% if (typeof error !== 'undefined' && error && (!req || !req.originalUrl || !req.originalUrl.includes('dashboard-data'))) { %>
+            <div class="alert alert-danger global-feedback" role="alert"><%= error %></div>
+        <% } %>
+
+        <!-- ============================================= -->
+        <!--         NUEVA SECCIÓN DE RESUMEN             -->
+        <!-- ============================================= -->
+        <div class="resumen-vendedores-container">
+            <div class="resumen-header">
+                <h3><i class="fas fa-list-ol"></i> Resumen de Clientes</h3>
+                <button id="toggle-resumen" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-chevron-up"></i> Contraer
+                </button>
+            </div>
+
+            <div class="resumen-list-container custom-scrollbar" id="resumen-list">
+                <% if (typeof vendedores !== 'undefined' && vendedores && Array.isArray(vendedores) && vendedores.length > 0) { %>
+                    <table class="resumen-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Estado</th>
+                                <th>Cuentas</th>
+                                <th>Mensajes (B/M/R)</th>
+                                <th>Total Mes</th>
+                                <th>Cumplimiento</th>
+                                <th>Progreso</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% vendedores.forEach(vendedor => { %>
+                                <%# --- INICIO: Lógica para determinar la clase CSS del estado --- %>
+                                <%
+                                    let estadoClass = 'tag-estado-default'; // Clase por defecto
+                                    let estadoTexto = vendedor.estado || 'Desconocido'; // Texto a mostrar
+                                    if (vendedor.estado) {
+                                        const estadoLower = String(vendedor.estado).toLowerCase().trim();
+                                        if (estadoLower === 'al dia' || estadoLower === 'al día' || estadoLower === 'activo') {
+                                            estadoClass = 'tag-estado-verde';
+                                            estadoTexto = 'Al día'; // Normalizar texto
+                                        } else if (estadoLower === '1 - 5') {
+                                            estadoClass = 'tag-estado-amarillo';
+                                            estadoTexto = '1 - 5'; // Mantener formato
+                                        } else if (estadoLower === '5 a 15') {
+                                            estadoClass = 'tag-estado-naranja';
+                                             estadoTexto = '5 a 15'; // Mantener formato
+                                        } else if (estadoLower === '+15') {
+                                            estadoClass = 'tag-estado-rojo';
+                                             estadoTexto = '+15'; // Mantener formato
+                                        } else if (estadoLower === 'inactivo') {
+                                            estadoClass = 'tag-estado-gris';
+                                             estadoTexto = 'Inactivo'; // Normalizar texto
+                                        }
+                                        // Si no coincide, se queda con tag-estado-default y el texto original
+                                    }
+                                %>
+                                <%# --- FIN: Lógica para determinar la clase CSS del estado --- %>
+
+                                <%# *** Añadido data-plan y data-nombre *** %>
+                                <tr class="resumen-item"
+                                    data-vendedor-id="<%= vendedor.id %>"
+                                    data-plan="<%= vendedor.plan ? vendedor.plan.toLowerCase() : '' %>"
+                                    data-nombre="<%= vendedor.nombre.toLowerCase() %>">
+                                    <td class="resumen-nombre">
+                                        <span><%= vendedor.nombre %></span>
+                                        <% if (vendedor.manager_asignado) { %>
+                                            <small><i class="fas fa-user-tie"></i> <%= vendedor.manager_asignado %></small>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <span class="tag tag-estado <%= estadoClass %>"><%= estadoTexto %></span>
+                                    </td>
+                                    <td><%= vendedor.num_cuentas || 0 %></td>
+                                    <td>
+                                        <%= vendedor.totalMensajesHoy || 0 %> /
+                                        <%= vendedor.totalMensajesManualesHoy || 0 %> /
+                                        <%= vendedor.totalRespuestasHoy || 0 %>
+                                    </td>
+                                    <td><%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %></td>
+                                    <td><%= parseFloat(vendedor.porcentaje_cumplimiento || 0).toFixed(1) %>%</td>
+                                    <td>
+                                        <div class="mini-progress-container" title="Progreso: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(1) %>%">
+                                            <div class="mini-progress-bar"
+                                                 style="width: <%= Math.min(100, parseFloat(vendedor.progreso_mensajes_mes_pct || 0)) %>%;
+                                                        background-color: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0) >= 100 ? 'var(--color-green-progress)' : (parseFloat(vendedor.progreso_mensajes_mes_pct || 0) > 50 ? 'var(--color-accent)' : 'var(--color-warning)') %>;">
+                                            </div>
+                                            <span class="mini-progress-text"><%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(0) %>%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                <% } else { %>
+                    <p class="no-data-global" style="padding: 1rem;">No hay Clientes registrados actualmente.</p>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Contenedor de Cards de Vendedores (oculto inicialmente) -->
+        <div class="vendedor-cards-grid" id="vendedor-cards-container">
+            <% if (typeof vendedores !== 'undefined' && vendedores && Array.isArray(vendedores) && vendedores.length > 0) { %>
+                <% vendedores.forEach(vendedor => { %>
+                     <%# --- Lógica para determinar la clase CSS del estado (para la tarjeta) --- %>
+                     <%
+                        let estadoCardClass = 'tag-estado-default';
+                        let estadoCardTexto = vendedor.estado || 'Desconocido';
+                        if (vendedor.estado) {
+                             const estadoLower = String(vendedor.estado).toLowerCase().trim();
+                             if (estadoLower === 'al dia' || estadoLower === 'al día' || estadoLower === 'activo') {
+                                 estadoCardClass = 'tag-estado-verde';
+                                 estadoCardTexto = 'Al día';
+                             } else if (estadoLower === '1 - 5') {
+                                 estadoCardClass = 'tag-estado-amarillo';
+                                 estadoCardTexto = '1 - 5';
+                             } else if (estadoLower === '5 a 15') {
+                                 estadoCardClass = 'tag-estado-naranja';
+                                 estadoCardTexto = '5 a 15';
+                             } else if (estadoLower === '+15') {
+                                 estadoCardClass = 'tag-estado-rojo';
+                                 estadoCardTexto = '+15';
+                             } else if (estadoLower === 'inactivo') {
+                                 estadoCardClass = 'tag-estado-gris';
+                                 estadoCardTexto = 'Inactivo';
+                             }
+                        }
+                     %>
+                    <%# --- FIN: Lógica para determinar la clase CSS del estado --- %>
+
+                    <%# *** Añadido data-plan y data-nombre *** %>
+                    <div class="vendedor-card"
+                         id="vendedor-card-<%= vendedor.id %>"
+                         data-vendedor='<%- JSON.stringify(vendedor) %>'
+                         data-plan="<%= vendedor.plan ? vendedor.plan.toLowerCase() : '' %>"
+                         data-nombre="<%= vendedor.nombre.toLowerCase() %>">
+                        <div class="card-header">
+                             <span class="tag tag-estado <%= estadoCardClass %>" title="Estado: <%= estadoCardTexto %>"><%= estadoCardTexto %></span>
+                            <h3 class="vendedor-nombre"><%= vendedor.nombre %></h3>
+                            <% if (vendedor.manager_asignado) { %><small class="manager"><i class="fas fa-user-tie"></i> Manager: <%= vendedor.manager_asignado %></small><% } %>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-section">
+                                <h4><i class="fab fa-instagram"></i> Cuentas (<%= vendedor.num_cuentas || 0 %>)</h4>
+                                <% if (vendedor.cuentasDetalle && vendedor.cuentasDetalle.length > 0) { %>
+                                    <ul class="account-list custom-scrollbar">
+                                        <% vendedor.cuentasDetalle.forEach(cuenta => { %>
+                                            <li>
+                                                <span class="tag tag-cuenta"><%= cuenta.nombre %></span>
+                                                <span class="account-stats" title="Hoy (Msgs Bot/Manual/Rpts) / Histórico Total (Msgs)">
+                                                     (<%= cuenta.mensajesHoy || 0 %> / <%= cuenta.mensajesManualesHoy || 0 %> / <%= cuenta.respuestasHoy || 0 %> / <%= (cuenta.mensajesMongoTotal || 0).toLocaleString('es-ES') %>)
+                                                </span>
+                                            </li>
+                                        <% }); %>
+                                    </ul>
+                                <% } else { %><p class="no-data"><small>Sin cuentas asignadas.</small></p><% } %>
+                            </div>
+                            <div class="card-section card-stats">
+                                <div class="stat-item">
+                                    <label><i class="far fa-clock"></i> Hoy</label>
+                                    <span title="Bot / Manual / Respuestas"><%= vendedor.totalMensajesHoy || 0 %> B / <%= vendedor.totalMensajesManualesHoy || 0 %> M / <%= vendedor.totalRespuestasHoy || 0 %> R</span>
+                                </div>
+                                <div class="stat-item">
+                                    <label><i class="fas fa-chart-line"></i> Total Mes</label>
+                                    <span><%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %></span>
+                                </div>
+                                <% if (vendedor.fecha_ingreso) { %>
+                                <div class="stat-item">
+                                    <label><i class="far fa-calendar-alt"></i> Ingreso</label>
+                                    <span><%= new Date(vendedor.fecha_ingreso).toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit'}) %></span>
+                                </div>
+                                <% } %>
+
+                                <div class="stat-item stat-progress">
+                                    <label><i class="fas fa-tasks"></i> Progreso Mes (Msgs)</label>
+                                    <div class="progress-info">
+                                         <span class="progress-numbers" title="Mensajes enviados este mes / Objetivo mensual">
+                                             <%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %> / <%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? (vendedor.objetivo_mensual || 0).toLocaleString('es-ES') : 'N/A' %>
+                                         </span>
+                                         <span class="progress-percentage">
+                                             (<%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(0) + '%' : '--' %>)
+                                         </span>
+                                    </div>
+                                    <div class="progress-bar-container" title="<%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(1) + '% del objetivo mensual' : 'Sin objetivo definido' %>">
+                                        <div class="progress-bar" style="width: <%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? Math.min(100, parseFloat(vendedor.progreso_mensajes_mes_pct || 0)) : 0 %>%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                             <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'auditoria')) { %>
+                                <div class="card-section">
+                                    <h4><i class="far fa-clipboard"></i> Notas</h4>
+                                    <p class="notas custom-scrollbar"><%= vendedor.notas_auditoria || 'Sin notas.' %></p>
+                                </div>
+                            <% } %>
+                        </div>
+                        <div class="card-footer">
+                             <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'auditoria')) { %>
+                                <button class="btn btn-sm btn-secondary" onclick="openDesempenoModal('<%= vendedor.id %>')" title="Registrar desempeño diario"><i class="fas fa-calendar-plus"></i> Registrar Hoy</button>
+                                <button class="btn btn-sm btn-warning" onclick="openVendedorModal('<%= vendedor.id %>')" title="Editar perfil"><i class="fas fa-edit"></i> Editar</button>
+                            <% } %>
+                            <a href="/vendedores/<%= vendedor.id %>/historial" class="btn btn-sm btn-info" title="Ver historial"><i class="fas fa-history"></i> Historial</a>
+                        </div>
+                    </div>
+                 <% }); %>
+             <% } else { %>
+                 <p class="no-data-global" style="padding: 1rem;">No hay Clientes registrados actualmente.</p>
+             <% } %>
+             <p id="no-seller-found-message" class="no-data-global" style="display: none; padding: 1rem;">No se encontraron Clientes que coincidan con los filtros.</p>
+        </div> <!-- Fin Grid -->
+
+    </div> <!-- Fin vendedor-main-container -->
+
+    <!-- ============================================= -->
+    <!--         MODAL AGREGAR/EDITAR VENDEDOR         -->
+    <!-- ============================================= -->
+    <div id="vendedorModalOverlay" class="modal-overlay">
+         <div class="modal-content" id="vendedorModalContent">
+            <form action="/vendedores" method="POST" id="vendedor-form">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="vendedorModalLabel">Agregar Cliente</h5>
+                    <button type="button" class="modal-close-btn" onclick="closeVendedorModal()" title="Cerrar">×</button>
+                </div>
+                <div class="modal-body custom-scrollbar">
+                    <input type="hidden" id="vendedor_id" name="vendedor_id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="modal_nombre"><i class="fas fa-user fa-fw"></i> Nombre Cliente*</label>
+                            <input type="text" id="modal_nombre" name="nombre" required>
+                        </div>
+                        <div class="form-group">
+                             <label for="modal_manager_asignado"><i class="fas fa-user-tie fa-fw"></i> Manager Asignado</label>
+                            <input type="text" id="modal_manager_asignado" name="manager_asignado">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal_cuentas_asignadas"><i class="fab fa-instagram fa-fw"></i> Cuentas Instagram (separadas por coma)</label>
+                        <input type="text" id="modal_cuentas_asignadas" name="cuentas_asignadas" placeholder="usuario1, usuario2">
+                    </div>
+                    <div class="form-row">
+                         <div class="form-group">
+                            <label for="modal_porcentaje_cumplimiento"><i class="fas fa-percent fa-fw"></i> % Cumplimiento (Ref.)</label>
+                            <input type="number" id="modal_porcentaje_cumplimiento" name="porcentaje_cumplimiento" min="0" max="100" step="0.01" value="0.00" title="Este es un valor referencial/manual">
+                         </div>
+                         <div class="form-group">
+                             <label for="modal_objetivo_mensual"><i class="fas fa-bullseye fa-fw"></i> Objetivo Mensual (Msgs)</label>
+                            <input type="number" id="modal_objetivo_mensual" name="objetivo_mensual" min="0" step="1" value="0" title="El progreso se calcula con este valor. 0 o vacío para N/A.">
+                         </div>
+                    </div>
+                     <div class="form-row">
+                         <div class="form-group">
+                             <label for="modal_plan"><i class="fas fa-tag fa-fw"></i> Plan Asignado</label>
+                             <input type="text" id="modal_plan" name="plan" placeholder="Ej: base, premium"> <%# Input para el plan %>
+                         </div>
+                         <div class="form-group">
+                             <label for="modal_tipo_cuenta"><i class="fas fa-briefcase fa-fw"></i> Tipo Cuenta</label>
+                             <input type="text" id="modal_tipo_cuenta" name="tipo_cuenta" value="cliente"> <%# Input para tipo_cuenta %>
+                         </div>
+                     </div>
+                    <div class="form-row">
+                         <div class="form-group">
+                             <label for="modal_fecha_ingreso"><i class="far fa-calendar-alt fa-fw"></i> Fecha Ingreso</label>
+                            <input type="date" id="modal_fecha_ingreso" name="fecha_ingreso">
+                         </div>
+                         <div class="form-group">
+                             <label for="modal_estado"><i class="fas fa-toggle-on fa-fw"></i> Estado</label>
+                            <select id="modal_estado" name="estado">
+                                <!-- Opciones de estado como estaban, asegurar que coincidan con la lógica EJS -->
+                                <option value="Al dia" selected>Al dia</option>
+                                <option value="1 - 5">1 - 5</option>
+                                <option value="5 a 15">5 a 15</option>
+                                <option value="+15">+15</option>
+                                <option value="Activo">Activo</option> <%# Mantener si se usa %>
+                                <option value="Inactivo">Inactivo</option> <%# Mantener si se usa %>
+                            </select>
+                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal_notas_auditoria"><i class="far fa-clipboard fa-fw"></i> Notas / Comentarios</label>
+                        <textarea id="modal_notas_auditoria" name="notas_auditoria" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeVendedorModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================= -->
+    <!--      MODAL REGISTRAR DESEMPEÑO DIARIO         -->
+    <!-- ============================================= -->
+    <div id="desempenoModalOverlay" class="modal-overlay">
+        <div class="modal-content" id="desempenoModalContent">
+            <form id="desempeno-form" onsubmit="submitDesempeno(event)">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="desempenoModalLabel">Registrar Desempeño Diario</h5>
+                    <button type="button" class="modal-close-btn" onclick="closeDesempenoModal()" title="Cerrar">×</button>
+                </div>
+                <div class="modal-body custom-scrollbar">
+                    <input type="hidden" id="desempeno_vendedor_id" name="vendedor_id">
+                    <div class="form-group">
+                        <label for="desempeno_fecha"><i class="far fa-calendar-alt fa-fw"></i> Fecha del Registro</label>
+                        <input type="date" id="desempeno_fecha" name="fecha" value="<%= typeof today !== 'undefined' ? today : new Date().toISOString().slice(0,10) %>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="desempeno_notas"><i class="fas fa-clipboard-check fa-fw"></i> Notas de Auditoría</label>
+                        <textarea id="desempeno_notas" name="notas_auditoria" rows="2" placeholder="Observaciones o comentarios relevantes..."></textarea>
+                    </div>
+
+                    <hr class="modal-hr">
+                    <label class="accounts-title"><i class="fas fa-tasks"></i> Ingresar Datos por Cuenta:</label>
+                    <div id="desempeno-accounts-container">
+                        <p class="no-data">Seleccione un Cliente para cargar cuentas.</p>
+                    </div>
+                    <div id="desempeno-feedback" class="feedback-message"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeDesempenoModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-check-circle"></i> Guardar Desempeño</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts (Navbar, Lógica Vendedores) -->
+    <script defer src="/static/js/navbar.js"></script>
+
+    <script>
+        // CÓDIGO JS ACTUALIZADO PARA MANEJAR AMBOS FILTROS
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.getElementById('toggle-resumen');
+            const resumenList = document.getElementById('resumen-list');
+            const resumenTableBody = resumenList ? resumenList.querySelector('tbody') : null;
+            const cardsContainer = document.getElementById('vendedor-cards-container');
+            const sellerNameFilter = document.getElementById('seller-name-filter');
+            const planFilter = document.getElementById('plan-filter');
+            const noSellerMsg = document.getElementById('no-seller-found-message');
+            const header = document.querySelector('.vendedor-section-header'); // Contenedor principal del header
+            const showAllBtn = document.getElementById('show-all-btn'); // Obtener el botón existente
+
+            // Configuración inicial
+            if (cardsContainer) cardsContainer.style.display = 'none'; // Ocultar cards al inicio
+            if (showAllBtn) showAllBtn.style.display = 'inline-block'; // Mostrar el botón ahora que JS cargó
+
+            // Toggle para expandir/contraer el resumen
+            if (toggleBtn && resumenList) {
+                toggleBtn.addEventListener('click', function() {
+                    resumenList.classList.toggle('collapsed');
+                    const icon = this.querySelector('i');
+                    const isCollapsed = resumenList.classList.contains('collapsed');
+                    icon.className = isCollapsed ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+                    this.childNodes[1].nodeValue = isCollapsed ? ' Expandir' : ' Contraer'; // El texto está después del icono
+                });
+            }
+
+            // --- FUNCIÓN CENTRALIZADA DE FILTRADO ---
+            function applyFilters() {
+                if (!resumenTableBody && !cardsContainer) return;
+
+                const nameValue = sellerNameFilter.value.toLowerCase().trim();
+                const planValue = planFilter.value.toLowerCase(); // El valor ya debería ser lowercase
+
+                let resumenVisibleCount = 0;
+                let cardsVisibleCount = 0;
+                const cardsAreGloballyVisible = cardsContainer && cardsContainer.style.display === 'grid';
+
+                // 1. Filtrar en el resumen
+                if (resumenTableBody) {
+                    document.querySelectorAll('.resumen-item').forEach(row => {
+                        const nombre = row.dataset.nombre || '';
+                        const plan = row.dataset.plan || '';
+
+                        const nameMatch = nombre.includes(nameValue);
+                        const planMatch = (planValue === '' || plan === planValue);
+
+                        const isVisible = nameMatch && planMatch;
+                        row.style.display = isVisible ? '' : 'none';
+                        if (isVisible) resumenVisibleCount++;
+                    });
+                }
+
+                // 2. Filtrar en las cards (SOLO si el contenedor de cards está visible)
+                if (cardsAreGloballyVisible) {
+                    document.querySelectorAll('.vendedor-card').forEach(card => {
+                        // Verificar si la card estaba específicamente oculta por un clic en resumen
+                        const wasHiddenByClick = card.style.display === 'none' && cardsContainer.dataset.filteredById;
+                        if (wasHiddenByClick && card.id !== cardsContainer.dataset.filteredById) {
+                           // Si estaba oculta por clic y no es la seleccionada, la mantenemos oculta
+                           // a menos que el filtro de nombre o plan la oculte de todas formas
+                           // Esto previene que reaparezcan cards no seleccionadas al cambiar filtros
+                           // (Comentado por ahora, puede ser confuso. La lógica actual es más simple:
+                           // si la card coincide con filtros Y el contenedor está visible, se muestra)
+                        }
+
+                        const nombre = card.dataset.nombre || '';
+                        const plan = card.dataset.plan || '';
+
+                        const nameMatch = nombre.includes(nameValue);
+                        const planMatch = (planValue === '' || plan === planValue);
+
+                        const isVisible = nameMatch && planMatch;
+
+                         // Solo mostrar si coincide Y el contenedor está visible
+                        card.style.display = isVisible ? 'block' : 'none';
+                        if (isVisible) cardsVisibleCount++;
+                    });
+                }
+
+                // 3. Mostrar/Ocultar mensaje "No encontrado"
+                 const showNoSellerMsg = resumenVisibleCount === 0 && (!cardsAreGloballyVisible || cardsVisibleCount === 0);
+                 if (noSellerMsg) {
+                     noSellerMsg.style.display = showNoSellerMsg ? 'block' : 'none';
+                 }
+
+                 // Limpiar el estado de filtrado por ID si se aplican filtros generales
+                 if(cardsContainer) delete cardsContainer.dataset.filteredById;
+            }
+
+            // --- EVENT LISTENERS PARA FILTROS ---
+            if (sellerNameFilter) {
+                sellerNameFilter.addEventListener('input', applyFilters);
+            }
+            if (planFilter) {
+                planFilter.addEventListener('change', applyFilters);
+            }
+
+            // Clic en item del resumen muestra la card correspondiente
+            if (resumenTableBody) {
+                resumenTableBody.addEventListener('click', function(event) {
+                    const targetRow = event.target.closest('.resumen-item');
+                    if (!targetRow) return;
+
+                    const vendedorId = targetRow.getAttribute('data-vendedor-id');
+                    const cardId = `vendedor-card-${vendedorId}`;
+                    const card = document.getElementById(cardId);
+
+                    if (card && cardsContainer) {
+                        cardsContainer.style.display = 'grid';
+                        cardsContainer.classList.add('visible');
+                        cardsContainer.dataset.filteredById = cardId; // Marcar que filtramos por ID
+
+                        // Oculta TODAS las cards primero
+                        document.querySelectorAll('.vendedor-card').forEach(c => {
+                            c.style.display = 'none';
+                        });
+                         // Muestra SOLO la seleccionada
+                        card.style.display = 'block';
+
+                        // Scroll y highlight
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        card.classList.add('highlighted');
+                        setTimeout(() => card.classList.remove('highlighted'), 2000);
+
+                        if (noSellerMsg) noSellerMsg.style.display = 'none';
+                    }
+                });
+            }
+
+            // Lógica del botón "Mostrar Todos"
+            if (showAllBtn) {
+                showAllBtn.addEventListener('click', function() {
+                    if (cardsContainer) {
+                         cardsContainer.style.display = 'grid';
+                         cardsContainer.classList.add('visible');
+                         delete cardsContainer.dataset.filteredById; // Quitar filtro por ID
+                    }
+                    if(sellerNameFilter) sellerNameFilter.value = '';
+                    if(planFilter) planFilter.value = ''; // Resetea a "Todos los Planes"
+
+                    applyFilters(); // Re-aplica filtros (vacíos) para mostrar todo
+
+                    // Asegurar que no quede el mensaje "no encontrado"
+                    if (noSellerMsg) noSellerMsg.style.display = 'none';
+                });
+            }
+
+            // Aplicar filtros inicialmente por si acaso (aunque normalmente estarán vacíos)
+            // applyFilters();
+
+        });
+    </script>
+
+    <%# Incluir el script de vendedores_manager.js DESPUÉS del script inline %>
+    <%# Asegúrate que las funciones openVendedorModal, closeVendedorModal, etc. estén definidas globalmente o en este script %>
+    <script defer src="/static/js/ventas.js"></script>
+
+</body>
+</html>
