@@ -522,60 +522,66 @@ app.patch('/auditoria/patrimonio/archivar', isAuthenticated, async (req, res) =>
                 console.warn("MongoDB URI or DB Name not configured. Skipping MongoDB message counts.");
             }
     
-            // 6. Preparar datos finales para la vista
-            const vendedoresParaVista = vendedores.map(vendedor => {
-                let cuentasConDatos = [];
-                let totalMensajesHoy = 0;
-                let totalRespuestasHoy = 0;
-                let totalMensajesManualesHoy = 0;
-                let totalMensajesMongo = 0;
-    
-                // Procesar cuentas solo si existen y es un array
-                if (vendedor.cuentas_asignadas && Array.isArray(vendedor.cuentas_asignadas)) {
-                    cuentasConDatos = vendedor.cuentas_asignadas.map(cuenta => {
-                        const cuentaLower = String(cuenta).toLowerCase(); // Asegurar string y minúsculas
-                        // Obtener datos de hoy para esta cuenta, con defaults 0
-                        const desempenoCuentaHoy = desempenoHoyMap[vendedor.id]?.[cuentaLower] || { mensajes: 0, respuestas: 0, mensajesManuales: 0 };
-                        // Obtener total histórico de Mongo, default 0
-                        const mensajesMongo = mongoMessageCounts[cuentaLower] || 0;
-    
-                        // Sumar a los totales del vendedor
-                        totalMensajesHoy += desempenoCuentaHoy.mensajes;
-                        totalRespuestasHoy += desempenoCuentaHoy.respuestas;
-                        totalMensajesManualesHoy += desempenoCuentaHoy.mensajesManuales;
-                        totalMensajesMongo += mensajesMongo;
-    
-                        // Retornar objeto detallado para la cuenta
-                        return {
-                            nombre: cuenta,
-                            mensajesHoy: desempenoCuentaHoy.mensajes,
-                            respuestasHoy: desempenoCuentaHoy.respuestas,
-                            mensajesManualesHoy: desempenoCuentaHoy.mensajesManuales,
-                            mensajesMongoTotal: mensajesMongo
-                        };
-                    });
-                }
-    
-                // Calcular progreso mensual
-                const objetivoMensual = vendedor.objetivo_mensual || 0;
-                // Usar mensajes (enviados, generalmente bot) del mes para el progreso
-                const mensajesEsteMes = desempenoMesMap[vendedor.id]?.mensajes || 0;
-                // Calcular porcentaje, asegurando que esté entre 0 y 100
-                const progresoMensualPct = objetivoMensual > 0 ? Math.min(100, Math.max(0, (mensajesEsteMes / objetivoMensual) * 100)) : 0;
-    
-                // Retornar el objeto completo del vendedor para la vista
-                return {
-                    ...vendedor, // Incluye id, nombre, plan, estado, etc.
-                    num_cuentas: vendedor.num_cuentas || 0, // Desde la query inicial
-                    cuentasDetalle: cuentasConDatos,
-                    totalMensajesHoy,
-                    totalRespuestasHoy,
-                    totalMensajesManualesHoy,
-                    totalMensajesMongo, // Total histórico de todas sus cuentas
-                    total_mensajes_mes: mensajesEsteMes, // Total mensajes (bot?) del mes
-                    progreso_mensajes_mes_pct: progresoMensualPct, // Porcentaje de progreso
-                };
-            });
+// 6. Preparar datos finales para la vista
+const vendedoresParaVista = vendedores.map(vendedor => {
+    let cuentasConDatos = [];
+    let totalMensajesHoy = 0;
+    let totalRespuestasHoy = 0;
+    let totalMensajesManualesHoy = 0;
+    let totalMensajesAcumulados = 0;  // Nuevo: Para acumular todos los mensajes hasta hoy
+    let totalRespuestasAcumuladas = 0; // Nuevo: Para acumular todas las respuestas hasta hoy
+
+    // Procesar cuentas solo si existen y es un array
+    if (vendedor.cuentas_asignadas && Array.isArray(vendedor.cuentas_asignadas)) {
+        cuentasConDatos = vendedor.cuentas_asignadas.map(cuenta => {
+            const cuentaLower = String(cuenta).toLowerCase();
+            // Obtener datos de hoy para esta cuenta
+            const desempenoCuentaHoy = desempenoHoyMap[vendedor.id]?.[cuentaLower] || { 
+                mensajes: 0, 
+                respuestas: 0, 
+                mensajesManuales: 0 
+            };
+
+            // Sumar a los totales del vendedor
+            totalMensajesHoy += desempenoCuentaHoy.mensajes;
+            totalRespuestasHoy += desempenoCuentaHoy.respuestas;
+            totalMensajesManualesHoy += desempenoCuentaHoy.mensajesManuales;
+
+            // Retornar objeto detallado para la cuenta
+            return {
+                nombre: cuenta,
+                mensajesHoy: desempenoCuentaHoy.mensajes,
+                respuestasHoy: desempenoCuentaHoy.respuestas,
+                mensajesManualesHoy: desempenoCuentaHoy.mensajesManuales,
+                // Mantenemos mensajesMongoTotal aunque no lo usemos para no romper la vista
+                mensajesMongoTotal: 0 
+            };
+        });
+    }
+
+    // Calcular totales acumulados hasta hoy (incluyendo el mes actual)
+    const desempenoTotal = desempenoMesMap[vendedor.id] || { mensajes: 0, respuestas: 0 };
+    totalMensajesAcumulados = desempenoTotal.mensajes;
+    totalRespuestasAcumuladas = desempenoTotal.respuestas;
+
+    // Calcular progreso mensual
+    const objetivoMensual = vendedor.objetivo_mensual || 0;
+    const progresoMensualPct = objetivoMensual > 0 ? 
+        Math.min(100, Math.max(0, (desempenoTotal.mensajes / objetivoMensual) * 100)) : 0;
+
+    return {
+        ...vendedor,
+        num_cuentas: vendedor.num_cuentas || 0,
+        cuentasDetalle: cuentasConDatos,
+        totalMensajesHoy,          // Para las cards (hoy)
+        totalRespuestasHoy,         // Para las cards (hoy)
+        totalMensajesManualesHoy,   // Para las cards (hoy)
+        total_mensajes_mes: desempenoTotal.mensajes, // Total mensual (para progreso)
+        total_mensajes_acumulados: totalMensajesAcumulados, // Nuevo: Total histórico
+        total_respuestas_acumuladas: totalRespuestasAcumuladas, // Nuevo: Total histórico
+        progreso_mensajes_mes_pct: progresoMensualPct,
+    };
+});
     
             // 7. Renderizar la vista EJS
             res.render('vendedores', {
