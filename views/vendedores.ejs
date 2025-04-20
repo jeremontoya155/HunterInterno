@@ -94,7 +94,7 @@
                                 <th>Bot (Hoy)</th>
                                 <th>Manual (Hoy)</th>
                                 <th>Resp (Hoy)</th>
-                                <th>Total Bot</th>
+                                <th>Total Mensajes</th>
                                 <th>Total Resp</th>
                                 <th>Cumplimiento</th>
                                 <th>Progreso</th>
@@ -225,7 +225,7 @@
                                     <span title="Bot / Manual / Respuestas"><%= vendedor.totalMensajesHoy || 0 %> B / <%= vendedor.totalMensajesManualesHoy || 0 %> M / <%= vendedor.totalRespuestasHoy || 0 %> R</span>
                                 </div>
                                 <div class="stat-item">
-                                    <label><i class="fas fa-chart-line"></i> Total Bot</label>
+                                    <label><i class="fas fa-chart-line"></i> Total Mensajes</label>
                                     <span><%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %></span>
                                 </div>
                                 <div class="stat-item">
