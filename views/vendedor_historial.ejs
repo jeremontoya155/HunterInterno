@@ -4,15 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Historial - <%= vendedor.nombre %></title>
-     <!-- Tus CSS (Poppins, FontAwesome, Navbar, Scrollbar) -->
     <link rel="stylesheet" href="/static/css/navbar.css" />
     <link rel="stylesheet" href="/static/css/scrollbar.css" />
-    <link rel="stylesheet" href="/static/css/vendedores.css" /> <%# Reutiliza o crea uno nuevo %>
-     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-     <!-- Opcional: Chart.js si añades gráficos -->
-     <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
-     <style>
+    <link rel="stylesheet" href="/static/css/vendedores.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
         .historial-container { max-width: 1000px; margin: 1rem auto; padding: 1.5rem; }
         .historial-header { margin-bottom: 2rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;}
         .historial-header h1 { color: var(--color-accent-hover); }
@@ -22,7 +19,10 @@
         .historial-table th, .historial-table td { padding: 0.6rem 0.8rem; border: 1px solid var(--color-border); text-align: center; }
         .historial-table th { background-color: var(--color-background-light); }
         .historial-table .cuenta-col { text-align: left; }
-     </style>
+        .nota-cell { max-width: 300px; word-wrap: break-word; text-align: left !important; }
+        .nota-icon { color: var(--color-accent); cursor: help; }
+        .global-notes { background-color: #f8f9fa; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; border-left: 4px solid var(--color-accent); }
+    </style>
 </head>
 <body>
     <%- include('partials/navbar') %>
@@ -38,12 +38,24 @@
             <% historial.forEach(grupo => { %>
                 <div class="fecha-grupo">
                     <h3><%= new Date(grupo.fecha + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></h3>
+                    
+                    <!-- Notas globales para esta fecha -->
+                    <% const notasGlobales = grupo.entradas.find(e => e.notas_auditoria)?.notas_auditoria; %>
+                    <% if (notasGlobales) { %>
+                        <div class="global-notes">
+                            <strong><i class="fas fa-clipboard-check"></i> Notas de Auditoría:</strong>
+                            <p><%= notasGlobales %></p>
+                        </div>
+                    <% } %>
+                    
                     <table class="historial-table">
                         <thead>
                             <tr>
                                 <th class="cuenta-col">Cuenta Instagram</th>
                                 <th>Mensajes Enviados</th>
                                 <th>Respuestas Recibidas</th>
+                                <th>Mensajes Manuales</th>
+                                <th>Notas</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -52,6 +64,15 @@
                                     <td class="cuenta-col"><%= item.insta_username %></td>
                                     <td><%= item.mensajes_enviados %></td>
                                     <td><%= item.respuestas_recibidas %></td>
+                                    <td><%= item.mensajes_manuales %></td>
+                                    <td class="nota-cell">
+                                        <% if (item.notas_auditoria) { %>
+                                            <i class="fas fa-sticky-note nota-icon" title="<%= item.notas_auditoria %>"></i>
+                                            <%= item.notas_auditoria.length > 30 ? item.notas_auditoria.substring(0, 30) + '...' : item.notas_auditoria %>
+                                        <% } else { %>
+                                            -
+                                        <% } %>
+                                    </td>
                                 </tr>
                             <% }); %>
                         </tbody>
@@ -61,14 +82,8 @@
         <% } else { %>
             <p>No hay registros de desempeño diario para este vendedor.</p>
         <% } %>
-
-         <!-- Aquí podrías poner un contenedor para gráficos si usas Chart.js -->
-         <!-- <canvas id="historialChart"></canvas> -->
     </div>
 
-     <script defer src="/static/js/navbar.js"></script>
-     <!-- Script opcional para gráficos -->
-     <!-- <script defer src="/static/js/historial_charts.js"></script> -->
-
+    <script defer src="/static/js/navbar.js"></script>
 </body>
 </html>

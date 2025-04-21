@@ -1106,29 +1106,166 @@ const vendedoresParaVista = vendedores.map(vendedor => {
     // --- API COMPLETA PARA CALENDARIO FULFILLMENT (SIN TRIGGER) ---
 
     // GET /api/calendar/events - Obtener todos los eventos del usuario logueado
-    app.get('/api/calendar/events', isAuthenticated, async (req, res) => {
-        if (req.session.user.role !== 'fulfillment') {
-            return res.status(403).json({ error: 'Acceso denegado' });
-        }
-        const userId = req.session.user.id;
+// --- API COMPLETA PARA CALENDARIO FULFILLMENT (CON VENDEDORES) ---
 
-        try {
-            const query = `
-                SELECT
-                    id, title, description, start_date AS start, end_date AS end,
-                    all_day, color
-                FROM fulfillment_calendar_events
-                WHERE user_id = $1 ORDER BY start_date ASC;
-            `;
-            const { rows } = await pool.query(query, [userId]);
-            console.log(`[${new Date().toISOString()}] GET /api/calendar/events - Devolviendo ${rows.length} eventos para user ${userId}`);
-            res.json(rows);
-        } catch (error) {
-            console.error(`[${new Date().toISOString()}] Error en GET /api/calendar/events for user ${userId}:`, error);
-            res.status(500).json({ error: 'Error interno al obtener eventos del calendario' });
-        }
-    });
+// GET /api/calendar/events - Obtener todos los eventos del usuario logueado
+app.get('/api/calendar/events', isAuthenticated, async (req, res) => {
+    if (req.session.user.role !== 'fulfillment') {
+        return res.status(403).json({ error: 'Acceso denegado' });
+    }
+    const userId = req.session.user.id;
+    const { vendedor_id } = req.query; // Nuevo parámetro para filtrar por vendedor
 
+    try {
+        let query = `
+            SELECT
+                e.id, e.title, e.description, e.start_date AS start, e.end_date AS end,
+                e.all_day, e.color, e.vendedor_id,
+                v.nombre as vendedor_nombre
+            FROM fulfillment_calendar_events e
+            LEFT JOIN vendedores v ON e.vendedor_id = v.id
+            WHERE e.user_id = $1
+        `;
+        
+        let params = [userId];
+        
+        if (vendedor_id) {
+            query += ` AND e.vendedor_id = $${params.length + 1}`;
+            params.push(vendedor_id);
+        }
+        
+        query += ` ORDER BY e.start_date ASC;`;
+        
+        const { rows } = await pool.query(query, params);
+        console.log(`GET /api/calendar/events - Devolviendo ${rows.length} eventos para user ${userId}`);
+        res.json(rows);
+    } catch (error) {
+        console.error(`Error en GET /api/calendar/events for user ${userId}:`, error);
+        res.status(500).json({ error: 'Error interno al obtener eventos del calendario' });
+    }
+});
+
+// POST /api/calendar/events - Crear un nuevo evento con vendedor
+app.post('/api/calendar/events', isAuthenticated, async (req, res) => {
+    if (req.session.user.role !== 'fulfillment') {
+        return res.status(403).json({ error: 'Acceso denegado' });
+    }
+    const userId = req.session.user.id;
+    const { title, description, start, end, all_day, color, vendedor_id } = req.body;
+
+    if (!title || !start) {
+        return res.status(400).json({ error: 'Título y Fecha Inicio son obligatorios' });
+    }
+
+    const isAllDay = typeof all_day === 'boolean' ? all_day : (!end || end.split('T')[0] === start.split('T')[0]);
+    let finalEndDate = end || null;
+
+    try {
+        const query = `
+            INSERT INTO fulfillment_calendar_events
+                (title, description, start_date, end_date, all_day, color, user_id, vendedor_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id, title, description, start_date AS start, end_date AS end, all_day, color, vendedor_id;
+        `;
+        const { rows } = await pool.query(query, [
+            title, 
+            description || null, 
+            start, 
+            finalEndDate, 
+            isAllDay, 
+            color || null, 
+            userId,
+            vendedor_id || null
+        ]);
+        console.log(`Evento creado con ID: ${rows[0].id}`);
+        res.status(201).json({ message: 'Evento creado correctamente', event: rows[0] });
+    } catch (error) {
+        console.error(`Error en POST /api/calendar/events for user ${userId}:`, error);
+        if (error.code === '22007' || error.code === '22008') {
+            return res.status(400).json({ error: 'Formato de fecha inválido.' });
+        }
+        res.status(500).json({ error: 'Error interno al crear el evento' });
+    }
+});
+
+// PUT /api/calendar/events/:id - Actualizar un evento existente
+app.put('/api/calendar/events/:id', isAuthenticated, async (req, res) => {
+    if (req.session.user.role !== 'fulfillment') {
+        return res.status(403).json({ error: 'Acceso denegado' });
+    }
+    const eventId = req.params.id;
+    const userId = req.session.user.id;
+    const { title, description, start, end, all_day, color, vendedor_id } = req.body;
+
+    if (!eventId) {
+        return res.status(400).json({ error: 'ID del evento es requerido' });
+    }
+
+    try {
+        const currentEventResult = await pool.query(
+            'SELECT * FROM fulfillment_calendar_events WHERE id = $1 AND user_id = $2',
+            [eventId, userId]
+        );
+
+        if (currentEventResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Evento no encontrado o no tienes permiso para editarlo.' });
+        }
+
+        const isAllDay = typeof all_day === 'boolean' ? all_day : currentEvent.all_day;
+        let finalEndDate = end !== undefined ? (end || null) : currentEvent.end_date;
+
+        const query = `
+            UPDATE fulfillment_calendar_events SET
+                title = COALESCE($1, title),
+                description = COALESCE($2, description),
+                start_date = COALESCE($3, start_date),
+                end_date = $4,
+                all_day = COALESCE($5, all_day),
+                color = COALESCE($6, color),
+                vendedor_id = $7,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $8 AND user_id = $9
+            RETURNING id, title, description, start_date AS start, end_date AS end, all_day, color, vendedor_id;
+        `;
+        
+        const { rows } = await pool.query(query, [
+            title,
+            description,
+            start,
+            finalEndDate,
+            isAllDay,
+            color,
+            vendedor_id || null,
+            eventId,
+            userId
+        ]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No se pudo actualizar el evento.' });
+        }
+
+        res.status(200).json({ message: 'Evento actualizado correctamente', event: rows[0] });
+
+    } catch (error) {
+        console.error(`Error en PUT /api/calendar/events/${eventId} for user ${userId}:`, error);
+        if (error.code === '22007' || error.code === '22008') {
+            return res.status(400).json({ error: 'Formato de fecha inválido.' });
+        }
+        res.status(500).json({ error: 'Error interno al actualizar el evento' });
+    }
+});
+
+// GET /api/vendedores/para-calendario - Obtener vendedores para selector en calendario
+app.get('/api/vendedores/para-calendario', isAuthenticated, async (req, res) => {
+    try {
+        const query = 'SELECT id, nombre FROM vendedores ORDER BY nombre ASC';
+        const { rows } = await pool.query(query);
+        res.json(rows);
+    } catch (error) {
+        console.error('Error al obtener vendedores para calendario:', error);
+        res.status(500).json({ error: 'Error al obtener la lista de vendedores' });
+    }
+});
     // POST /api/calendar/events - Crear un nuevo evento
     app.post('/api/calendar/events', isAuthenticated, async (req, res) => {
         if (req.session.user.role !== 'fulfillment') {
@@ -3679,15 +3816,50 @@ app.get('/api/vendedores/agendas/resumen', isAuthenticated, async (req, res) => 
         }
     });
 
+    app.post('/guardar-desempeno', isAuthenticated, async (req, res) => {
+        const { vendedor_id, fecha, notas_auditoria, cuentas } = req.body;
+        
+        try {
+            // Procesar cada cuenta
+            for (const cuenta of cuentas) {
+                await pool.query(`
+                    INSERT INTO vendedor_desempeno_diario (
+                        vendedor_id,
+                        fecha,
+                        insta_username,
+                        mensajes_enviados,
+                        respuestas_recibidas,
+                        mensajes_manuales,
+                        notas_auditoria  <!-- Asegurar que se guarde -->
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    ON CONFLICT (vendedor_id, fecha, insta_username) 
+                    DO UPDATE SET
+                        mensajes_enviados = EXCLUDED.mensajes_enviados,
+                        respuestas_recibidas = EXCLUDED.respuestas_recibidas,
+                        mensajes_manuales = EXCLUDED.mensajes_manuales,
+                        notas_auditoria = EXCLUDED.notas_auditoria
+                `, [
+                    vendedor_id,
+                    fecha,
+                    cuenta.username,
+                    cuenta.mensajes || 0,
+                    cuenta.respuestas || 0,
+                    cuenta.manuales || 0,
+                    notas_auditoria  // Asegurar que se incluya aquí
+                ]);
+            }
+            
+            res.json({ success: true });
+        } catch (error) {
+            console.error("Error al guardar desempeño:", error);
+            res.status(500).json({ error: "Error al guardar los datos" });
+        }
+    });
 
     // --- NUEVO: GET /vendedores/:id/historial ---
-    app.get('/vendedores/:id/historial', isAuthenticated, async (req, res) => {
+// --- NUEVO: GET /vendedores/:id/historial ---
+app.get('/vendedores/:id/historial', isAuthenticated, async (req, res) => {
     const vendedorId = req.params.id;
-    // Opcional: Verificar rol si solo admin/auditoria pueden ver historial
-    // const userRole = req.session.user.role;
-    // if (userRole !== 'admin' && userRole !== 'auditoria') {
-    //     return res.status(403).render('error', {message: 'Acceso denegado', error: {}, user: req.session.user});
-    // }
 
     try {
         // 1. Obtener datos del vendedor
@@ -3697,40 +3869,36 @@ app.get('/api/vendedores/agendas/resumen', isAuthenticated, async (req, res) => 
         }
         const vendedor = vendedorResult.rows[0];
 
-        // 2. Obtener historial de desempeño ordenado
-        // 2. Obtener historial de desempeño ordenado (AÑADIR mensajes_manuales)
+        // 2. Obtener historial agrupado por fecha
         const historialResult = await pool.query(`
-            SELECT fecha, insta_username, mensajes_enviados, respuestas_recibidas, mensajes_manuales -- <<< AÑADIDO
+            SELECT 
+                fecha,
+                ARRAY_AGG(
+                    json_build_object(
+                        'insta_username', insta_username,
+                        'mensajes_enviados', mensajes_enviados,
+                        'respuestas_recibidas', respuestas_recibidas,
+                        'mensajes_manuales', mensajes_manuales
+                    )
+                ) as cuentas,
+                MAX(notas_auditoria) as notas_auditoria  -- Tomamos las notas (puede ser el primer registro con notas)
             FROM vendedor_desempeno_diario
             WHERE vendedor_id = $1
-            ORDER BY fecha DESC, insta_username ASC
+            GROUP BY fecha
+            ORDER BY fecha DESC
         `, [vendedorId]);
-        const historial = historialResult.rows; // Ahora cada item tiene mensajes_manuales
-
-        // 3. (Opcional) Agrupar por fecha para la vista
-        const historialAgrupado = historial.reduce((acc, item) => {
-            const fechaStr = item.fecha.toISOString().slice(0, 10);
-            if (!acc[fechaStr]) {
-                acc[fechaStr] = { fecha: fechaStr, entradas: [] };
-            }
-            acc[fechaStr].entradas.push(item);
-            return acc;
-        }, {});
-
 
         res.render('vendedor_historial', {
             vendedor: vendedor,
-            historial: Object.values(historialAgrupado).sort((a,b) => b.fecha.localeCompare(a.fecha)), // Ordena por fecha descendente
+            historial: historialResult.rows,
             user: req.session.user
-            // Puedes pasar datos para gráficos aquí si los implementas
         });
 
     } catch (error) {
         console.error(`Error en GET /vendedores/${vendedorId}/historial:`, error);
         res.status(500).render('error', { message: 'Error al cargar historial', error, user: req.session.user });
     }
-    });
-
+});
     async function getDashboardData(startDate, endDate, selectedAccounts = []) {
         let totalMensajes = 0;
         let totalMensajesManuales = 0;
