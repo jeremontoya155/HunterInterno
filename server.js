@@ -697,45 +697,42 @@ const vendedoresParaVista = vendedores.map(vendedor => {
     }
     });
 
-    // --- NUEVO: POST /vendedores/desempeno (Para Registrar Desempeño Diario) ---
-    // --- NUEVO: POST /vendedores/desempeno (CORREGIDO para incluir mensajes_manuales) ---
-    app.post('/vendedores/desempeno', isAuthenticated, async (req, res) => { // requireRole añadido por coherencia
-        const { vendedor_id, fecha, desempeno } = req.body; // desempeno ahora debe incluir {cuenta, mensajes, respuestas, mensajes_manuales}
-
+    app.post('/vendedores/desempeno', isAuthenticated, async (req, res) => {
+        const { vendedor_id, fecha, desempeno } = req.body;
+    
         if (!vendedor_id || !fecha || !Array.isArray(desempeno) || desempeno.length === 0) {
             return res.status(400).json({ success: false, message: 'Datos incompletos.' });
         }
-
+    
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
-
+    
             for (const item of desempeno) {
                 const cuenta = item.cuenta?.trim().toLowerCase();
                 const mensajes = parseInt(item.mensajes, 10) || 0;
                 const respuestas = parseInt(item.respuestas, 10) || 0;
-                const mensajesManuales = parseInt(item.mensajes_manuales, 10) || 0; // <<< NUEVO: Obtener mensajes manuales
-
+                const mensajesManuales = parseInt(item.mensajes_manuales, 10) || 0;
+    
                 if (!cuenta) continue;
-
-                // Query actualizada para incluir mensajes_manuales
+    
+                // **Query actualizada: Solo actualiza los campos que se envían**
                 const queryText = `
                     INSERT INTO vendedor_desempeno_diario
                         (vendedor_id, fecha, insta_username, mensajes_enviados, respuestas_recibidas, mensajes_manuales)
-                    VALUES ($1, $2, $3, $4, $5, $6) -- Añadido $6
+                    VALUES ($1, $2, $3, $4, $5, $6)
                     ON CONFLICT (vendedor_id, fecha, insta_username) DO UPDATE SET
-                        mensajes_enviados = EXCLUDED.mensajes_enviados,     -- Sobreescribir
-                        respuestas_recibidas = EXCLUDED.respuestas_recibidas, -- Sobreescribir
-                        mensajes_manuales = EXCLUDED.mensajes_manuales,   -- <<< NUEVO: Sobreescribir mensajes manuales
+                        mensajes_enviados = COALESCE($4, vendedor_desempeno_diario.mensajes_enviados),
+                        respuestas_recibidas = COALESCE($5, vendedor_desempeno_diario.respuestas_recibidas),
+                        mensajes_manuales = COALESCE($6, vendedor_desempeno_diario.mensajes_manuales),
                         updated_at = CURRENT_TIMESTAMP;
                 `;
-                // Pasar el nuevo valor a la query
-                await client.query(queryText, [vendedor_id, fecha, cuenta, mensajes, respuestas, mensajesManuales]); // Añadido mensajesManuales
+                await client.query(queryText, [vendedor_id, fecha, cuenta, mensajes, respuestas, mensajesManuales]);
             }
-
+    
             await client.query('COMMIT');
-            res.json({ success: true, message: 'Desempeño registrado/actualizado correctamente.' });
-
+            res.json({ success: true, message: 'Desempeño actualizado correctamente.' });
+    
         } catch (error) {
             await client.query('ROLLBACK');
             console.error("Error en POST /vendedores/desempeno:", error);
@@ -744,7 +741,6 @@ const vendedoresParaVista = vendedores.map(vendedor => {
             client.release();
         }
     });
-
 
     // --- NUEVO: GET /vendedores/:id/historial ---
     app.get('/vendedores/:id/historial', isAuthenticated, async (req, res) => {
@@ -2174,6 +2170,107 @@ app.delete('/closers/:id', isAuthenticated, async (req, res) => {
 
         // GET /sprints - Vista principal de sprints
         // --- SPRINTS MODIFICADOS ---
+// POST /sprints/:id/tasks - Crear nueva tarea (solo admin)
+app.post('/sprints/:id/tasks', isAuthenticated, async (req, res) => {
+    if (req.session.user.role !== 'admin') {
+        return res.status(403).json({ success: false, error: 'Acceso no autorizado' });
+    }
+
+    const { id } = req.params;
+    const { title, description } = req.body;
+    
+    if (!title) {
+        return res.status(400).json({ success: false, error: 'El título es obligatorio' });
+    }
+
+    try {
+        const query = `
+            INSERT INTO sprint_tasks (sprint_id, title, description, created_by)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *
+        `;
+        const result = await pool.query(query, [
+            id,
+            title.trim(),
+            description || null,
+            req.session.user.id
+        ]);
+
+        res.json({ 
+            success: true,
+            task: result.rows[0]
+        });
+    } catch (error) {
+        console.error("Error en POST /sprints/:id/tasks:", error);
+        res.status(500).json({ success: false, error: 'Error al crear la tarea' });
+    }
+});
+
+// PUT /sprints/:sprintId/tasks/:taskId - Actualizar estado de tarea
+app.put('/sprints/:sprintId/tasks/:taskId', isAuthenticated, async (req, res) => {
+    const { sprintId, taskId } = req.params;
+    const { is_completed } = req.body;
+
+    try {
+        // Verificar que la tarea existe y pertenece al sprint
+        const verifyQuery = `
+            SELECT * FROM sprint_tasks 
+            WHERE id = $1 AND sprint_id = $2
+        `;
+        const verifyResult = await pool.query(verifyQuery, [taskId, sprintId]);
+
+        if (verifyResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Tarea no encontrada' });
+        }
+
+        // Solo el usuario asignado al sprint o admin puede marcar tareas
+        const sprintQuery = 'SELECT asignado_a FROM sprints WHERE id = $1';
+        const sprintResult = await pool.query(sprintQuery, [sprintId]);
+        
+        if (req.session.user.role !== 'admin' && 
+            sprintResult.rows[0].asignado_a !== req.session.user.id) {
+            return res.status(403).json({ success: false, error: 'No tienes permiso para modificar esta tarea' });
+        }
+
+        const updateQuery = `
+            UPDATE sprint_tasks SET
+                is_completed = $1,
+                completed_by = $2,
+                completed_at = ${is_completed ? 'CURRENT_TIMESTAMP' : 'NULL'}
+            WHERE id = $3
+            RETURNING *
+        `;
+        
+        const updateResult = await pool.query(updateQuery, [
+            is_completed,
+            is_completed ? req.session.user.id : null,
+            taskId
+        ]);
+
+        res.json({ 
+            success: true,
+            task: updateResult.rows[0],
+            progress: await calculateSprintProgress(sprintId)
+        });
+    } catch (error) {
+        console.error("Error en PUT /sprints/:sprintId/tasks/:taskId:", error);
+        res.status(500).json({ success: false, error: 'Error al actualizar la tarea' });
+    }
+});
+
+// Función auxiliar para calcular progreso
+async function calculateSprintProgress(sprintId) {
+    const result = await pool.query(`
+        SELECT 
+            COUNT(*) as total_tasks,
+            SUM(CASE WHEN is_completed = TRUE THEN 1 ELSE 0 END) as completed_tasks
+        FROM sprint_tasks
+        WHERE sprint_id = $1
+    `, [sprintId]);
+    
+    if (result.rows[0].total_tasks === 0) return 0;
+    return Math.round((result.rows[0].completed_tasks / result.rows[0].total_tasks) * 100);
+}
 
         // POST /sprints - Crear nuevo sprint (solo admin)
         app.post('/sprints', isAuthenticated, async (req, res) => {
@@ -2331,102 +2428,144 @@ app.post('/sprints/:id/evaluar', isAuthenticated, async (req, res) => {
         
         // GET /sprints - Vista principal modificada
         // --- GET /sprints - Vista principal con filtros ---
-        app.get('/sprints', isAuthenticated, async (req, res) => {
-            try {
-                // Obtener parámetros de filtro
-                const { titulo, fecha_inicio, fecha_fin, asignado_a } = req.query;
-                
-                // Construir consulta base
-                let sprintsQuery;
-                let queryParams = [];
-                let whereClauses = [];
-                
-                // Filtro por rol (no admin solo ve sus sprints asignados)
-                if (req.session.user.role !== 'admin') {
-                    whereClauses.push(`s.asignado_a = $${queryParams.length + 1}`);
-                    queryParams.push(req.session.user.id);
-                }
-                
-                // Aplicar filtros
-                if (titulo) {
-                    whereClauses.push(`s.nombre ILIKE $${queryParams.length + 1}`);
-                    queryParams.push(`%${titulo}%`);
-                }
-                
-                if (fecha_inicio) {
-                    whereClauses.push(`s.fecha_inicio >= $${queryParams.length + 1}`);
-                    queryParams.push(fecha_inicio);
-                }
-                
-                if (fecha_fin) {
-                    whereClauses.push(`s.fecha_fin <= $${queryParams.length + 1}`);
-                    queryParams.push(fecha_fin);
-                }
-                
-                if (asignado_a && req.session.user.role === 'admin') {
-                    whereClauses.push(`s.asignado_a = $${queryParams.length + 1}`);
-                    queryParams.push(asignado_a);
-                }
-                
-                // Construir consulta final
-                sprintsQuery = `
-                    SELECT s.*, u.username as created_by_username, ua.username as asignado_a_username
-                    FROM sprints s
-                    LEFT JOIN users u ON s.created_by = u.id
-                    LEFT JOIN users ua ON s.asignado_a = ua.id
-                    ${whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : ''}
-                    ORDER BY s.fecha_inicio DESC
-                `;
-                
-                const sprintsResult = await pool.query(sprintsQuery, queryParams);
-                
-                // Resto del código para obtener devoluciones y usuarios...
-                const devolucionesQuery = `
-                    SELECT d.*, u.username as user_username 
-                    FROM devoluciones d
-                    LEFT JOIN users u ON d.user_id = u.id
-                    WHERE d.sprint_id = $1
-                    ORDER BY d.fecha_creacion DESC
-                `;
-                
-                const sprintsWithDevoluciones = await Promise.all(
-                    sprintsResult.rows.map(async sprint => {
-                        const devoluciones = await pool.query(devolucionesQuery, [sprint.id]);
-                        return { ...sprint, devoluciones: devoluciones.rows };
-                    })
-                );
-
-                // Obtener usuarios para filtro (solo admin)
-                let users = [];
-                if (req.session.user.role === 'admin') {
-                    const usersResult = await pool.query(`
-                        SELECT id, username, role 
-                        FROM users 
-                        WHERE role IN ('auditoria', 'ventas', 'fulfillment')
-                        ORDER BY username ASC
-                    `);
-                    users = usersResult.rows;
-                }
-
-                res.render('devoluciones', {
-                    user: req.session.user,
-                    sprints: sprintsWithDevoluciones,
-                    users,
-                    success: req.query.success,
-                    error: req.query.error,
-                    req: req // Pasamos req para acceder a los query params en la vista
-                });
-
-            } catch (error) {
-                console.error("Error en GET /sprints:", error);
-                res.status(500).render('error', {
-                    message: 'Error al cargar los sprints',
-                    error: error,
-                    user: req.session.user
-                });
-            }
-        });
+        // GET /sprints - Vista principal con filtros y tareas
+app.get('/sprints', isAuthenticated, async (req, res) => {
+    try {
+        // Obtener parámetros de filtro
+        const { titulo, fecha_inicio, fecha_fin, asignado_a } = req.query;
         
+        // Construir consulta base
+        let sprintsQuery;
+        let queryParams = [];
+        let whereClauses = [];
+        
+        // Filtro por rol (no admin solo ve sus sprints asignados)
+        if (req.session.user.role !== 'admin') {
+            whereClauses.push(`s.asignado_a = $${queryParams.length + 1}`);
+            queryParams.push(req.session.user.id);
+        }
+        
+        // Aplicar filtros
+        if (titulo) {
+            whereClauses.push(`s.nombre ILIKE $${queryParams.length + 1}`);
+            queryParams.push(`%${titulo}%`);
+        }
+        
+        if (fecha_inicio) {
+            whereClauses.push(`s.fecha_inicio >= $${queryParams.length + 1}`);
+            queryParams.push(fecha_inicio);
+        }
+        
+        if (fecha_fin) {
+            whereClauses.push(`s.fecha_fin <= $${queryParams.length + 1}`);
+            queryParams.push(fecha_fin);
+        }
+        
+        if (asignado_a && req.session.user.role === 'admin') {
+            whereClauses.push(`s.asignado_a = $${queryParams.length + 1}`);
+            queryParams.push(asignado_a);
+        }
+        
+        // Construir consulta final
+        sprintsQuery = `
+            SELECT 
+                s.*, 
+                u.username as created_by_username, 
+                ua.username as asignado_a_username,
+                (
+                    SELECT COUNT(*) 
+                    FROM sprint_tasks st 
+                    WHERE st.sprint_id = s.id
+                ) as total_tasks,
+                (
+                    SELECT COUNT(*) 
+                    FROM sprint_tasks st 
+                    WHERE st.sprint_id = s.id AND st.is_completed = TRUE
+                ) as completed_tasks
+            FROM sprints s
+            LEFT JOIN users u ON s.created_by = u.id
+            LEFT JOIN users ua ON s.asignado_a = ua.id
+            ${whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : ''}
+            ORDER BY s.fecha_inicio DESC
+        `;
+        
+        const sprintsResult = await pool.query(sprintsQuery, queryParams);
+        
+        // Consultas para obtener detalles adicionales
+        const devolucionesQuery = `
+            SELECT d.*, u.username as user_username 
+            FROM devoluciones d
+            LEFT JOIN users u ON d.user_id = u.id
+            WHERE d.sprint_id = $1
+            ORDER BY d.fecha_creacion DESC
+        `;
+        
+        const tasksQuery = `
+            SELECT 
+                st.*, 
+                uc.username as created_by_username,
+                u.username as completed_by_username
+            FROM sprint_tasks st
+            LEFT JOIN users uc ON st.created_by = uc.id
+            LEFT JOIN users u ON st.completed_by = u.id
+            WHERE st.sprint_id = $1
+            ORDER BY 
+                st.is_completed ASC,
+                st.created_at DESC
+        `;
+        
+        // Obtener todos los datos adicionales para cada sprint
+        const sprintsWithDetails = await Promise.all(
+            sprintsResult.rows.map(async sprint => {
+                const [devoluciones, tasks] = await Promise.all([
+                    pool.query(devolucionesQuery, [sprint.id]),
+                    pool.query(tasksQuery, [sprint.id])
+                ]);
+                
+                // Calcular progreso
+                const progress = sprint.total_tasks > 0 
+                    ? Math.round((sprint.completed_tasks / sprint.total_tasks) * 100)
+                    : 0;
+                
+                return { 
+                    ...sprint, 
+                    devoluciones: devoluciones.rows,
+                    tasks: tasks.rows,
+                    progress
+                };
+            })
+        );
+
+        // Obtener usuarios para filtro (solo admin)
+        let users = [];
+        if (req.session.user.role === 'admin') {
+            const usersResult = await pool.query(`
+                SELECT id, username, role 
+                FROM users 
+                WHERE role IN ('auditoria', 'ventas', 'fulfillment')
+                ORDER BY username ASC
+            `);
+            users = usersResult.rows;
+        }
+
+        res.render('devoluciones', {
+            user: req.session.user,
+            sprints: sprintsWithDetails,
+            users,
+            success: req.query.success,
+            error: req.query.error,
+            req: req // Pasamos req para acceder a los query params en la vista
+        });
+
+    } catch (error) {
+        console.error("Error en GET /sprints:", error);
+        res.status(500).render('error', {
+            message: 'Error al cargar los sprints',
+            error: error,
+            user: req.session.user
+        });
+    }
+});
         // --- RUTAS PARA DEVOLUCIONES ---
         
         // POST /devoluciones - Crear nueva devolución

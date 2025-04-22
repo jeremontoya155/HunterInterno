@@ -1,0 +1,218 @@
+<%# views/partials/sprint_details.ejs %>
+<%# CORREGIDO: Lógica de itemClass %>
+
+<%# Variables esperadas: sprint, user %>
+
+<%# Descripción y Metadatos %>
+<% if (sprint.descripcion) { %>
+    <p class="sprint-desc"><%- sprint.descripcion %></p> <%# Usar <%- para permitir HTML si es necesario, o <%= para escapar %>
+<% } %>
+<div class="sprint-meta">
+    <span><i class="fas fa-user-shield"></i> Creado por: <strong><%= sprint.created_by_username || 'Admin' %></strong></span>
+    <% if(user.role === 'admin') { %>
+        <span><i class="fas fa-user-tag"></i> Asignado a: <strong><%= sprint.asignado_a_username || 'No asignado' %></strong></span>
+    <% } %>
+     <span><i class="far fa-calendar-alt"></i> Inicio: <strong><%= new Date(sprint.fecha_inicio).toLocaleDateString('es-ES') %></strong></span>
+     <span><i class="far fa-calendar-check"></i> Fin: <strong><%= new Date(sprint.fecha_fin).toLocaleDateString('es-ES') %></strong></span>
+     <span style="font-weight: 500; color: <%= sprint.cerrado ? 'var(--color-success)' : 'var(--color-warning)' %>;">
+        <i class="fas <%= sprint.cerrado ? 'fa-lock' : 'fa-unlock' %>"></i> <%= sprint.cerrado ? 'Cerrado' : 'En Progreso' %>
+     </span>
+</div>
+
+
+<div class="sprint-details-grid">
+
+    <!-- Sección de Tareas -->
+    <div class="tasks-section">
+        <div class="tasks-header">
+            <h4 class="section-title"><i class="fas fa-tasks"></i> Tareas</h4>
+            <% if (user.role === 'admin' && !sprint.cerrado) { %>
+                <button class="btn btn-secondary btn-sm" onclick="openModal('addTaskModal', { sprintId: sprint.id })">
+                    <i class="fas fa-plus"></i> Añadir Tarea
+                </button>
+            <% } %>
+        </div>
+
+        <div class="task-progress-container progress-sprint-<%= sprint.id %>">
+             <div class="task-progress-info">
+                 <span>Progreso de Tareas</span>
+                 <span class="progress-text"><%= sprint.completed_tasks || 0 %> / <%= sprint.total_tasks || 0 %> completadas (<%= sprint.progress || 0 %>%)</span>
+             </div>
+             <div class="task-progress-bar">
+                 <div class="task-progress-fill" style="width: <%= sprint.progress || 0 %>%"></div>
+             </div>
+        </div>
+
+        <div class="task-list" id="task-list-sprint-<%= sprint.id %>">
+            <% if (!sprint.tasks || sprint.tasks.length === 0) { %>
+                <p class="no-tasks">No hay tareas definidas para este sprint.</p>
+            <% } else { %>
+                <% sprint.tasks.forEach(task => { %>
+                    <div class="task-item <%= task.is_completed ? 'completed' : '' %>" id="task-<%= task.id %>">
+                        <input
+                            type="checkbox"
+                            class="task-checkbox"
+                            id="task-check-<%= task.id %>-<%= sprint.id %>"
+                            data-task-id="<%= task.id %>"
+                            data-sprint-id="<%= sprint.id %>"
+                            onchange="handleTaskStatusChange(this)"
+                            <%= task.is_completed ? 'checked' : '' %>
+                            <%= (user.role !== 'admin' && user.id !== sprint.asignado_a) || sprint.cerrado ? 'disabled' : '' %>
+                        >
+                        <div class="task-content">
+                            <label for="task-check-<%= task.id %>-<%= sprint.id %>" class="task-title-text"><%= task.title %></label>
+                            <% if (task.description) { %>
+                                <p class="task-description"><%- task.description %></p> <%# Permitir HTML básico? o <%= para escapar %>
+                            <% } %>
+                            <div class="task-meta">
+                                 <span><i class="far fa-user"></i> Creada por: <%= task.created_by_username || 'N/A' %></span>
+                                 <span><i class="far fa-clock"></i> <%= new Date(task.created_at).toLocaleDateString('es-ES') %></span>
+                                 <% if (task.is_completed && task.completed_by_username) { %>
+                                     <span class="completion-info">
+                                        <i class="fas fa-check" style="color: var(--color-success);"></i> Completada por: <%= task.completed_by_username %>
+                                        <% if (task.completed_at) { %>
+                                            (<%= new Date(task.completed_at).toLocaleDateString('es-ES') %>)
+                                        <% } %>
+                                    </span>
+                                 <% } %>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Sección de Actualizaciones/Devoluciones -->
+    <div class="devoluciones-section">
+         <h4 class="section-title"><i class="fas fa-comments"></i> Actualizaciones</h4>
+         <div class="devoluciones-list">
+             <% if (!sprint.devoluciones || sprint.devoluciones.length === 0) { %>
+                <p class="no-devoluciones">No hay actualizaciones registradas.</p>
+            <% } else { %>
+                <% sprint.devoluciones.forEach(devolucion => { %>
+                    <%# CORREGIDO: Lógica para determinar la clase del item %>
+                    <%
+                      let itemClass = 'devolucion-other'; // Default
+                      if (devolucion.user_id === user.id) {
+                        itemClass = 'devolucion-user'; // Del usuario actual
+                      } else if (devolucion.user_id === sprint.created_by) { // Del creador del sprint (asumido admin en este contexto)
+                        itemClass = 'devolucion-admin';
+                      }
+                      // Podrías añadir más lógica si hay otros roles específicos
+                    %>
+
+                    <div class="devolucion-item <%= itemClass %>">
+                        <div class="devolucion-header">
+                            <h5 class="devolucion-title"><%= devolucion.titulo %></h5>
+                            <div class="devolucion-meta">
+                                <span class="devolucion-user">
+                                    <i class="far fa-user-circle"></i> <%= devolucion.user_username || 'Usuario Desc.' %>
+                                </span>
+                                <span><i class="far fa-clock"></i> <%= new Date(devolucion.fecha_creacion).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) %></span>
+                            </div>
+                        </div>
+                        <p class="devolucion-desc"><%- devolucion.descripcion %></p> <%# Escapar o no según necesidad %>
+                        <% if (devolucion.fecha_limite || (user.role === 'admin' || user.id === devolucion.user_id)) { %>
+                             <div class="devolucion-footer">
+                                <% if (devolucion.fecha_limite && !sprint.cerrado) { %>
+                                    <span><i class="far fa-calendar-times" style="color: var(--color-warning);"></i> Límite: <%= new Date(devolucion.fecha_limite).toLocaleDateString('es-ES') %></span>
+                                <% } else { %>
+                                    <span></span>
+                                <% } %>
+                                <div class="devolucion-actions">
+                                    <% if (!sprint.cerrado && (user.role === 'admin' || user.id === devolucion.user_id)) { %>
+                                        <button class="btn btn-secondary btn-xs"
+                                                onclick="openModal('devolucionModal', { sprintId: sprint.id, id: devolucion.id, titulo: `<%= devolucion.titulo.replace(/"/g, '"') %>`, descripcion: `<%= devolucion.descripcion.replace(/`/g, '\\`').replace(/"/g, '"') %>`, fecha_limite: `<%= devolucion.fecha_limite %>`, sprint_id: sprint.id })"> <%# Pasar datos completos para editar %>
+                                            <i class="fas fa-edit"></i> Editar
+                                        </button>
+                                    <% } %>
+                                    <% if (!sprint.cerrado && user.role === 'admin' && devolucion.user_id !== user.id) { %>
+                                        <button class="btn btn-info btn-xs"
+                                                onclick="openModal('respondModal', { sprint_id: sprint.id, titulo: `<%= devolucion.titulo.replace(/"/g, '"') %>` })"> <%# Pasar datos para responder %>
+                                            <i class="fas fa-reply"></i> Responder
+                                        </button>
+                                    <% } %>
+                                </div>
+                            </div>
+                        <% } %>
+                    </div>
+                <% }); %>
+            <% } %>
+         </div>
+         <% if (!sprint.cerrado && (user.role === 'admin' || user.id === sprint.asignado_a)) { %>
+            <button class="btn btn-secondary btn-sm" style="margin-top: 20px;" onclick="openModal('devolucionModal', { sprintId: sprint.id })">
+                <i class="fas fa-plus"></i> Nueva Actualización
+            </button>
+         <% } %>
+    </div>
+
+    <!-- Sección de Evaluaciones (Solo si está cerrado) -->
+    <% if (sprint.cerrado) { %>
+    <div class="evaluaciones-section">
+         <h4 class="section-title"><i class="fas fa-clipboard-check"></i> Evaluaciones Finales</h4>
+
+         <div class="evaluaciones-admin-container">
+             <h5 class="evaluaciones-title"><i class="fas fa-user-shield"></i> Evaluación Administrador</h5>
+             <% if (sprint.porcentaje_cumplimiento !== null) { %>
+                 <div class="evaluacion-item evaluacion-admin">
+                     <div class="evaluacion-progress">
+                         <div class="progress-bar"><div class="progress-fill eval-admin" style="width: <%= sprint.porcentaje_cumplimiento %>%"></div></div>
+                         <div class="progress-text"><%= sprint.porcentaje_cumplimiento %>% Cumplimiento</div>
+                     </div>
+                     <% if (sprint.comentarios_cierre) { %>
+                         <p class="evaluacion-comentario"><%- sprint.comentarios_cierre %></p> <%# Escapar o no %>
+                     <% } %>
+                 </div>
+             <% } else { %>
+                 <p class="no-evaluaciones">Pendiente.</p>
+             <% } %>
+         </div>
+
+         <div class="evaluaciones-usuarios-container">
+              <h5 class="evaluaciones-title"><i class="fas fa-users"></i> Evaluaciones Equipo</h5>
+              <%# Asegurarse que evaluaciones_usuario es un objeto antes de usar Object.entries %>
+              <% const evaluaciones = sprint.evaluaciones_usuario && typeof sprint.evaluaciones_usuario === 'object' ? Object.entries(sprint.evaluaciones_usuario) : []; %>
+              <% if (evaluaciones.length > 0) { %>
+                <div class="evaluaciones-usuarios-list">
+                    <% evaluaciones.forEach(([userId, evaluacion]) => { %>
+                        <%# Verificar que la evaluación individual tiene los datos esperados %>
+                        <% if (evaluacion && evaluacion.username && evaluacion.fecha && evaluacion.porcentaje !== undefined) { %>
+                            <div class="evaluacion-item evaluacion-user">
+                                 <div class="evaluacion-header">
+                                    <span><strong><%= evaluacion.username %></strong></span>
+                                    <span><%= new Date(evaluacion.fecha).toLocaleDateString('es-ES') %></span>
+                                 </div>
+                                <div class="evaluacion-progress">
+                                    <div class="progress-bar"><div class="progress-fill eval-user" style="width: <%= evaluacion.porcentaje %>%"></div></div>
+                                    <div class="progress-text"><%= evaluacion.porcentaje %>% Cumplimiento</div>
+                                </div>
+                                <% if (evaluacion.comentarios) { %>
+                                    <p class="evaluacion-comentario"><%- evaluacion.comentarios %></p> <%# Escapar o no %>
+                                <% } %>
+                            </div>
+                        <% } %>
+                    <% }); %>
+                </div>
+             <% } else { %>
+                 <p class="no-evaluaciones">Sin evaluaciones del equipo.</p>
+             <% } %>
+         </div>
+
+         <% if (user.role !== 'admin' && (!sprint.evaluaciones_usuario || !sprint.evaluaciones_usuario[user.id])) { %>
+            <button class="btn btn-primary btn-sm" style="margin-top: 15px;" onclick="openModal('evaluarSprintModal', { sprintId: sprint.id })">
+                <i class="fas fa-star"></i> Evaluar Sprint
+            </button>
+         <% } %>
+    </div>
+    <% } %>
+
+</div> <%# Fin sprint-details-grid %>
+
+<div class="sprint-actions">
+    <% if (user.role === 'admin' && !sprint.cerrado) { %>
+        <button class="btn btn-success btn-sm" onclick="openModal('closeSprintModal', { sprintId: sprint.id })">
+            <i class="fas fa-lock"></i> Cerrar Sprint
+        </button>
+    <% } %>
+</div>

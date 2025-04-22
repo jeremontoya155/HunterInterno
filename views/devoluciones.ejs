@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HUNTER - Gestión de Sprints</title>
+    <title>HUNTER - Resumen de Sprints</title> <%# Título actualizado %>
 
     <!-- Google Fonts (Poppins) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,618 +16,650 @@
     <!-- Estilos -->
     <link rel="stylesheet" href="/static/css/navbar.css" />
     <link rel="stylesheet" href="/static/css/scrollbar.css" />
+    <%# Ya no es necesario sprints.css si todos los estilos están inline, o mantenlo si tiene estilos base %>
+    <%# <link rel="stylesheet" href="/static/css/sprints.css" /> %>
     <style>
+        /* --- ESTILOS GLOBALES Y VARIABLES (Tema Oscuro Refinado) --- */
         :root {
-            --color-evaluacion-user: #2196f3;  /* Azul para evaluaciones de usuarios */
-            --color-evaluacion-admin: #4caf50; /* Verde para evaluación de admin */
-            --color-background-dark: #0a0a10;
-            --color-background-medium: #111827;
-            --color-background-light: #1f2937;
-            --color-accent: #4caf91;
-            --color-accent-hover: #5cdb95;
-            --color-text-primary: #e5e7eb;
-            --color-text-secondary: #9ca3af;
-            --color-highlight: #4caf91;
-            --color-border: rgba(76, 175, 145, 0.2);
-            --color-success: #4caf50;
-            --color-warning: #ff9800;
-            --color-danger: #f44336;
-            --color-info: #2196f3;
+            /* Mapeo a estética Dark Theme usando nombres originales */
+            --color-primary: #3498db; /* Azul principal (Accent) */
+            --color-primary-light: #5dade2; /* Azul claro (Hover/Light Accent) */
+            --color-secondary: #8b949e; /* Gris secundario (Texto secundario, bordes sutiles) */
+            --color-success: #2ecc71; /* Verde éxito */
+            --color-success-light: rgba(46, 204, 113, 0.15); /* Fondo verde claro/transparente */
+            --color-success-dark: #2ecc71; /* Texto/Icono éxito (mismo color base) */
+            --color-danger: #f85149; /* Rojo peligro */
+            --color-warning: #f39c12; /* Naranja/amarillo advertencia */
+            --color-warning-light: rgba(243, 156, 18, 0.15); /* Fondo advertencia claro/transparente */
+            --color-warning-dark: #f39c12; /* Texto/Icono advertencia (mismo color base) */
+            --color-info: #58a6ff; /* Azul info */
+            --color-background: #0d1117; /* Fondo más oscuro (Body) */
+            --color-background-soft: #161b22; /* Fondo medio (Cards, Secciones, Tabla) */
+            --color-background-light: #21262d; /* Fondo más claro (Hover, Headers sutiles) */
+            --color-background-soft-accent: #1f2a38; /* Un azul muy oscuro y desaturado para acento sutil */
+            --color-background-hover: #21262d; /* Hover explícito (mismo que light) */
+            --color-text-primary: #c9d1d9; /* Texto principal claro */
+            --color-text-secondary: #8b949e; /* Texto secundario grisáceo */
+            --color-border-light: #30363d; /* Borde principal oscuro (más visible) */
+            --color-border-subtle: #21262d; /* Borde muy sutil (casi invisible) */
+            --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.2); /* Sombra más sutil */
+            --border-radius-base: 6px; /* Radio de borde base */
+            --border-radius-small: 4px;
+            --border-radius-large: 8px;
+
+             /* GitHub-like Progress */
+            --color-progress-fill: #238636; /* Verde GitHub específico para progreso */
+            --color-progress-bg: rgba(35, 134, 54, 0.15); /* Fondo de barra de progreso */
         }
 
+        /* --- RESET BÁSICO Y BODY --- */
+        *, *::before, *::after { box-sizing: border-box; }
         body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--color-background-dark);
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            background-color: var(--color-background);
             color: var(--color-text-primary);
-            line-height: 1.7;
-            padding-top: 70px;
+            margin: 0;
+            padding-top: 70px; /* Ajustar si la navbar tiene altura fija */
+            font-size: 14px; /* Tamaño base GitHub-like */
+            line-height: 1.5;
         }
-
         .container {
             max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+            margin: 25px auto; /* Más margen superior/inferior */
+            padding: 0 20px; /* Más padding lateral */
         }
 
+        /* --- CABECERA DE PÁGINA --- */
         .page-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--color-border-light);
         }
-
         .page-title {
-            font-size: 2rem;
+            color: var(--color-text-primary); /* Texto primario */
             font-weight: 600;
-            color: var(--color-text-primary);
+            font-size: 1.6em; /* Más grande */
             margin: 0;
         }
-
-        .page-title .highlight {
-            color: var(--color-highlight);
+        .page-title .highlight { /* Ya no es necesario si el título es claro */
+            color: var(--color-text-primary);
+            font-weight: 600;
         }
 
+        /* --- BOTONES --- */
         .btn {
+            padding: 6px 14px; /* Ajuste padding */
+            border: 1px solid var(--color-border-light); /* Borde por defecto */
+            border-radius: var(--border-radius-base);
+            cursor: pointer;
+            font-size: 14px; /* Consistente */
+            font-weight: 500;
+            transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: 500;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            background-color: var(--color-accent);
-            color: var(--color-background-dark);
-        }
-
-        .btn-primary:hover {
-            background-color: var(--color-accent-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(76, 175, 145, 0.3);
-        }
-
-        .btn-secondary {
-             background-color: var(--color-background-light);
-             color: var(--color-text-primary);
-             border: 1px solid var(--color-border);
-        }
-         .btn-secondary:hover {
-             background-color: #2a3a4a;
-             border-color: var(--color-accent);
-         }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.85rem;
-        }
-
-        /* --- Estilos para la sección de Filtros --- */
-        .filters-section {
-            background: var(--color-background-medium);
-            border: 1px solid var(--color-border);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .filters-header {
+            gap: 6px;
+            line-height: 1.4; /* Ajuste línea */
+            background-color: var(--color-background-light); /* Fondo botón secundario */
             color: var(--color-text-primary);
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 1.1rem;
+        }
+        .btn:hover {
+            border-color: var(--color-text-secondary); /* Borde más visible al hover */
+            background-color: var(--color-border-light); /* Fondo hover secundario */
+        }
+        .btn i { line-height: 1; }
+        /* Botón Primario (Como Nuevo Sprint, Aplicar Filtro) */
+        .btn-primary {
+            background-color: var(--color-success); /* Verde como primario */
+            border-color: var(--color-success);
+            color: #fff; /* Texto blanco en verde */
+        }
+        .btn-primary:hover {
+            background-color: #27ae60; /* Verde más oscuro */
+            border-color: #27ae60;
+        }
+         /* Botón Secundario (Limpiar Filtro, Cancelar) */
+        .btn-secondary {
+            background-color: var(--color-background-light);
+            border-color: var(--color-border-light);
+            color: var(--color-text-primary);
+        }
+        .btn-secondary:hover {
+            border-color: var(--color-text-secondary);
+             background-color: var(--color-border-light);
+        }
+        /* Otros botones */
+         .btn-info { background-color: var(--color-info); border-color: var(--color-info); color: #fff; }
+         .btn-info:hover { background-color: #4a9dff; border-color: #4a9dff; }
+         .btn-danger { background-color: var(--color-danger); border-color: var(--color-danger); color: #fff; }
+         .btn-danger:hover { background-color: #e03c34; border-color: #e03c34; }
+         .btn-success { background-color: var(--color-success); border-color: var(--color-success); color: #fff; }
+         .btn-success:hover { background-color: #27ae60; border-color: #27ae60; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; gap: 4px; }
+
+        /* --- ESTILOS PARA FILTROS (Estilo GitHub) --- */
+        .filters-section {
+            background-color: var(--color-background-soft); /* Fondo sección */
+            padding: 15px 20px;
+            border-radius: var(--border-radius-base);
+            margin-bottom: 25px;
+            border: 1px solid var(--color-border-light); /* Borde sección */
+        }
+        .filters-header {
+            margin: 0 0 15px 0;
+            font-size: 0.9em;
             font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-
-        .filters-header i {
-            color: var(--color-accent);
-        }
-
+        .filters-header i { margin-right: 5px; }
         .filters-form {
             display: grid;
-             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
             align-items: end;
         }
-
-        .filter-group {
-            margin-bottom: 0;
-        }
-
+        .filter-group { display: flex; flex-direction: column; }
         .filter-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            font-size: 0.9rem;
+            font-size: 12px; /* Más pequeño */
+            margin-bottom: 5px;
             color: var(--color-text-secondary);
-        }
-
-        .filter-actions {
-            grid-column: 1 / -1;
-            display: flex;
-            gap: 15px;
-            margin-top: 10px;
-        }
-
-        .filter-actions .btn {
-            flex: 1;
-        }
-
-        /* --- Estilos para las tarjetas de sprint --- */
-        .sprint-card {
-            background: linear-gradient(145deg, var(--color-background-medium), var(--color-background-light));
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 30px;
-            border: 1px solid var(--color-border);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .sprint-card.cerrado {
-            border-left: 4px solid var(--color-success);
-            opacity: 0.9;
-        }
-
-        .sprint-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--color-border);
-        }
-
-        .sprint-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--color-accent);
-            margin-bottom: 10px;
-        }
-
-        .sprint-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            font-size: 0.9rem;
-            color: var(--color-text-secondary);
-        }
-
-        .sprint-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
             font-weight: 500;
         }
-
-        .sprint-dates {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            color: var(--color-text-secondary);
-            font-size: 0.9rem;
-            text-align: right;
-        }
-
-        .sprint-dates span {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            justify-content: flex-end;
-        }
-
-        .sprint-desc {
-            color: var(--color-text-secondary);
-            margin-bottom: 20px;
-            white-space: pre-wrap;
-        }
-
-        /* --- Estilos para las evaluaciones --- */
-        .evaluaciones-container {
-            margin-top: 25px;
-        }
-
-        .evaluaciones-title {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            color: var(--color-accent);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .evaluaciones-usuarios {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid var(--color-border);
-        }
-
-        .evaluacion-item {
-            background-color: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-left: 3px solid var(--color-accent);
-        }
-
-        .evaluacion-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-        }
-
-        .evaluacion-comentario {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px dashed var(--color-border);
-            color: var(--color-text-secondary);
-            font-size: 0.9rem;
-        }
-
-        /* --- Estilos para devoluciones --- */
-        .devoluciones-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .devolucion-item {
-            background-color: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 15px;
-            border-left: 4px solid var(--color-accent);
-            transition: all 0.3s ease;
-        }
-
-        .devolucion-item.devolucion-admin {
-            background-color: rgba(76, 175, 145, 0.1);
-            border-left: 4px solid var(--color-accent);
-        }
-
-        .devolucion-item.devolucion-user {
-            background-color: rgba(33, 150, 243, 0.1);
-            border-left: 4px solid var(--color-info);
-        }
-
-        .devolucion-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .devolucion-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .devolucion-title {
-            font-weight: 600;
-            font-size: 1.1rem;
+        .form-control { /* Estilo input/select oscuro */
+            padding: 6px 12px;
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--border-radius-base);
+            font-size: 14px;
+            background-color: var(--color-background); /* Fondo input más oscuro */
             color: var(--color-text-primary);
-            margin: 0;
+            line-height: 1.5;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
-
-        .devolucion-meta {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
-        }
-
-        .devolucion-user {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .devolucion-desc {
-            margin-bottom: 15px;
-            color: var(--color-text-secondary);
-            white-space: pre-line;
-        }
-
-        .devolucion-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .devolucion-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .no-sprints {
-            text-align: center;
-            padding: 40px 20px;
-            background-color: var(--color-background-medium);
-            border-radius: 10px;
-            border: 1px dashed var(--color-border);
-            color: var(--color-text-secondary);
-        }
-        .no-sprints p {
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-
-        /* --- Estilos Comunes Formularios (Input, Select, Textarea) --- */
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--color-text-primary);
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 10px 15px;
-            background-color: var(--color-background-light);
-            border: 1px solid var(--color-border);
-            border-radius: 6px;
-            color: var(--color-text-primary);
-            font-family: 'Poppins', sans-serif;
-            font-size: 1rem;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
         .form-control:focus {
             outline: none;
-            border-color: var(--color-accent);
-            box-shadow: 0 0 0 2px rgba(76, 175, 145, 0.3);
+            border-color: var(--color-primary); /* Borde azul al focus */
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3); /* Sombra focus azul */
         }
+         .form-control::placeholder { color: var(--color-text-secondary); opacity: 0.7; }
+         /* Estilo específico para select */
+         select.form-control {
+            /* Apariencia para que parezca un input */
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%238b949e'%3E%3Cpath d='M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+            padding-right: 30px; /* Espacio para el icono flecha */
+         }
 
-        input[type="date"].form-control {
-            position: relative;
-            color-scheme: dark;
-        }
-
-        textarea.form-control {
-            min-height: 120px;
-            resize: vertical;
-        }
-        /* --- Fin Estilos Comunes Formularios --- */
-
-        /* --- Estilos Modales --- */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1050;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            outline: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal.show {
-             display: flex;
-        }
-
-        .modal-content {
-            background-color: var(--color-background-medium);
-            border-radius: 10px;
-            padding: 25px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            position: relative;
+        .filter-actions {
             display: flex;
-            flex-direction: column;
+            gap: 10px;
+            grid-column: -1;
+            justify-self: end;
+            align-self: end; /* Alinea verticalmente con los inputs */
+            padding-bottom: 1px; /* Pequeño ajuste vertical */
         }
+         /* Sobrescribir colores botones dentro del filtro */
+         .filter-actions .btn-primary { background-color: var(--color-success); border-color: var(--color-success); }
+         .filter-actions .btn-primary:hover { background-color: #27ae60; border-color: #27ae60; }
+         .filter-actions .btn-secondary { background-color: var(--color-background-light); border-color: var(--color-border-light); color: var(--color-text-primary); }
+         .filter-actions .btn-secondary:hover { background-color: var(--color-border-light); border-color: var(--color-text-secondary); }
 
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--color-border);
-        }
-
-        .modal-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--color-accent);
-            margin: 0;
-        }
-
-        .close-modal {
-            background: none;
-            border: none;
-            color: var(--color-text-secondary);
-            font-size: 1.8rem;
-            line-height: 1;
-            cursor: pointer;
-            padding: 0;
-            transition: color 0.3s ease;
-        }
-
-        .close-modal:hover {
-            color: var(--color-text-primary);
-        }
-
-        .form-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 15px;
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid var(--color-border);
-        }
-        /* --- Fin Estilos Modales --- */
-
-        /* --- Estilos Alertas --- */
+        /* --- ESTILOS PARA ALERTAS (Flash Messages) --- */
         .alert {
-            padding: 15px 20px;
-            border-radius: 6px;
+            padding: 10px 15px;
             margin-bottom: 20px;
-            font-weight: 500;
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--border-radius-base);
             display: flex;
             align-items: center;
             gap: 10px;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+            font-size: 14px;
         }
-
+        .alert i { font-size: 1.1em; }
         .alert-success {
-            background-color: rgba(76, 175, 80, 0.15);
             color: var(--color-success);
-            border-left: 4px solid var(--color-success);
+            background-color: rgba(46, 204, 113, 0.1); /* Fondo transparente verde */
+            border-color: rgba(46, 204, 113, 0.3);
         }
-
         .alert-error {
-            background-color: rgba(244, 67, 54, 0.15);
             color: var(--color-danger);
-            border-left: 4px solid var(--color-danger);
+            background-color: rgba(248, 81, 73, 0.1); /* Fondo transparente rojo */
+            border-color: rgba(248, 81, 73, 0.3);
         }
-         .alert i {
-             font-size: 1.2rem;
+
+        /* --- ESTILOS PARA NO SPRINTS --- */
+         .no-sprints {
+             margin-top: 20px;
+             padding: 30px; /* Más padding */
+             background-color: var(--color-background-soft);
+             border-radius: var(--border-radius-base);
+             text-align: center;
+             color: var(--color-text-secondary);
+             border: 1px dashed var(--color-border-light); /* Borde discontinuo */
          }
-        /* --- Fin Estilos Alertas --- */
+         .no-sprints p { margin-bottom: 15px; font-size: 1.1em; }
+         .no-sprints button { margin-top: 15px; } /* Botón primario ya es verde */
 
-        /* --- Estilos Barra de Progreso --- */
-        .progress-container {
-            margin: 20px 0;
+        /* --- ESTILOS PARA LA TABLA RESUMEN (Estilo GitHub) --- */
+        .table-container { overflow-x: auto; }
+        .sprints-table {
+            width: 100%;
+            border-collapse: separate; /* Para border-radius y border */
+            border-spacing: 0;
+            margin-top: 20px;
+            background-color: transparent; /* Tabla transparente, filas con fondo */
+            border: 1px solid var(--color-border-light); /* Borde general tabla */
+            border-radius: var(--border-radius-base);
+            overflow: hidden; /* Clipa contenido a bordes redondeados */
         }
-
-        .progress-bar {
-            height: 12px;
-            background-color: var(--color-background-light);
-            border-radius: 6px;
-            overflow: hidden;
-            margin-bottom: 5px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background-color: var(--color-success);
-            transition: width 0.5s ease;
-            border-radius: 6px;
-        }
-
-        .progress-text {
-            text-align: right;
-            font-size: 0.9rem;
+        .sprints-table thead {
+            background-color: var(--color-background-light); /* Fondo cabecera */
             color: var(--color-text-secondary);
+            font-size: 12px; /* Cabecera más pequeña */
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .sprints-table th,
+        .sprints-table td {
+            padding: 10px 15px; /* Padding ajustado */
+            text-align: left;
+            /* Borde inferior sutil en cabecera, más fuerte entre filas */
+            border-bottom: 1px solid var(--color-border-light);
+            vertical-align: middle;
+            white-space: nowrap; /* Evitar wrap en celdas resumen */
+        }
+        .sprints-table th { font-weight: 600; border-bottom-width: 1px; border-bottom-color: var(--color-border-light); } /* Borde más marcado bajo cabecera */
+        .sprints-table td { font-size: 14px; } /* Tamaño texto filas */
+
+        .sprints-table tbody tr { background-color: var(--color-background-soft); } /* Fondo filas */
+
+        .sprints-table tbody tr.sprint-summary-row {
+            cursor: pointer;
+            transition: background-color 0.1s ease;
+        }
+        .sprints-table tbody tr.sprint-summary-row:hover {
+            background-color: var(--color-background-hover); /* Fondo hover */
+        }
+        .sprints-table tbody tr.sprint-summary-row.active {
+            background-color: var(--color-background-hover); /* Mismo que hover o ligeramente distinto */
+            /* Quitar borde izquierdo azul, no es estilo GitHub */
+            /* border-left: 3px solid var(--color-primary); */
+        }
+        /* Quitar padding extra si ya no hay borde izquierdo */
+         /* .sprints-table tbody tr.sprint-summary-row.active td:first-child { padding-left: 15px; } */
+
+         /* Estilo filas cerradas */
+         .sprints-table tbody tr.sprint-summary-row.cerrado {
+            opacity: 0.7;
+            /* color: var(--color-text-secondary); */ /* Texto ya es secundario */
+         }
+         .sprints-table tbody tr.sprint-summary-row.cerrado:hover { opacity: 0.85; }
+
+        /* Icono Expandir */
+        .sprints-table .expand-icon {
+            transition: transform 0.2s ease;
+            display: inline-block;
+            margin-right: 5px;
+            width: 16px;
+            text-align: center;
+            color: var(--color-text-secondary); /* Color icono normal */
+            font-size: 0.8em;
+        }
+        .sprints-table tr.active .expand-icon {
+            transform: rotate(90deg);
+            color: var(--color-text-primary); /* Icono más brillante al expandir */
+        }
+
+        /* Estado (Badge) */
+        .sprints-table .sprint-status-indicator {
+            padding: 3px 10px;
+            border-radius: var(--border-radius-large); /* Más redondeado */
+            font-size: 11px; /* Texto pequeño */
+            font-weight: 600;
+            display: inline-block;
+            white-space: nowrap;
+            border: 1px solid transparent; /* Borde sutil opcional */
+            line-height: 1.4;
+        }
+        .sprints-table .sprint-status-indicator i { margin-right: 4px; font-size: 0.9em;}
+        .sprints-table .sprint-status-indicator.open { /* Naranja */
+            background-color: var(--color-warning-light);
+            color: var(--color-warning-dark);
+            border-color: rgba(243, 156, 18, 0.4);
+        }
+        .sprints-table .sprint-status-indicator.closed { /* Verde */
+             background-color: var(--color-success-light);
+             color: var(--color-success-dark);
+             border-color: rgba(46, 204, 113, 0.4);
+        }
+
+        /* Celda Progreso Resumen */
+         .summary-progress-cell { display: flex; align-items: center; gap: 8px; }
+         .summary-progress-bar {
+             width: 80px; /* Ancho barra */
+             height: 8px;
+             background-color: var(--color-progress-bg); /* Fondo barra GitHub */
+             border-radius: var(--border-radius-large);
+             overflow: hidden;
+             display: inline-block;
+         }
+         .summary-progress-fill {
+             height: 100%;
+             background-color: var(--color-progress-fill); /* Color progreso GitHub */
+             border-radius: var(--border-radius-large);
+             transition: width 0.3s ease;
+         }
+         .summary-progress-text {
+              font-size: 12px; /* Texto porcentaje */
+              color: var(--color-text-secondary);
+              font-weight: 500;
+         }
+
+        /* Fila de Detalles */
+        .sprint-details-row {
+            display: none; /* Oculta por defecto */
+        }
+        .sprint-details-row td {
+            padding: 0; /* Sin padding en el TD contenedor */
+            border-bottom: 1px solid var(--color-border-light);
+            /* Quitar borde izquierdo azul */
+            /* border-left: 3px solid var(--color-primary); */
+        }
+        .sprint-card-details {
+            /* El padding interior define el espacio */
+            padding: 25px 30px;
+            background-color: var(--color-background); /* Fondo más oscuro para contenido detalle? o soft? Probar oscuro */
+        }
+
+        /* --- ESTILOS PARA EL CONTENIDO DETALLADO (Dentro de sprint-card-details) --- */
+        /* Ajustar estilos internos para coherencia con tema oscuro */
+        .sprint-desc {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+        }
+         .sprint-desc strong { color: var(--color-text-primary); font-weight: 600; }
+
+        .tasks-section, .evaluaciones-container, .devoluciones-list {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid var(--color-border-light);
+        }
+         .tasks-header {
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+             margin-bottom: 20px;
+        }
+        .tasks-title, .evaluaciones-title, .devoluciones-list h4 {
+            color: var(--color-text-primary); /* Títulos claros */
+            font-weight: 600;
+            font-size: 1.3em; /* Más grandes */
+            margin: 0 0 20px 0; /* Margen inferior */
+        }
+        .tasks-title i, .evaluaciones-title i, .devoluciones-list h4 i {
+             margin-right: 8px;
+             color: var(--color-text-secondary); /* Iconos secundarios */
+        }
+        /* Botón Añadir Tarea */
+         .tasks-header .btn-secondary { /* Usar estilo secundario */
+             background-color: var(--color-background-light);
+             border-color: var(--color-border-light);
+             color: var(--color-text-primary);
+         }
+         .tasks-header .btn-secondary:hover {
+             border-color: var(--color-text-secondary);
+              background-color: var(--color-border-light);
+         }
+
+        /* Progreso Detallado */
+        .task-progress-container {
+             margin-bottom: 25px;
+             padding: 15px;
+             background-color: var(--color-background-soft); /* Fondo sección progreso */
+             border-radius: var(--border-radius-base);
+             border: 1px solid var(--color-border-light);
+         }
+         .task-progress-info {
+              display: flex;
+              justify-content: space-between;
+              font-size: 13px;
+              margin-bottom: 10px;
+              color: var(--color-text-secondary);
+              font-weight: 500;
+         }
+         .task-progress-bar {
+            width: 100%;
+            height: 10px; /* Más gruesa */
+            background-color: var(--color-progress-bg);
+            border-radius: var(--border-radius-large);
+            overflow: hidden;
+         }
+        .task-progress-fill {
+            height: 100%;
+            background-color: var(--color-progress-fill);
+            border-radius: var(--border-radius-large);
+            transition: width 0.4s ease-in-out;
+        }
+
+        /* Lista de Tareas */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Espacio entre tareas */
+            max-height: none; /* Sin límite de altura por defecto */
+            overflow-y: visible;
+            padding-right: 0;
+            margin-top: 20px;
+        }
+        .task-item {
+            background-color: var(--color-background-soft); /* Fondo tarea */
+            padding: 12px 18px;
+            border-radius: var(--border-radius-base);
+            border: 1px solid var(--color-border-light); /* Borde tarea */
+            /* Quitar borde izquierdo de color */
+            border-left: none;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+        .task-item:hover {
+             background-color: var(--color-background-hover);
+             border-color: var(--color-text-secondary); /* Borde hover */
+        }
+        .task-item.completed {
+            background-color: var(--color-background-soft); /* Mismo fondo */
+            border-color: var(--color-border-light);
+            opacity: 0.6; /* Opacidad para completadas */
+        }
+        .task-item.completed .task-title-text {
+            text-decoration: line-through;
+            color: var(--color-text-secondary);
+        }
+         .task-item.completed:hover { opacity: 0.75; }
+
+        .task-checkbox {
+            margin-top: 4px;
+            flex-shrink: 0;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            accent-color: var(--color-primary); /* Color del check */
+        }
+         .task-checkbox:disabled { cursor: not-allowed; opacity: 0.5; }
+        .task-content { flex-grow: 1; }
+        .task-title-text {
             font-weight: 500;
+            display: block;
+            margin-bottom: 4px;
+            color: var(--color-text-primary);
+            font-size: 14px;
+            cursor: pointer;
         }
-        /* --- Fin Estilos Barra de Progreso --- */
+        .task-description {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+        .task-meta {
+            font-size: 12px; /* Meta más pequeño */
+            color: var(--color-text-secondary);
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .task-meta span { display: inline-flex; align-items: center; gap: 5px; }
+        .task-meta i { font-size: 1em; } /* Iconos meta mismo tamaño */
+        .completion-info { font-weight: 500; color: var(--color-success); } /* Verde para completado */
 
-        /* --- Media Queries para Responsividad --- */
-        @media (max-width: 992px) {
-            .filters-form {
-                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-                gap: 15px;
-            }
+        /* Evaluaciones y Devoluciones */
+        .evaluaciones-usuarios {
+             display: grid;
+             gap: 15px;
+             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+        .evaluacion-item, .devolucion-item {
+             padding: 15px 20px;
+             border: 1px solid var(--color-border-light);
+             border-radius: var(--border-radius-base);
+             background-color: var(--color-background-soft); /* Fondo items */
+             margin-bottom: 15px; /* Espacio devoluciones */
+             /* Quitar borde izquierdo */
+             border-left: none;
+         }
+        .evaluacion-header {
+             display: flex;
+             justify-content: space-between;
+             font-size: 13px;
+             margin-bottom: 10px;
+             color: var(--color-text-secondary);
+        }
+        .evaluacion-header strong { color: var(--color-text-primary); font-weight: 600; }
+        .evaluacion-comentario {
+             font-size: 13px;
+             margin-top: 12px;
+             color: var(--color-text-secondary); /* Comentarios secundarios */
+             font-style: normal; /* Sin cursiva por defecto */
+             line-height: 1.5;
+             background-color: var(--color-background); /* Fondo más oscuro para cita */
+             padding: 10px 15px;
+             border-radius: var(--border-radius-small);
+             border-left: 3px solid var(--color-border-light); /* Borde cita */
+        }
+        .evaluacion-item .progress-bar { /* Progreso dentro de evaluación */
+            width: 100%; height: 6px; /* Más delgada */
+            background-color: var(--color-progress-bg); border-radius: var(--border-radius-large);
+            overflow: hidden; margin-top: 8px;
+        }
+        .evaluacion-item .progress-fill {
+             height: 100%; background-color: var(--color-info); /* Progreso azul info */
+             border-radius: var(--border-radius-large); transition: width 0.3s ease;
+        }
+        .evaluacion-item .progress-text {
+             font-size: 12px; margin-top: 5px; color: var(--color-text-secondary); text-align: right;
         }
 
-        @media (max-width: 768px) {
-             .page-header {
-                 flex-direction: column;
-                 align-items: flex-start;
-                 gap: 15px;
-             }
-
-            .sprint-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-
-            .sprint-dates {
-                text-align: left;
-                 width: 100%;
-            }
-             .sprint-dates span {
-                 justify-content: flex-start;
-             }
-
-             .devolucion-header, .devolucion-footer {
-                 flex-direction: column;
-                 align-items: flex-start;
-                 gap: 10px;
-             }
-              .devolucion-meta {
-                 width: 100%;
-                 justify-content: space-between;
-             }
-             .devolucion-actions {
-                width: 100%;
-                justify-content: flex-end;
-            }
-
-            .filters-form {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-            .filter-actions {
-                 margin-top: 5px;
-                 flex-direction: column;
-             }
-            .filter-actions .btn {
-                width: 100%;
-            }
-
-            .modal-content {
-                max-width: 95%;
-                padding: 20px;
-            }
-            .form-actions {
-                flex-direction: column-reverse;
-            }
-             .form-actions .btn {
-                 width: 100%;
-             }
+        /* Devoluciones Específico */
+        .devolucion-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+        .devolucion-title { font-size: 1.1em; font-weight: 600; margin: 0; color: var(--color-text-primary); }
+        .devolucion-meta { font-size: 12px; color: var(--color-text-secondary); display: flex; gap: 15px; }
+        .devolucion-user i { margin-right: 4px; }
+        .devolucion-desc {
+            font-size: 14px; color: var(--color-text-secondary); line-height: 1.6;
+            margin-bottom: 15px; white-space: pre-wrap; word-wrap: break-word;
         }
-        /* --- Fin Media Queries --- */
+        .devolucion-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--color-border-light);
+            font-size: 12px; color: var(--color-text-secondary);
+        }
+        .devolucion-footer span i { margin-right: 4px; }
+        .devolucion-actions { display: flex; gap: 10px; }
+        /* Botones Editar/Responder en devoluciones */
+         .devolucion-actions .btn-secondary { /* Editar */
+             background-color: var(--color-background-light); border-color: var(--color-border-light); color: var(--color-text-primary);
+         }
+          .devolucion-actions .btn-secondary:hover { background-color: var(--color-border-light); border-color: var(--color-text-secondary); }
+          .devolucion-actions .btn-info { /* Responder */
+              background-color: var(--color-info); border-color: var(--color-info); color: #fff;
+          }
+          .devolucion-actions .btn-info:hover { background-color: #4a9dff; border-color: #4a9dff; }
 
-        /* Estilos para evaluaciones de usuarios */
-.evaluacion-user {
-    border-left: 3px solid var(--color-evaluacion-user);
-    background-color: rgba(33, 150, 243, 0.05);
-}
+        /* --- ESTILOS PARA MODALES (Oscuros) --- */
+        .modal {
+            display: none; position: fixed; z-index: 1050; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.7); /* Fondo modal más oscuro */
+            align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s ease;
+        }
+        .modal.show { display: flex; opacity: 1; }
+        .modal-content {
+            background-color: var(--color-background-soft); /* Fondo modal */
+            color: var(--color-text-primary); /* Texto modal */
+            margin: auto; padding: 25px 30px; border-radius: var(--border-radius-large); /* Más redondeado */
+            width: 90%; max-width: 600px; /* Un poco más ancho */
+            border: 1px solid var(--color-border-light);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); /* Sombra más pronunciada */
+            position: relative; transform: scale(0.98); transition: transform 0.2s ease;
+        }
+        .modal.show .modal-content { transform: scale(1); }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            /* Sin borde inferior por defecto, más limpio */
+            padding-bottom: 10px; margin-bottom: 20px;
+        }
+        .modal-title {
+            margin: 0; font-size: 1.5em; font-weight: 600; color: var(--color-text-primary); /* Título claro */
+        }
+        .close-modal {
+            border: none; background: none; font-size: 2em; font-weight: normal;
+            color: var(--color-text-secondary); cursor: pointer; line-height: 1; padding: 0;
+             transition: color 0.15s ease;
+        }
+        .close-modal:hover { color: var(--color-text-primary); }
+        .form-group { margin-bottom: 20px; }
+        .form-label {
+            display: block; margin-bottom: 8px; font-weight: 500;
+            font-size: 13px; color: var(--color-text-secondary); /* Label secundario */
+        }
+        /* Input/Textarea dentro de modal hereda estilo .form-control oscuro */
+        textarea.form-control { min-height: 100px; resize: vertical; }
+        .form-actions {
+            display: flex; justify-content: flex-end; gap: 10px;
+            margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--color-border-light); /* Separador acciones */
+        }
+        /* Ajustar botones dentro de modal si es necesario (ya usan clases btn-*) */
+        .modal .btn-danger { /* Confirmar Cierre */
+             background-color: var(--color-danger); border-color: var(--color-danger); color: #fff;
+         }
+         .modal .btn-danger:hover { background-color: #e03c34; border-color: #e03c34; }
+         .modal .btn-success { /* Enviar Evaluación / Guardar Sprint */
+              background-color: var(--color-success); border-color: var(--color-success); color: #fff;
+          }
+          .modal .btn-success:hover { background-color: #27ae60; border-color: #27ae60; }
 
-.evaluacion-user .progress-fill {
-    background-color: var(--color-evaluacion-user);
-}
+        /* Scrollbar oscuro (Opcional, Webkit) */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--color-background); }
+        ::-webkit-scrollbar-thumb { background-color: var(--color-border-light); border-radius: 10px; border: 2px solid var(--color-background); }
+        ::-webkit-scrollbar-thumb:hover { background-color: var(--color-text-secondary); }
 
-/* Estilo para evaluación de admin */
-.evaluacion-admin {
-    border-left: 3px solid var(--color-evaluacion-admin);
-    background-color: rgba(76, 175, 80, 0.05);
-}
-
-.evaluacion-admin .progress-fill {
-    background-color: var(--color-evaluacion-admin);
-}
     </style>
+    
 </head>
 <body>
     <%- include('partials/navbar') %>
@@ -635,7 +667,7 @@
     <div class="container">
 
         <div class="page-header">
-            <h1 class="page-title">Gestión de <span class="highlight">Sprints</span></h1>
+            <h1 class="page-title">Gestión de <span class="highlight">Sprints y Tareas</span></h1>
             <% if (user.role === 'admin') { %>
                 <button class="btn btn-primary" onclick="openModal('sprintModal')">
                     <i class="fas fa-plus"></i> Nuevo Sprint
@@ -643,35 +675,27 @@
             <% } %>
         </div>
 
-        <!-- ====================================== -->
-        <!--         Sección de Filtros           -->
-        <!-- ====================================== -->
+        <!-- Sección de Filtros -->
         <div class="filters-section">
             <h3 class="filters-header">
-                <i class="fas fa-filter"></i>
-                FILTRAR SPRINTS
+                <i class="fas fa-filter"></i> Filtrar Sprints
             </h3>
-
             <form id="filtrosForm" class="filters-form" method="GET" action="/sprints">
-
-                <!-- Filtro por título -->
+                 <!-- Filtro por título -->
                 <div class="filter-group">
                     <label for="filtroTitulo" class="filter-label">Título</label>
                     <input type="text" id="filtroTitulo" name="titulo" value="<%= req.query.titulo || '' %>" class="form-control" placeholder="Buscar por título...">
                 </div>
-
                 <!-- Filtro fecha desde -->
                 <div class="filter-group">
                     <label for="filtroFechaInicio" class="filter-label">Fecha desde</label>
                     <input type="date" id="filtroFechaInicio" name="fecha_inicio" value="<%= req.query.fecha_inicio || '' %>" class="form-control">
                 </div>
-
                 <!-- Filtro fecha hasta -->
                 <div class="filter-group">
                     <label for="filtroFechaFin" class="filter-label">Fecha hasta</label>
                     <input type="date" id="filtroFechaFin" name="fecha_fin" value="<%= req.query.fecha_fin || '' %>" class="form-control">
                 </div>
-
                 <!-- Filtro asignado a (solo admin) -->
                 <% if (user.role === 'admin') { %>
                 <div class="filter-group">
@@ -686,36 +710,31 @@
                     </select>
                 </div>
                 <% } %>
-
                 <!-- Botones de acción -->
                 <div class="filter-actions">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary btn-sm"> <%# btn-sm para consistencia %>
                         <i class="fas fa-check"></i> Aplicar
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="resetFilters()">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilters()">
                         <i class="fas fa-times"></i> Limpiar
                     </button>
                 </div>
             </form>
-        </div>
-        <!-- ====================================== -->
-        <!--       Fin Sección de Filtros         -->
-        <!-- ====================================== -->
+       </div>
 
         <!-- Mensajes de éxito/error -->
         <% if (typeof success !== 'undefined' && success) { %>
-            <div class="alert alert-success">
+            <div class="alert alert-success js-server-flash"> <%# Añadida clase para JS %>
                 <i class="fas fa-check-circle"></i> <%= success %>
             </div>
         <% } %>
-
         <% if (typeof error !== 'undefined' && error) { %>
-            <div class="alert alert-error">
+            <div class="alert alert-error js-server-flash"> <%# Añadida clase para JS %>
                 <i class="fas fa-exclamation-circle"></i> <%= error %>
             </div>
         <% } %>
 
-        <!-- Lista de Sprints -->
+        <!-- Tabla Resumen de Sprints / Mensaje si no hay sprints -->
         <% if (sprints.length === 0) { %>
             <div class="no-sprints">
                 <p>No se encontraron sprints con los filtros aplicados o no hay sprints creados aún.</p>
@@ -726,149 +745,247 @@
                 <% } %>
             </div>
         <% } else { %>
-            <% sprints.forEach(sprint => { %>
-                <div class="sprint-card <%= sprint.cerrado ? 'cerrado' : '' %>" id="sprint-<%= sprint.id %>">
-                    <div class="sprint-header">
-                        <div>
-                            <h2 class="sprint-title"><%= sprint.nombre %></h2>
-                            <div class="sprint-meta">
-                                <span><i class="fas fa-user-tag"></i> Asignado a: <strong><%= sprint.asignado_a_username || 'No asignado' %></strong></span>
-                                <span><i class="fas fa-user-shield"></i> Creado por: <strong><%= sprint.created_by_username || 'Admin' %></strong></span>
-                                <% if (sprint.cerrado) { %>
-                                    <span class="sprint-status" style="color: var(--color-success);">
-                                        <i class="fas fa-lock"></i> Cerrado
-                                    </span>
-                                <% } else { %>
-                                    <span class="sprint-status" style="color: var(--color-warning);">
-                                        <i class="fas fa-unlock"></i> En progreso
-                                    </span>
-                                <% } %>
-                            </div>
-                        </div>
-                        <div class="sprint-dates">
-                            <span><i class="far fa-calendar-alt"></i> Inicio: <%= new Date(sprint.fecha_inicio).toLocaleDateString('es-ES') %></span>
-                            <span><i class="far fa-calendar-check"></i> Fin: <%= new Date(sprint.fecha_fin).toLocaleDateString('es-ES') %></span>
-                        </div>
-                    </div>
+            <div class="table-container">
+                <table class="sprints-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;"></th> <%# Columna icono expandir %>
+                            <th>Nombre del Sprint</th>
+                            <th>Asignado a</th>
+                            <th style="width: 180px;">Fechas</th> <%# Ancho fijo para fechas %>
+                            <th style="width: 120px;">Estado</th> <%# Ancho fijo para estado %>
+                            <th style="width: 150px;">Progreso</th> <%# Ancho fijo para progreso %>
+                        </tr>
+                    </thead>
+                    <tbody id="sprintsTableBody">
+                        <% sprints.forEach(sprint => { %>
+                            <tr class="sprint-summary-row <%= sprint.cerrado ? 'cerrado' : '' %>"
+                                data-sprint-id="<%= sprint.id %>"
+                                onclick="toggleSprintDetails('<%= sprint.id %>')"
+                                title="Clic para ver/ocultar detalles">
 
-                    <% if (sprint.descripcion) { %>
-                        <p class="sprint-desc"><%= sprint.descripcion %></p>
-                    <% } %>
-
-                    <!-- Evaluación del Admin -->
-                    <% if (sprint.cerrado && sprint.porcentaje_cumplimiento !== null) { %>
-                        <div class="progress-container">
-                            <h4>Evaluación del Administrador</h4>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: <%= sprint.porcentaje_cumplimiento %>%"></div>
-                            </div>
-                            <div class="progress-text">Cumplimiento: <%= sprint.porcentaje_cumplimiento %>%</div>
-                            <% if (sprint.comentarios_cierre) { %>
-                                <p class="sprint-desc"><%= sprint.comentarios_cierre %></p>
-                            <% } %>
-                        </div>
-                    <% } %>
-
-                    <!-- Evaluaciones de Usuarios -->
-                    <% if (sprint.cerrado && sprint.evaluaciones_usuario) { %>
-                        <div class="evaluaciones-container">
-                            <h4 class="evaluaciones-title">
-                                <i class="fas fa-users"></i> Evaluaciones del Equipo
-                            </h4>
-                            <div class="evaluaciones-usuarios">
-                                <% Object.entries(sprint.evaluaciones_usuario).forEach(([userId, evaluacion]) => { %>
-                                    <div class="evaluacion-item evaluacion-user">
-                                        <div class="evaluacion-header">
-                                            <span><strong><%= evaluacion.username %></strong></span>
-                                            <span><%= new Date(evaluacion.fecha).toLocaleDateString('es-ES') %></span>
-                                        </div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: <%= evaluacion.porcentaje %>%"></div>
-                                        </div>
-                                        <div class="progress-text">Cumplimiento: <%= evaluacion.porcentaje %>%</div>
-                                        <% if (evaluacion.comentarios) { %>
-                                            <p class="evaluacion-comentario"><%= evaluacion.comentarios %></p>
-                                        <% } %>
-                                    </div>
-                                <% }); %>
-                            </div>
-                        </div>
-                    <% } %>
-
-                    <!-- Botones de Acción Sprint -->
-                    <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                        <% if (user.role === 'admin' && !sprint.cerrado) { %>
-                            <button class="btn btn-primary btn-sm" onclick="openModal('closeSprintModal', { sprintId: <%= sprint.id %> })">
-                                <i class="fas fa-lock"></i> Cerrar Sprint
-                            </button>
-                        <% } %>
-
-                        <% if (!sprint.cerrado && (user.role === 'admin' || user.id === sprint.asignado_a)) { %>
-                            <button class="btn btn-primary btn-sm" onclick="openModal('devolucionModal', { sprintId: <%= sprint.id %> })">
-                                <i class="fas fa-plus"></i> Agregar Actualización
-                            </button>
-                        <% } %>
-
-                        <% if (sprint.cerrado && user.role !== 'admin' && (!sprint.evaluaciones_usuario || !sprint.evaluaciones_usuario[user.id])) { %>
-                            <button class="btn btn-primary btn-sm" onclick="openModal('evaluarSprintModal', { sprintId: <%= sprint.id %> })">
-                                <i class="fas fa-star"></i> Evaluar Sprint
-                            </button>
-                        <% } %>
-                    </div>
-
-                    <!-- Lista de Devoluciones/Actualizaciones -->
-                    <div class="devoluciones-list">
-                        <% if (sprint.devoluciones && sprint.devoluciones.length === 0) { %>
-                            <p style="color: var(--color-text-secondary); font-style: italic; margin-top: 10px;">No hay actualizaciones en este sprint.</p>
-                        <% } else if (sprint.devoluciones) { %>
-                            <% sprint.devoluciones.forEach(devolucion => { %>
-                                <div class="devolucion-item <%= devolucion.user_id === user.id ? 'devolucion-user' : 'devolucion-admin' %>">
-                                    <div class="devolucion-header">
-                                        <h3 class="devolucion-title"><%= devolucion.titulo %></h3>
-                                        <div class="devolucion-meta">
-                                            <span class="devolucion-user">
-                                                <i class="far fa-user"></i> <%= devolucion.user_username || 'Usuario eliminado' %>
-                                            </span>
-                                            <span><i class="far fa-clock"></i> <%= new Date(devolucion.fecha_creacion).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) %></span>
-                                        </div>
-                                    </div>
-
-                                    <div class="devolucion-desc">
-                                        <%= devolucion.descripcion %>
-                                    </div>
-
-                                    <% if (devolucion.fecha_limite || (user.role === 'admin' || user.id === devolucion.user_id)) { %>
-                                        <div class="devolucion-footer">
-                                            <% if (devolucion.fecha_limite && !sprint.cerrado) { %>
-                                                <span><i class="far fa-calendar-times"></i> Límite: <%= new Date(devolucion.fecha_limite).toLocaleDateString('es-ES') %></span>
-                                            <% } else { %>
-                                                <span></span>
-                                            <% } %>
-                                            <div class="devolucion-actions">
-                                                <% if (!sprint.cerrado && (user.role === 'admin' || user.id === devolucion.user_id)) { %>
-                                                    <button class="btn btn-primary btn-sm"
-                                                            onclick="openModal('editDevolucionModal', <%= JSON.stringify(devolucion) %>)">
-                                                        <i class="fas fa-edit"></i> Editar
-                                                    </button>
-                                                <% } %>
-
-                                                <% if (!sprint.cerrado && user.role === 'admin' && devolucion.user_id !== user.id) { %>
-                                                    <button class="btn btn-primary btn-sm"
-                                                            onclick="openModal('respondModal', <%= JSON.stringify(devolucion) %>)">
-                                                        <i class="fas fa-reply"></i> Responder
-                                                    </button>
-                                                <% } %>
-                                            </div>
-                                        </div>
+                                <td><i class="fas fa-chevron-right expand-icon"></i></td>
+                                <td style="font-weight: 500;"><%= sprint.nombre %></td>
+                                <td><%= sprint.asignado_a_username || 'N/A' %></td>
+                                <td>
+                                    <%= new Date(sprint.fecha_inicio).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) %> -
+                                    <%= new Date(sprint.fecha_fin).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                                </td>
+                                <td>
+                                    <% if (sprint.cerrado) { %>
+                                        <span class="sprint-status-indicator closed">
+                                            <i class="fas fa-lock"></i> Cerrado
+                                        </span>
+                                    <% } else { %>
+                                        <span class="sprint-status-indicator open">
+                                             <i class="fas fa-unlock"></i> En Progreso
+                                        </span>
                                     <% } %>
-                                </div>
-                            <% }); %>
-                        <% } %>
-                    </div>
-                </div>
-            <% }); %>
+                                </td>
+                                <td class="summary-progress-cell" id="summary-progress-<%= sprint.id %>">
+                                    <div class="summary-progress-bar">
+                                        <div class="summary-progress-fill" style="width: <%= sprint.progress %>%"></div>
+                                    </div>
+                                    <span class="summary-progress-text"><%= sprint.progress %>%</span>
+                                </td>
+                            </tr>
+                            <tr class="sprint-details-row" id="sprint-details-<%= sprint.id %>">
+                                <td colspan="6"> <%# Colspan = número de columnas TH %>
+                                    <div class="sprint-card-details" id="sprint-card-content-<%= sprint.id %>">
+                                         <%# Info adicional del Sprint que no está en la tabla %>
+                                         <div style="font-size: 0.85em; color: var(--color-text-secondary); margin-bottom: 15px;">
+                                              <span><i class="fas fa-user-shield"></i> Creado por: <strong><%= sprint.created_by_username || 'Admin' %></strong></span>
+                                         </div>
+
+                                        <% if (sprint.descripcion) { %>
+                                            <p class="sprint-desc"><strong>Descripción:</strong> <%= sprint.descripcion %></p>
+                                        <% } %>
+
+                                        <!-- Sección de Tareas y Progreso (Interna) -->
+                                        <div class="tasks-section">
+                                             <div class="tasks-header">
+                                                 <h4 class="tasks-title"><i class="fas fa-tasks"></i> Tareas del Sprint</h4>
+                                                 <% if (user.role === 'admin' && !sprint.cerrado) { %>
+                                                     <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openModal('addTaskModal', { sprintId: <%= sprint.id %> })"> <%# event.stopPropagation para no cerrar detalles %>
+                                                         <i class="fas fa-plus"></i> Añadir Tarea
+                                                     </button>
+                                                 <% } %>
+                                             </div>
+                                             <div class="task-progress-container" id="progress-sprint-<%= sprint.id %>">
+                                                 <div class="task-progress-info">
+                                                     <span>Progreso Detallado de Tareas</span>
+                                                     <span class="progress-text">
+                                                         <%= sprint.completed_tasks %> / <%= sprint.total_tasks %> completadas (<%= sprint.progress %>%)
+                                                     </span>
+                                                 </div>
+                                                 <div class="task-progress-bar">
+                                                     <div class="task-progress-fill" style="width: <%= sprint.progress %>%"></div>
+                                                 </div>
+                                             </div>
+                                             <div class="task-list" id="task-list-sprint-<%= sprint.id %>">
+                                                <% if (!sprint.tasks || sprint.tasks.length === 0) { %>
+                                                    <p class="no-tasks">No hay tareas asignadas a este sprint.</p>
+                                                <% } else { %>
+                                                    <% sprint.tasks.forEach(task => { %>
+                                                        <div class="task-item <%= task.is_completed ? 'completed' : '' %>" id="task-<%= task.id %>">
+                                                            <input
+                                                                type="checkbox"
+                                                                class="task-checkbox"
+                                                                id="task-check-<%= task.id %>"
+                                                                data-task-id="<%= task.id %>"
+                                                                data-sprint-id="<%= sprint.id %>"
+                                                                onchange="handleTaskStatusChange(this)"
+                                                                onclick="event.stopPropagation()" <%# Evita cerrar detalles al marcar %>
+                                                                <%= task.is_completed ? 'checked' : '' %>
+                                                                <%= (user.role !== 'admin' && user.id !== sprint.asignado_a) || sprint.cerrado ? 'disabled' : '' %>
+                                                            >
+                                                            <div class="task-content">
+                                                                <label for="task-check-<%= task.id %>" class="task-title-text"><%= task.title %></label>
+                                                                <% if (task.description) { %>
+                                                                    <p class="task-description"><%= task.description %></p>
+                                                                <% } %>
+                                                                <div class="task-meta">
+                                                                     <span><i class="far fa-user"></i> Creada por: <%= task.created_by_username || 'N/A' %></span>
+                                                                     <span><i class="far fa-clock"></i> <%= new Date(task.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric'}) %></span>
+                                                                     <% if (task.is_completed && task.completed_by_username) { %>
+                                                                         <span class="completion-info">
+                                                                            <i class="fas fa-check"></i> Completada por: <%= task.completed_by_username %>
+                                                                            <% if (task.completed_at) { %>
+                                                                                (<%= new Date(task.completed_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric'}) %>)
+                                                                            <% } %>
+                                                                        </span>
+                                                                     <% } %>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    <% }); %>
+                                                <% } %>
+                                             </div>
+                                        </div>
+                                        <!-- Fin Sección de Tareas -->
+
+                                        <!-- Evaluación del Admin (Interna) -->
+                                        <% if (sprint.cerrado && sprint.porcentaje_cumplimiento !== null) { %>
+                                            <div class="evaluaciones-container" style="background-color: var(--color-background-soft-accent);"> <%# Fondo distinto para admin %>
+                                                 <h4 class="evaluaciones-title" style="color: var(--color-primary);"><i class="fas fa-user-tie"></i> Evaluación del Administrador</h4>
+                                                  <div class="evaluacion-item" style="background-color: #fff;">
+                                                      <div class="progress-bar">
+                                                            <div class="progress-fill" style="width: <%= sprint.porcentaje_cumplimiento %>%; background-color: var(--color-primary);"></div>
+                                                        </div>
+                                                        <div class="progress-text">Cumplimiento (Admin): <%= sprint.porcentaje_cumplimiento %>%</div>
+                                                        <% if (sprint.comentarios_cierre) { %>
+                                                            <p class="evaluacion-comentario" style="border-left-color: var(--color-primary);"><%= sprint.comentarios_cierre %></p>
+                                                        <% } else { %>
+                                                            <p class="evaluacion-comentario" style="font-style: italic; color: var(--color-text-secondary);">Sin comentarios de cierre.</p>
+                                                        <% } %>
+                                                  </div>
+                                            </div>
+                                        <% } %>
+
+                                        <!-- Evaluaciones de Usuarios (Interna) -->
+                                        <% if (sprint.cerrado && sprint.evaluaciones_usuario && Object.keys(sprint.evaluaciones_usuario).length > 0) { %>
+                                             <div class="evaluaciones-container">
+                                                 <h4 class="evaluaciones-title">
+                                                     <i class="fas fa-users"></i> Evaluaciones del Equipo
+                                                 </h4>
+                                                 <div class="evaluaciones-usuarios">
+                                                     <% Object.entries(sprint.evaluaciones_usuario).forEach(([userId, evaluacion]) => { %>
+                                                         <div class="evaluacion-item">
+                                                             <div class="evaluacion-header">
+                                                                <span><strong><%= evaluacion.username %></strong></span>
+                                                                <span><%= new Date(evaluacion.fecha).toLocaleDateString('es-ES') %></span>
+                                                            </div>
+                                                            <div class="progress-bar">
+                                                                <div class="progress-fill" style="width: <%= evaluacion.porcentaje %>%"></div>
+                                                            </div>
+                                                            <div class="progress-text">Cumplimiento (Usuario): <%= evaluacion.porcentaje %>%</div>
+                                                            <% if (evaluacion.comentarios) { %>
+                                                                <p class="evaluacion-comentario"><%= evaluacion.comentarios %></p>
+                                                             <% } else { %>
+                                                                <p class="evaluacion-comentario" style="font-style: italic; color: var(--color-text-secondary);">Sin comentarios.</p>
+                                                             <% } %>
+                                                         </div>
+                                                     <% }); %>
+                                                 </div>
+                                             </div>
+                                        <% } %>
+
+                                         <!-- Lista de Devoluciones/Actualizaciones (Interna) -->
+                                        <div class="devoluciones-list">
+                                            <h4><i class="fas fa-history"></i> Historial de Actualizaciones</h4>
+                                             <% if (!sprint.devoluciones || sprint.devoluciones.length === 0) { %>
+                                                <p style="color: var(--color-text-secondary); font-style: italic; text-align: center; margin-top: 10px; padding: 10px;">No hay actualizaciones registradas en este sprint.</p>
+                                            <% } else if (sprint.devoluciones) { %>
+                                                <% sprint.devoluciones.sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion)).forEach(devolucion => { %> <%# Ordenar por fecha descendente %>
+                                                    <div class="devolucion-item <%= devolucion.user_id === user.id ? 'devolucion-user' : 'devolucion-admin' %>">
+                                                         <div class="devolucion-header">
+                                                            <h3 class="devolucion-title"><%= devolucion.titulo %></h3>
+                                                            <div class="devolucion-meta">
+                                                                <span class="devolucion-user">
+                                                                    <i class="far fa-user"></i> <%= devolucion.user_username || 'Usuario eliminado' %>
+                                                                </span>
+                                                                <span><i class="far fa-clock"></i> <%= new Date(devolucion.fecha_creacion).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) %></span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="devolucion-desc">
+                                                            <%- devolucion.descripcion.replace(/\n/g, '<br>') %> <%# Renderizar saltos de línea %>
+                                                        </div>
+                                                        <% if (devolucion.fecha_limite || (user.role === 'admin' || user.id === devolucion.user_id)) { %>
+                                                            <div class="devolucion-footer">
+                                                                <% if (devolucion.fecha_limite && !sprint.cerrado) { %>
+                                                                    <span><i class="far fa-calendar-times"></i> Límite: <strong><%= new Date(devolucion.fecha_limite).toLocaleDateString('es-ES') %></strong></span>
+                                                                <% } else { %>
+                                                                    <span></span> <%# Placeholder %>
+                                                                <% } %>
+                                                                <div class="devolucion-actions">
+                                                                    <% if (!sprint.cerrado && (user.role === 'admin' || user.id === devolucion.user_id)) { %>
+                                                                        <button class="btn btn-secondary btn-sm"
+                                                                                onclick="event.stopPropagation(); openModal('editDevolucionModal', <%= JSON.stringify(devolucion) %>)">
+                                                                            <i class="fas fa-edit"></i> Editar
+                                                                        </button>
+                                                                    <% } %>
+                                                                    <% if (!sprint.cerrado && user.role === 'admin' && devolucion.user_id !== user.id) { %>
+                                                                        <button class="btn btn-info btn-sm"
+                                                                                onclick="event.stopPropagation(); openModal('respondModal', <%= JSON.stringify(devolucion) %>)">
+                                                                            <i class="fas fa-reply"></i> Responder
+                                                                        </button>
+                                                                    <% } %>
+                                                                </div>
+                                                            </div>
+                                                        <% } %>
+                                                    </div>
+                                                <% }); %>
+                                            <% } %>
+                                        </div> <!-- Fin devoluciones-list -->
+
+                                        <!-- Botones de Acción Sprint (Internos) -->
+                                        <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--color-border-light); display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+                                            <% if (user.role === 'admin' && !sprint.cerrado) { %>
+                                                <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); openModal('closeSprintModal', { sprintId: <%= sprint.id %> })">
+                                                    <i class="fas fa-lock"></i> Cerrar Sprint
+                                                </button>
+                                            <% } %>
+                                            <% if (!sprint.cerrado && (user.role === 'admin' || user.id === sprint.asignado_a)) { %>
+                                                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openModal('devolucionModal', { sprintId: <%= sprint.id %> })">
+                                                    <i class="fas fa-comment-dots"></i> Agregar Actualización
+                                                </button>
+                                            <% } %>
+                                            <% if (sprint.cerrado && user.role !== 'admin' && (!sprint.evaluaciones_usuario || !sprint.evaluaciones_usuario[user.id])) { %>
+                                                <button class="btn btn-success btn-sm" onclick="event.stopPropagation(); openModal('evaluarSprintModal', { sprintId: <%= sprint.id %> })">
+                                                    <i class="fas fa-star"></i> Evaluar Sprint
+                                                </button>
+                                            <% } %>
+                                        </div>
+
+                                    </div> <%# Fin sprint-card-details %>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
         <% } %>
-    </div>
+    </div> <!-- Fin container -->
 
     <!-- ====================================== -->
     <!--                 MODALES                -->
@@ -896,7 +1013,9 @@
                     <select class="form-control" id="sprintAsignado" name="asignado_a" required>
                         <option value="" disabled selected>Seleccionar usuario...</option>
                         <% users.forEach(user => { %>
-                            <option value="<%= user.id %>"><%= user.username %> (<%= user.role %>)</option>
+                            <% if (user.role !== 'admin') { %> <%# Opcional: No asignar a otros admins %>
+                                <option value="<%= user.id %>"><%= user.username %></option>
+                            <% } %>
                         <% }); %>
                     </select>
                 </div>
@@ -948,7 +1067,7 @@
 
     <!-- Modal para editar devolución/actualización -->
     <div class="modal" id="editDevolucionModal">
-        <div class="modal-content">
+         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">Editar Actualización</h3>
                 <button class="close-modal" onclick="closeModal('editDevolucionModal')">×</button>
@@ -986,8 +1105,14 @@
             <form id="respondForm" action="/devoluciones" method="POST">
                 <input type="hidden" id="respondSprintId" name="sprint_id">
                 <div class="form-group">
-                    <label class="form-label" for="respondTitulo">Título</label>
+                    <label class="form-label" for="respondTitulo">Título de la Respuesta</label>
                     <input type="text" class="form-control" id="respondTitulo" name="titulo" value="Re: " required>
+                </div>
+                 <div class="form-group">
+                    <label class="form-label">Actualización Original:</label>
+                    <blockquote id="originalDevolucionText" style="font-size: 0.9em; background: #eee; padding: 10px; border-left: 3px solid #ccc; margin: 0 0 15px 0; max-height: 100px; overflow-y: auto;">
+                        <!-- Se llenará con JS -->
+                    </blockquote>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="respondDescripcion">Respuesta</label>
@@ -1005,15 +1130,16 @@
     <!-- Modal para cerrar sprint (solo admin) -->
     <% if (user.role === 'admin') { %>
     <div class="modal" id="closeSprintModal">
-        <div class="modal-content">
+         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">Cerrar Sprint</h3>
                 <button class="close-modal" onclick="closeModal('closeSprintModal')">×</button>
             </div>
             <form id="closeSprintForm" onsubmit="event.preventDefault(); submitCloseSprint();">
                 <input type="hidden" name="sprint_id" id="closeSprintId">
+                 <p style="margin-bottom: 15px; font-size: 0.95em; color: var(--color-text-secondary);">Evalúa el cumplimiento general del sprint y añade comentarios finales.</p>
                 <div class="form-group">
-                    <label class="form-label" for="sprintPorcentaje">Porcentaje de Cumplimiento (0-100)</label>
+                    <label class="form-label" for="sprintPorcentaje">Porcentaje de Cumplimiento (Admin: 0-100)</label>
                     <input type="number" class="form-control" id="sprintPorcentaje" name="porcentaje_cumplimiento" min="0" max="100" required>
                 </div>
                 <div class="form-group">
@@ -1022,7 +1148,7 @@
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('closeSprintModal')">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Confirmar Cierre</button>
+                    <button type="submit" class="btn btn-danger">Confirmar Cierre</button> <%# Botón rojo para confirmar cierre %>
                 </div>
             </form>
         </div>
@@ -1038,8 +1164,9 @@
             </div>
             <form id="evaluarSprintForm" onsubmit="event.preventDefault(); submitEvaluarSprint();">
                 <input type="hidden" name="sprint_id" id="evaluarSprintId">
+                 <p style="margin-bottom: 15px; font-size: 0.95em; color: var(--color-text-secondary);">Indica tu percepción sobre el cumplimiento del sprint.</p>
                 <div class="form-group">
-                    <label class="form-label" for="evaluacionPorcentaje">Porcentaje de Cumplimiento (0-100)</label>
+                    <label class="form-label" for="evaluacionPorcentaje">Tu Porcentaje de Cumplimiento (0-100)</label>
                     <input type="number" class="form-control" id="evaluacionPorcentaje" name="porcentaje" min="0" max="100" required>
                 </div>
                 <div class="form-group">
@@ -1048,11 +1175,39 @@
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('evaluarSprintModal')">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Enviar Evaluación</button>
+                    <button type="submit" class="btn btn-success">Enviar Evaluación</button> <%# Botón verde para enviar evaluación %>
                 </div>
             </form>
         </div>
     </div>
+
+    <!-- Modal para añadir Tarea (solo admin) -->
+    <% if (user.role === 'admin') { %>
+    <div class="modal" id="addTaskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Añadir Tarea al Sprint</h3>
+                <button class="close-modal" onclick="closeModal('addTaskModal')">×</button>
+            </div>
+            <form id="addTaskForm" onsubmit="event.preventDefault(); submitAddTask();">
+                <input type="hidden" name="sprint_id" id="addTaskSprintId">
+                <div class="form-group">
+                    <label class="form-label" for="taskTitle">Título de la Tarea</label>
+                    <input type="text" class="form-control" id="taskTitle" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="taskDescription">Descripción (Opcional)</label>
+                    <textarea class="form-control" id="taskDescription" name="description" rows="4"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addTaskModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Tarea</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <% } %>
+
 
     <!-- ====================================== -->
     <!--               SCRIPTS                  -->
@@ -1063,67 +1218,156 @@
             const modal = document.getElementById(modalId);
             if (!modal) return;
 
+            // Limpiar formularios antes de llenarlos (excepto edit/respond que se sobreescriben)
+            if (modalId === 'sprintModal' || modalId === 'devolucionModal' || modalId === 'addTaskModal' || modalId === 'closeSprintModal' || modalId === 'evaluarSprintModal') {
+                 const form = modal.querySelector('form');
+                 if (form) form.reset();
+            }
+
+
             if (data) {
                 try {
                     if (modalId === 'devolucionModal') {
                         modal.querySelector('#devolucionSprintId').value = data.sprintId;
-                        modal.querySelector('#devolucionForm').reset();
                     } else if (modalId === 'editDevolucionModal') {
                         modal.querySelector('#editDevolucionId').value = data.id;
                         modal.querySelector('#editDevolucionTitulo').value = data.titulo;
                         modal.querySelector('#editDevolucionDescripcion').value = data.descripcion;
                         const fechaLimiteInput = modal.querySelector('#editDevolucionFechaLimite');
-                        if (data.fecha_limite) {
-                            fechaLimiteInput.value = new Date(data.fecha_limite).toISOString().split('T')[0];
-                        } else {
-                            fechaLimiteInput.value = '';
-                        }
+                        fechaLimiteInput.value = data.fecha_limite ? new Date(data.fecha_limite).toISOString().split('T')[0] : '';
                     } else if (modalId === 'respondModal') {
                          modal.querySelector('#respondSprintId').value = data.sprint_id;
                          modal.querySelector('#respondTitulo').value = `Re: ${data.titulo}`;
-                         modal.querySelector('#respondForm').reset();
-                         modal.querySelector('#respondTitulo').value = `Re: ${data.titulo}`;
+                         // Mostrar texto original
+                         const originalTextEl = modal.querySelector('#originalDevolucionText');
+                         if(originalTextEl) originalTextEl.textContent = data.descripcion;
+                         modal.querySelector('#respondDescripcion').value = ''; // Limpiar textarea respuesta
                     } else if (modalId === 'closeSprintModal') {
                         modal.querySelector('#closeSprintId').value = data.sprintId;
-                        modal.querySelector('#closeSprintForm').reset();
-                         modal.querySelector('#closeSprintId').value = data.sprintId;
                     } else if (modalId === 'evaluarSprintModal') {
                         modal.querySelector('#evaluarSprintId').value = data.sprintId;
-                        modal.querySelector('#evaluarSprintForm').reset();
+                    } else if (modalId === 'addTaskModal') {
+                         modal.querySelector('#addTaskSprintId').value = data.sprintId;
                     }
                 } catch (error) {
-                    console.error("Error populating modal data:", error);
+                    console.error(`Error populating modal data for ${modalId}:`, error, data);
+                    showFlashMessage('error', `Error al preparar el formulario. Revisa la consola.`);
                 }
             }
 
             modal.classList.add('show');
-            modal.style.display = 'flex';
+            // Forzar reflow para asegurar que la transición se aplica
+            // void modal.offsetWidth; // Comentado si no es estrictamente necesario
+            modal.style.display = 'flex'; // Ya aplicado en CSS con .show
         }
 
         function closeModal(modalId) {
             const modal = document.getElementById(modalId);
-             if (!modal) return;
+            if (!modal) return;
             modal.classList.remove('show');
-            modal.style.display = 'none';
+            // Retrasar el display none para la transición CSS
+            setTimeout(() => {
+                // Verificar si aún no tiene 'show' antes de ocultar
+                if (!modal.classList.contains('show')) {
+                    modal.style.display = 'none';
+                }
+            }, 300); // Coincide con la duración de transición CSS
         }
 
+        // Cerrar modal al hacer clic fuera o presionar Escape
         window.addEventListener('click', function(event) {
-            if (event.target.classList.contains('modal')) {
+            if (event.target.classList.contains('modal') && event.target.classList.contains('show')) {
                  closeModal(event.target.id);
             }
         });
-
         window.addEventListener('keydown', function(event) {
              if (event.key === 'Escape') {
                  document.querySelectorAll('.modal.show').forEach(modal => closeModal(modal.id));
              }
          });
 
-        // --- Funciones AJAX ---
+        // --- Función para expandir/colapsar detalles del sprint ---
+        function toggleSprintDetails(sprintId) {
+            const summaryRow = document.querySelector(`tr.sprint-summary-row[data-sprint-id="${sprintId}"]`);
+            const detailsRow = document.getElementById(`sprint-details-${sprintId}`);
 
+            if (!summaryRow || !detailsRow) return;
+
+            const isOpening = detailsRow.style.display === 'none' || detailsRow.style.display === '';
+
+            // Opcional: Cerrar otros detalles abiertos para tener solo uno abierto
+            if (isOpening) {
+                document.querySelectorAll('.sprint-details-row').forEach(row => {
+                    if (row.id !== `sprint-details-${sprintId}` && row.style.display !== 'none') {
+                        row.style.display = 'none';
+                        const otherSummary = row.previousElementSibling;
+                        if (otherSummary && otherSummary.classList.contains('sprint-summary-row')) {
+                            otherSummary.classList.remove('active');
+                        }
+                    }
+                });
+            }
+
+            // Alternar la fila actual
+            detailsRow.style.display = isOpening ? 'table-row' : 'none';
+            summaryRow.classList.toggle('active', isOpening);
+        }
+
+
+        // --- Funciones AJAX (Sin cambios en endpoints, recarga como estrategia principal) ---
+
+        // Helper para manejar respuestas Fetch
+        function handleResponse(response) {
+             return response.json().then(data => {
+                 if (!response.ok) {
+                     const error = new Error(data.error || data.message || `Error ${response.status}: ${response.statusText}`);
+                     error.response = response;
+                     error.data = data;
+                     throw error;
+                 }
+                 // Manejar caso donde ok=true pero el backend indica fallo
+                 if (data.success === false) {
+                      const error = new Error(data.error || data.message || 'Operación fallida según el servidor.');
+                      error.data = data;
+                      throw error;
+                 }
+                 return data;
+             });
+         }
+
+        // Helper para mostrar mensajes flash simulados
+        function showFlashMessage(type, message) {
+            const container = document.querySelector('.container');
+            if (!container) return;
+
+            const existingAlert = container.querySelector(`.alert.js-flash`); // Buscar solo JS flashes
+            if (existingAlert) existingAlert.remove();
+
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} js-flash`;
+            alertDiv.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+            alertDiv.style.marginTop = '15px';
+            alertDiv.style.opacity = '0'; // Start hidden for fade-in
+
+             const pageHeader = container.querySelector('.page-header');
+             container.insertBefore(alertDiv, pageHeader ? pageHeader.nextSibling : container.firstChild);
+
+             // Fade-in
+             setTimeout(() => { alertDiv.style.opacity = '1'; }, 50);
+
+            // Auto-eliminar
+            setTimeout(() => {
+                alertDiv.style.opacity = '0';
+                setTimeout(() => alertDiv.remove(), 500);
+            }, 5000);
+        }
+
+        // Editar Devolución
         function saveDevolucionChanges() {
             const form = document.getElementById('editDevolucionForm');
             const devolucionId = form.querySelector('#editDevolucionId').value;
+            const sprintRow = document.querySelector(`#sprint-details-${devolucionId}`).closest('.sprint-details-row').previousElementSibling;
+            const sprintId = sprintRow ? sprintRow.dataset.sprintId : null; // Necesitamos el sprintId para anclar
             const formData = {
                 titulo: form.querySelector('#editDevolucionTitulo').value,
                 descripcion: form.querySelector('#editDevolucionDescripcion').value,
@@ -1132,160 +1376,286 @@
 
             fetch(`/devoluciones/${devolucionId}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw new Error(err.message || 'Error en el servidor'); });
-                }
-                return response.json();
-            })
+            .then(handleResponse)
             .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert(data.message || 'Error al guardar los cambios');
-                }
+                showFlashMessage('success', 'Actualización guardada correctamente.');
+                closeModal('editDevolucionModal');
+                // Recargar para ver cambio. Anclar a la sección del sprint.
+                window.location.href = window.location.pathname + window.location.search + (sprintId ? `#sprint-details-${sprintId}` : '');
+                // Forzar recarga si el hash no cambia (ya estaba abierto)
+                setTimeout(() => window.location.reload(), 50);
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('Error al guardar los cambios: ' + error.message);
+                console.error('Error al guardar cambios de devolución:', error);
+                showFlashMessage('error', `Error al guardar: ${error.message || 'Error desconocido'}`);
             });
         }
 
+        // Cerrar Sprint
         function submitCloseSprint() {
             const form = document.getElementById('closeSprintForm');
             const sprintId = form.querySelector('#closeSprintId').value;
             const porcentaje = form.querySelector('#sprintPorcentaje').value;
             const comentarios = form.querySelector('#sprintComentarios').value;
 
-            if (porcentaje === '' || porcentaje < 0 || porcentaje > 100) {
-                alert('El porcentaje de cumplimiento debe estar entre 0 y 100.');
+            if (porcentaje === '' || isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+                showFlashMessage('error', 'El porcentaje de cumplimiento debe ser un número entre 0 y 100.');
                 return;
             }
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cerrando...';
+
 
             fetch(`/sprints/${sprintId}/cerrar`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    porcentaje_cumplimiento: porcentaje,
+                    porcentaje_cumplimiento: parseInt(porcentaje),
                     comentarios_cierre: comentarios
                 })
             })
-            .then(response => {
-                 if (!response.ok) {
-                    return response.json().then(err => { throw new Error(err.error || 'Error en la respuesta del servidor'); });
-                 }
-                 return response.json();
-             })
+            .then(handleResponse)
             .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert(data.error || 'Error al cerrar el sprint');
-                }
+                 showFlashMessage('success', 'Sprint cerrado correctamente.');
+                 closeModal('closeSprintModal');
+                 window.location.href = window.location.pathname + window.location.search + `#sprint-details-${sprintId}`;
+                 setTimeout(() => window.location.reload(), 50);
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('Error al cerrar el sprint: ' + error.message);
+                 console.error('Error al cerrar sprint:', error);
+                 showFlashMessage('error', `Error al cerrar: ${error.message || 'Error desconocido'}`);
+                  submitButton.disabled = false;
+                  submitButton.innerHTML = 'Confirmar Cierre';
             });
         }
 
+        // Evaluar Sprint (Usuario)
         function submitEvaluarSprint() {
             const form = document.getElementById('evaluarSprintForm');
             const sprintId = form.querySelector('#evaluarSprintId').value;
             const porcentaje = form.querySelector('#evaluacionPorcentaje').value;
             const comentarios = form.querySelector('#evaluacionComentarios').value;
 
-            if (porcentaje === '' || porcentaje < 0 || porcentaje > 100) {
-                alert('El porcentaje de cumplimiento debe estar entre 0 y 100.');
+            if (porcentaje === '' || isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
+                showFlashMessage('error', 'El porcentaje de cumplimiento debe ser un número entre 0 y 100.');
                 return;
             }
+             const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
             fetch(`/sprints/${sprintId}/evaluar`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    porcentaje: porcentaje,
+                    porcentaje: parseInt(porcentaje),
                     comentarios: comentarios
                 })
             })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw new Error(err.error || 'Error en la respuesta del servidor'); });
-                }
-                return response.json();
-            })
+            .then(handleResponse)
             .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert(data.error || 'Error al enviar la evaluación');
-                }
+                showFlashMessage('success', 'Evaluación enviada correctamente.');
+                closeModal('evaluarSprintModal');
+                window.location.href = window.location.pathname + window.location.search + `#sprint-details-${sprintId}`;
+                setTimeout(() => window.location.reload(), 50);
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('Error al enviar la evaluación: ' + error.message);
+                 console.error('Error al enviar evaluación:', error);
+                 showFlashMessage('error', `Error al evaluar: ${error.message || 'Error desconocido'}`);
+                  submitButton.disabled = false;
+                  submitButton.innerHTML = 'Enviar Evaluación';
             });
+        }
+
+        // --- AJAX y UI para Tareas ---
+
+        // Cambiar estado de una tarea (Actualiza UI dinámicamente)
+        function handleTaskStatusChange(checkbox) {
+            const taskId = checkbox.dataset.taskId;
+            const sprintId = checkbox.dataset.sprintId;
+            const isCompleted = checkbox.checked;
+
+            checkbox.disabled = true; // Evitar clics múltiples
+
+            fetch(`/sprints/${sprintId}/tasks/${taskId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_completed: isCompleted })
+            })
+            .then(handleResponse)
+            .then(data => {
+                 // Asumiendo que la respuesta es: { success: true, task: {...}, sprint_progress: { progress: %, completed_tasks: X, total_tasks: Y } }
+                 updateTaskUI(taskId, data.task);
+                 updateSprintProgressUI(sprintId, data.sprint_progress);
+                 checkbox.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error updating task status:', error);
+                showFlashMessage('error', `Error al actualizar tarea: ${error.message || 'Error desconocido'}`);
+                // Revertir estado visual del checkbox en caso de error
+                checkbox.checked = !isCompleted;
+                checkbox.disabled = false;
+            });
+        }
+
+        // Crear una nueva tarea (Recarga para simplicidad)
+        function submitAddTask() {
+            const form = document.getElementById('addTaskForm');
+            const sprintId = form.querySelector('#addTaskSprintId').value;
+            const title = form.querySelector('#taskTitle').value;
+            const description = form.querySelector('#taskDescription').value;
+
+            if (!title.trim()) {
+                showFlashMessage('error', 'El título de la tarea es obligatorio.');
+                return;
+            }
+
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+            fetch(`/sprints/${sprintId}/tasks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: title, description: description })
+            })
+            .then(handleResponse)
+            .then(data => {
+                showFlashMessage('success', 'Tarea creada correctamente.');
+                closeModal('addTaskModal');
+                window.location.href = window.location.pathname + window.location.search + `#sprint-details-${sprintId}`;
+                setTimeout(() => window.location.reload(), 50);
+            })
+            .catch(error => {
+                console.error('Error creating task:', error);
+                showFlashMessage('error', `Error al crear tarea: ${error.message || 'Error desconocido'}`);
+            })
+            .finally(() => {
+                 submitButton.disabled = false;
+                 submitButton.innerHTML = 'Guardar Tarea';
+            });
+        }
+
+        // --- Helpers para actualizar UI dinámicamente (Tareas y Progreso) ---
+        function updateTaskUI(taskId, updatedTask) {
+            const taskElement = document.getElementById(`task-${taskId}`);
+            if (!taskElement) return;
+
+            taskElement.classList.toggle('completed', updatedTask.is_completed);
+
+            const checkbox = taskElement.querySelector(`#task-check-${taskId}`);
+            if (checkbox) checkbox.checked = updatedTask.is_completed;
+
+            const titleLabel = taskElement.querySelector('.task-title-text');
+            if (titleLabel) titleLabel.style.textDecoration = updatedTask.is_completed ? 'line-through' : 'none';
+
+            // Actualizar meta info (completado por/cuándo)
+            const metaDiv = taskElement.querySelector('.task-meta');
+             if (metaDiv) {
+                 let completionSpan = metaDiv.querySelector('.completion-info');
+                 if (updatedTask.is_completed && updatedTask.completed_by_username) {
+                     if (!completionSpan) {
+                         completionSpan = document.createElement('span');
+                         completionSpan.classList.add('completion-info');
+                         metaDiv.appendChild(completionSpan);
+                     }
+                     let completionText = `<i class="fas fa-check"></i> Completada por: ${updatedTask.completed_by_username}`;
+                     if (updatedTask.completed_at) {
+                         completionText += ` (${new Date(updatedTask.completed_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })})`;
+                     }
+                     completionSpan.innerHTML = completionText;
+                 } else if (completionSpan) {
+                     completionSpan.remove(); // Eliminar si la tarea se desmarca
+                 }
+             }
+        }
+
+        function updateSprintProgressUI(sprintId, progressData) {
+            if (!progressData) return; // Si no viene info de progreso
+
+            const progressPercent = progressData.progress !== undefined ? progressData.progress : 0;
+            const completedTasks = progressData.completed_tasks !== undefined ? progressData.completed_tasks : '?';
+            const totalTasks = progressData.total_tasks !== undefined ? progressData.total_tasks : '?';
+
+             // 1. Actualizar progreso en la fila de RESUMEN de la tabla
+             const summaryProgressCell = document.getElementById(`summary-progress-${sprintId}`);
+             if (summaryProgressCell) {
+                  const progressBarFill = summaryProgressCell.querySelector('.summary-progress-fill');
+                  const progressText = summaryProgressCell.querySelector('.summary-progress-text');
+                  if (progressBarFill) progressBarFill.style.width = `${progressPercent}%`;
+                  if (progressText) progressText.textContent = `${progressPercent}%`;
+             }
+
+            // 2. Actualizar progreso en la sección de DETALLES
+            const detailsProgressContainer = document.getElementById(`progress-sprint-${sprintId}`);
+            if (detailsProgressContainer) {
+                const detailsProgressBarFill = detailsProgressContainer.querySelector('.task-progress-fill');
+                const detailsProgressText = detailsProgressContainer.querySelector('.progress-text'); // El span dentro de task-progress-info
+                if (detailsProgressBarFill) detailsProgressBarFill.style.width = `${progressPercent}%`;
+                if (detailsProgressText) detailsProgressText.textContent = `${completedTasks} / ${totalTasks} completadas (${progressPercent}%)`;
+            }
         }
 
         // --- Lógica de Inicialización y Filtros ---
         document.addEventListener('DOMContentLoaded', function() {
-            const today = new Date().toISOString().split('T')[0];
-
-            const dateInputs = document.querySelectorAll('.modal input[type="date"]');
-            dateInputs.forEach(input => {
-                // Permitir fechas pasadas para edición/visualización si es necesario
-                // input.min = today;
-            });
-
+            // Validaciones de fechas en modales (Nuevo Sprint)
             const sprintInicio = document.getElementById('sprintInicio');
             const sprintFin = document.getElementById('sprintFin');
-            if(sprintInicio && sprintFin) {
+            if (sprintInicio && sprintFin) {
                  sprintInicio.addEventListener('change', function() {
-                     if (this.value) {
-                         sprintFin.min = this.value;
-                     } else {
-                          sprintFin.min = null;
-                     }
+                     sprintFin.min = this.value || '';
+                     if (sprintFin.value && sprintFin.value < this.value) sprintFin.value = '';
                  });
-                 if (sprintInicio.value && sprintFin.value && sprintFin.value < sprintInicio.value) {
-                     sprintFin.value = sprintInicio.value;
-                 }
+                 if (sprintInicio.value) sprintFin.min = sprintInicio.value;
             }
+            // Validaciones de fechas en modal (Nueva/Editar Devolución) - Opcional
+            // const devFechaLimite = document.getElementById('devolucionFechaLimite'); // y editDev...
+            // if(devFechaLimite) devFechaLimite.min = new Date().toISOString().split('T')[0]; // Ejemplo: no permitir fechas pasadas
 
+            // Validaciones de fechas en filtros
             const filtroFechaInicio = document.getElementById('filtroFechaInicio');
             const filtroFechaFin = document.getElementById('filtroFechaFin');
             if (filtroFechaInicio && filtroFechaFin) {
                 filtroFechaInicio.addEventListener('change', function() {
-                     if (this.value) {
-                         filtroFechaFin.min = this.value;
-                          if (filtroFechaFin.value && filtroFechaFin.value < this.value) {
-                             filtroFechaFin.value = '';
-                          }
-                     } else {
-                         filtroFechaFin.min = null;
-                     }
+                     filtroFechaFin.min = this.value || '';
+                     if (filtroFechaFin.value && filtroFechaFin.value < this.value) filtroFechaFin.value = '';
                 });
-                 if (filtroFechaInicio.value) {
-                     filtroFechaFin.min = filtroFechaInicio.value;
-                 }
+                 if (filtroFechaInicio.value) filtroFechaFin.min = filtroFechaInicio.value;
             }
+
+             // Remover mensajes flash del servidor después de unos segundos
+             const serverAlerts = document.querySelectorAll('.alert.js-server-flash');
+             serverAlerts.forEach(alertDiv => {
+                 setTimeout(() => {
+                     alertDiv.style.opacity = '0';
+                     setTimeout(() => alertDiv.remove(), 500);
+                 }, 7000); // Más tiempo para mensajes del servidor
+             });
+
+             // Abrir detalle si la URL tiene un hash #sprint-details-ID
+             if (window.location.hash && window.location.hash.startsWith('#sprint-details-')) {
+                 const sprintId = window.location.hash.substring('#sprint-details-'.length);
+                 const summaryRow = document.querySelector(`tr.sprint-summary-row[data-sprint-id="${sprintId}"]`);
+                 if (summaryRow) {
+                     toggleSprintDetails(sprintId);
+                     // Opcional: Scroll hacia el elemento
+                     setTimeout(() => summaryRow.scrollIntoView({ behavior: 'smooth', block: 'center' }), 350);
+                 }
+             }
         });
 
+        // Limpiar filtros
         function resetFilters() {
-            window.location.href = '/sprints';
+            // Redirige a la URL base sin query params, manteniendo el path
+            window.location.href = window.location.pathname;
         }
 
     </script>
-        <script defer src="/static/js/navbar.js"></script>
+    <script defer src="/static/js/navbar.js"></script> <%# Asumiendo que este maneja la navbar %>
 
 </body>
 </html>
