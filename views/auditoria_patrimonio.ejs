@@ -108,7 +108,8 @@
                             <th>Dispositivo</th>
                             <th>Vendedor</th>
                             <th>Autentificator</th>
-                            <th>2FA</th>
+                            <th>Verif.?</th>
+                           
                             <th>Número SIM</th>
                             <th>Duración Núm.</th>
                             <th>Correo</th>
@@ -116,7 +117,6 @@
                             <th>Cód. Respaldo</th>
                             <th>Link</th>
                             <th>Link Original</th>
-                            <th>Verif.?</th>
                             <th>Últ. Carga Cel.</th>
                             <th>Acciones</th>
                         </tr>
@@ -137,7 +137,8 @@
                                         <td><%= cuenta.dispositivo || '-' %></td>
                                         <td><%= cuenta.vendedor || '-' %></td>
                                         <td><%= cuenta.autentificador_cuenta || '-' %></td>
-                                        <td><%= cuenta.autentificador || '-' %></td>
+                                        
+                                        <td class="text-center filter-verificacion"><%- cuenta.verificacion ? '<i class="fas fa-check-circle text-success" title="Verificada"></i>' : '<i class="fas fa-times-circle text-danger" title="No Verificada"></i>' %></td>
                                         <td class="celular-col"><%= cuenta.celular || '-' %></td>
                                         <td><%= cuenta.duracion_numero || '-' %></td>
                                         <td><%= cuenta.correo || '-' %></td>
@@ -147,7 +148,6 @@
                                         <td class="codigos-col" title="<%= cuenta.codigos_respaldo ? 'Códigos registrados' : 'Sin códigos' %>"><%= cuenta.codigos_respaldo ? 'Registrados' : '-' %></td>
                                         <td class="link-col"><%= cuenta.link ? '<a href="' + cuenta.link + '" target="_blank" title="Abrir perfil"><i class="fas fa-external-link-alt"></i></a>' : '-' %></td>
                                         <td><%= cuenta.link_original || '-' %></td>
-                                        <td class="text-center filter-verificacion"><%- cuenta.verificacion ? '<i class="fas fa-check-circle text-success" title="Verificada"></i>' : '<i class="fas fa-times-circle text-danger" title="No Verificada"></i>' %></td>
                                         <td><%= cuenta.ultima_carga_celular ? new Date(cuenta.ultima_carga_celular).toLocaleDateString('es-ES') : '-' %></td>
                                         <td class="actions-col">
                                             <button class="btn btn-sm btn-warning" onclick="openPatrimonioModal('<%= cuenta.id %>')" title="Editar"><i class="fas fa-edit"></i></button>
