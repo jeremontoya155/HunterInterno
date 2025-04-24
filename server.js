@@ -697,70 +697,66 @@ const vendedoresParaVista = vendedores.map(vendedor => {
     }
     });
 
-   // --- POST /vendedores/desempeno (Endpoint modificado para acumular valores) ---
-   app.post('/vendedores/desempeno', isAuthenticated, async (req, res) => {
-    const { vendedor_id, fecha, desempeno } = req.body;
-
-    if (!vendedor_id || !fecha || !Array.isArray(desempeno) || desempeno.length === 0) {
-        return res.status(400).json({ success: false, message: 'Datos incompletos.' });
-    }
-
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-
-        for (const item of desempeno) {
-            const cuenta = item.cuenta?.trim().toLowerCase();
-            const nuevosMensajes = parseInt(item.mensajes, 10) || 0;
-            const nuevasRespuestas = parseInt(item.respuestas, 10) || 0;
-            const nuevosMensajesManuales = parseInt(item.mensajes_manuales, 10) || 0;
-
-            if (!cuenta) continue;
-
-            // Opción 1: La forma más segura - Usar UPDATE directamente
-            const updateQuery = `
-                INSERT INTO vendedor_desempeno_diario (
-                    vendedor_id, fecha, insta_username, 
-                    mensajes_enviados, respuestas_recibidas, mensajes_manuales
-                ) 
-                VALUES ($1, $2, $3, $4, $5, $6)
-                ON CONFLICT (vendedor_id, fecha, insta_username) 
-                DO UPDATE SET
-                    mensajes_enviados = vendedor_desempeno_diario.mensajes_enviados + EXCLUDED.mensajes_enviados,
-                    respuestas_recibidas = vendedor_desempeno_diario.respuestas_recibidas + EXCLUDED.respuestas_recibidas,
-                    mensajes_manuales = vendedor_desempeno_diario.mensajes_manuales + EXCLUDED.mensajes_manuales,
-                    updated_at = CURRENT_TIMESTAMP
-                RETURNING *;
-            `;
-
-            await client.query(updateQuery, [
-                vendedor_id, 
-                fecha, 
-                cuenta, 
-                nuevosMensajes, 
-                nuevasRespuestas, 
-                nuevosMensajesManuales
-            ]);
+    app.post('/vendedores/desempeno', isAuthenticated, async (req, res) => {
+        const { vendedor_id, fecha, desempeno } = req.body;
+    
+        if (!vendedor_id || !fecha || !Array.isArray(desempeno) || desempeno.length === 0) {
+            return res.status(400).json({ success: false, message: 'Datos incompletos.' });
         }
-
-        await client.query('COMMIT');
-        res.json({ 
-            success: true, 
-            message: 'Desempeño registrado correctamente. Los valores se han acumulado.' 
-        });
-
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error("Error en POST /vendedores/desempeno:", error);
-        res.status(500).json({ 
-            success: false, 
-            message: `Error al registrar desempeño: ${error.message}` 
-        });
-    } finally {
-        client.release();
-    }
-});
-
+    
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+    
+            // Bloqueo preventivo para evitar duplicados durante la transacción
+            await client.query('SELECT pg_advisory_xact_lock($1)', [vendedor_id]);
+    
+            for (const item of desempeno) {
+                const cuenta = item.cuenta?.trim().toLowerCase();
+                if (!cuenta) continue;
+    
+                const query = `
+                    INSERT INTO vendedor_desempeno_diario (
+                        vendedor_id, fecha, insta_username,
+                        mensajes_enviados, respuestas_recibidas, mensajes_manuales
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    ON CONFLICT (vendedor_id, fecha, insta_username)
+                    DO UPDATE SET
+                        mensajes_enviados = EXCLUDED.mensajes_enviados,
+                        respuestas_recibidas = EXCLUDED.respuestas_recibidas,
+                        mensajes_manuales = EXCLUDED.mensajes_manuales,
+                        updated_at = CURRENT_TIMESTAMP
+                    RETURNING *;
+                `;
+    
+                await client.query(query, [
+                    vendedor_id,
+                    fecha,
+                    cuenta,
+                    parseInt(item.mensajes, 10) || 0,
+                    parseInt(item.respuestas, 10) || 0,
+                    parseInt(item.mensajes_manuales, 10) || 0
+                ]);
+            }
+    
+            await client.query('COMMIT');
+            res.json({ 
+                success: true, 
+                message: 'Registros actualizados correctamente (sobrescritura completa).' 
+            });
+    
+        } catch (error) {
+            await client.query('ROLLBACK');
+            console.error("Error en POST /vendedores/desempeno:", error);
+            res.status(500).json({ 
+                success: false, 
+                message: `Error al actualizar desempeño: ${error.message}` 
+            });
+        } finally {
+            client.release();
+        }
+    });
     // --- NUEVO: GET /vendedores/:id/historial ---
     app.get('/vendedores/:id/historial', isAuthenticated, async (req, res) => {
     const vendedorId = req.params.id;
