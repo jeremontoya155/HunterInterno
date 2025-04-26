@@ -375,254 +375,284 @@ app.patch('/auditoria/patrimonio/archivar', isAuthenticated, async (req, res) =>
 
 
     // --- GET /vendedores (COMPLETO Y CORREGIDO) ---
-    app.get('/vendedores', isAuthenticated, async (req, res) => {
-        // Define fechas por defecto para el dashboard inicial (ej: último mes)
-        const defaultEndDate = new Date();
-        const defaultStartDate = new Date();
-        defaultStartDate.setDate(defaultEndDate.getDate() - 29); // 30 días incluyendo hoy
-        const initialStartDate = defaultStartDate.toISOString().slice(0, 10);
-        const initialEndDate = defaultEndDate.toISOString().slice(0, 10);
-        const hoy = new Date().toISOString().slice(0, 10); // Definir 'hoy' aquí
-    
-        let client; // Definir cliente Mongo fuera del try/finally para cerrarlo siempre
-    
+  // Asume que tienes configurado tu pool de PostgreSQL y MongoClient si usas MongoDB
+// const pool = require('./db'); // O tu forma de importar el pool
+// const { MongoClient } = require('mongodb'); // Si usas MongoDB
+// const { mongoUri, mongoDbName } = require('./config'); // Tus configuraciones
+// const { isAuthenticated } = require('./middleware/auth'); // Tu middleware de autenticación
+// const { getDashboardData } = require('./utils/dashboardUtils'); // Tu función para obtener datos del dashboard
+
+// --- GET /vendedores (COMPLETO Y ACTUALIZADO) ---
+app.get('/vendedores', isAuthenticated, async (req, res) => {
+    // Define fechas por defecto para el dashboard inicial (ej: último mes)
+    const defaultEndDate = new Date();
+    const defaultStartDate = new Date();
+    defaultStartDate.setDate(defaultEndDate.getDate() - 29); // 30 días incluyendo hoy
+    const initialStartDate = defaultStartDate.toISOString().slice(0, 10);
+    const initialEndDate = defaultEndDate.toISOString().slice(0, 10);
+    const hoy = new Date().toISOString().slice(0, 10); // Definir 'hoy' aquí
+
+    let mongoClient; // Definir cliente Mongo fuera del try/finally para cerrarlo siempre
+
+    try {
+        // 1. Obtener datos del dashboard inicial (Se mantiene como estaba)
+        const initialDashboardData = await getDashboardData(initialStartDate, initialEndDate);
+
+        // *** NUEVO: Obtener datos de clientes de patrimonio_cuentas para Autocomplete ***
+        let distinctClientNames = [];
+        let clientDetailsMap = {}; // Mapa: { 'nombre_cliente': { usuarios: ['user1'], tipo_cuenta: 'tipo' } }
+
         try {
-            // 1. Obtener datos del dashboard inicial
-            // Se llama a getDashboardData ANTES de cualquier posible error en las queries de vendedor
-            const initialDashboardData = await getDashboardData(initialStartDate, initialEndDate);
-    
-            // *** NUEVO: Obtener planes distintos para el filtro ***
-            let distinctPlans = [];
-            try {
-                // Query para obtener planes únicos, no nulos y no vacíos
-                const plansResult = await pool.query(`
-                    SELECT DISTINCT plan
-                    FROM vendedores
-                    WHERE plan IS NOT NULL AND plan <> ''
-                    ORDER BY plan ASC
-                `);
-                // Mapea el resultado a un array de strings
-                distinctPlans = plansResult.rows.map(row => row.plan);
-            } catch (planError) {
-                console.error("Error fetching distinct plans:", planError);
-                // No es un error fatal, pero loguearlo es importante.
-                // El filtro de planes simplemente no mostrará opciones dinámicas.
-                // Puedes enviar un mensaje de error específico si quieres:
-                // req.flash('error_msg', 'No se pudieron cargar los filtros de planes.');
-            }
-            // *** FIN NUEVO ***
-    
-            // 2. Obtener datos de vendedores
-            const sqlQueryVendedores = `
-                SELECT v.*,
-                        COALESCE(jsonb_array_length(v.cuentas_asignadas), 0) as num_cuentas
-                FROM vendedores v ORDER BY v.nombre ASC
+            // Query para obtener nombres únicos de patrimonio
+            const clientNamesResult = await pool.query(`
+                SELECT DISTINCT nombre_cliente
+                FROM patrimonio_cuentas
+                WHERE nombre_cliente IS NOT NULL AND nombre_cliente <> ''
+                ORDER BY nombre_cliente ASC
+            `);
+            distinctClientNames = clientNamesResult.rows.map(row => row.nombre_cliente);
+
+            // Query para obtener detalles (usuarios y tipo_cuenta) por cliente
+            // Usamos MIN(tipo_cuenta) asumiendo un tipo principal por cliente para este contexto
+            const clientDetailsResult = await pool.query(`
+                SELECT
+                    nombre_cliente,
+                    array_agg(usuario ORDER BY usuario) as usuarios,
+                    MIN(tipo_cuenta) as tipo_cuenta
+                FROM patrimonio_cuentas
+                WHERE nombre_cliente IS NOT NULL AND nombre_cliente <> ''
+                GROUP BY nombre_cliente;
+            `);
+
+            // Construir el mapa para fácil acceso en JS
+            clientDetailsResult.rows.forEach(row => {
+                clientDetailsMap[row.nombre_cliente] = {
+                    usuarios: row.usuarios || [], // Asegura que sea un array
+                    tipo_cuenta: row.tipo_cuenta || 'cliente' // Default a 'cliente' si es NULL
+                };
+            });
+            console.log("Client details map para autocomplete:", clientDetailsMap); // Log para depuración
+
+        } catch (patrimonioError) {
+            console.error("Error fetching data from patrimonio_cuentas for autocomplete:", patrimonioError);
+            // No es un error fatal, la página cargará sin autocomplete.
+            // Se podría enviar un mensaje flash si se desea informar al usuario.
+            req.flash('error_msg', 'No se pudieron cargar los nombres de cliente para autocompletar.');
+        }
+        // *** FIN NUEVO: Obtener datos de patrimonio_cuentas ***
+
+        // 2. Obtener planes distintos para el filtro de planes (Se mantiene como estaba)
+        let distinctPlans = [];
+        try {
+            const plansResult = await pool.query(`
+                SELECT DISTINCT plan
+                FROM vendedores
+                WHERE plan IS NOT NULL AND plan <> ''
+                ORDER BY plan ASC
+            `);
+            distinctPlans = plansResult.rows.map(row => row.plan);
+        } catch (planError) {
+            console.error("Error fetching distinct plans:", planError);
+            // No es fatal para la carga principal.
+        }
+
+        // 3. Obtener datos principales de vendedores (Se mantiene como estaba)
+        const sqlQueryVendedores = `
+            SELECT v.*,
+                    COALESCE(jsonb_array_length(v.cuentas_asignadas), 0) as num_cuentas
+            FROM vendedores v ORDER BY v.nombre ASC
+        `;
+        const vendedoresResult = await pool.query(sqlQueryVendedores);
+        const vendedores = vendedoresResult.rows;
+        const vendedorIds = vendedores.map(v => v.id);
+
+        // 4. Calcular fechas y desempeño MENSUAL (Se mantiene como estaba)
+        const nowForMonth = new Date();
+        const year = nowForMonth.getFullYear();
+        const month = nowForMonth.getMonth();
+        const firstDayOfMonth = new Date(year, month, 1).toISOString().slice(0, 10);
+        const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().slice(0, 10);
+
+        let desempenoMesMap = {};
+        if (vendedorIds.length > 0) {
+            const sqlQueryMes = `
+                SELECT
+                    vendedor_id,
+                    SUM(COALESCE(mensajes_enviados, 0)) as total_mensajes_mes,
+                    SUM(COALESCE(respuestas_recibidas, 0)) as total_respuestas_mes,
+                    SUM(COALESCE(mensajes_manuales, 0)) as total_manuales_mes
+                FROM vendedor_desempeno_diario
+                WHERE vendedor_id = ANY($1::int[]) AND fecha >= $2 AND fecha <= $3
+                GROUP BY vendedor_id;
             `;
-            const vendedoresResult = await pool.query(sqlQueryVendedores);
-            const vendedores = vendedoresResult.rows;
-            const vendedorIds = vendedores.map(v => v.id);
-    
-            // 3. Calcular fechas y desempeño MENSUAL
-            const nowForMonth = new Date();
-            const year = nowForMonth.getFullYear();
-            const month = nowForMonth.getMonth();
-            const firstDayOfMonth = new Date(year, month, 1).toISOString().slice(0, 10);
-            // Para el último día, es más seguro ir al primer día del mes siguiente y restar 1 día
-            const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().slice(0, 10); // Día 0 del mes siguiente es el último del actual
-    
-            let desempenoMesMap = {};
-            if (vendedorIds.length > 0) {
-                const sqlQueryMes = `
-                    SELECT
-                        vendedor_id,
-                        SUM(mensajes_enviados) as total_mensajes_mes,
-                        SUM(respuestas_recibidas) as total_respuestas_mes,
-                        SUM(mensajes_manuales) as total_manuales_mes -- Opcional: si quieres totalizar manuales del mes
-                    FROM vendedor_desempeno_diario
-                    WHERE vendedor_id = ANY($1::int[]) AND fecha >= $2 AND fecha <= $3
-                    GROUP BY vendedor_id;
-                `;
-                // Pasar parámetros correctamente
-                const desempenoMesResult = await pool.query(sqlQueryMes, [vendedorIds, firstDayOfMonth, lastDayOfMonth]);
-                desempenoMesResult.rows.forEach(item => {
-                    desempenoMesMap[item.vendedor_id] = {
-                        // Asegurar conversión a número y valor por defecto 0
-                        mensajes: parseInt(item.total_mensajes_mes, 10) || 0,
-                        respuestas: parseInt(item.total_respuestas_mes, 10) || 0,
-                        manuales: parseInt(item.total_manuales_mes, 10) || 0 // Opcional
+            const desempenoMesResult = await pool.query(sqlQueryMes, [vendedorIds, firstDayOfMonth, lastDayOfMonth]);
+            desempenoMesResult.rows.forEach(item => {
+                desempenoMesMap[item.vendedor_id] = {
+                    mensajes: parseInt(item.total_mensajes_mes, 10) || 0,
+                    respuestas: parseInt(item.total_respuestas_mes, 10) || 0,
+                    manuales: parseInt(item.total_manuales_mes, 10) || 0
+                };
+            });
+        }
+
+        // 5. Obtener desempeño de HOY (Se mantiene como estaba)
+        let desempenoHoyMap = {};
+        if (vendedorIds.length > 0) {
+            const sqlQueryHoy = `
+                SELECT vendedor_id, insta_username, mensajes_enviados, respuestas_recibidas, mensajes_manuales
+                FROM vendedor_desempeno_diario
+                WHERE fecha = $1 AND vendedor_id = ANY($2::int[])
+            `;
+            const desempenoHoyResult = await pool.query(sqlQueryHoy, [hoy, vendedorIds]);
+            desempenoHoyMap = desempenoHoyResult.rows.reduce((map, item) => {
+                if (!map[item.vendedor_id]) map[item.vendedor_id] = {};
+                // Asegurar que insta_username no sea null antes de toLowerCase
+                const usernameLower = item.insta_username ? item.insta_username.toLowerCase() : null;
+                if(usernameLower) {
+                    map[item.vendedor_id][usernameLower] = {
+                        mensajes: item.mensajes_enviados || 0,
+                        respuestas: item.respuestas_recibidas || 0,
+                        mensajesManuales: item.mensajes_manuales || 0
+                    };
+                }
+                return map;
+            }, {});
+        }
+
+        // 6. Obtener totales de MongoDB (Opcional - Se mantiene como estaba)
+        // (Si no usas MongoDB, puedes eliminar esta sección)
+        let allAssignedUsernames = [];
+        vendedores.forEach(v => {
+            if (v.cuentas_asignadas && Array.isArray(v.cuentas_asignadas)) {
+                allAssignedUsernames.push(...v.cuentas_asignadas.map(u => String(u).toLowerCase())); // Asegurar string y lowercase
+            }
+        });
+        allAssignedUsernames = [...new Set(allAssignedUsernames)]; // Filtrar duplicados
+
+        let mongoMessageCounts = {};
+        if (allAssignedUsernames.length > 0 && typeof mongoUri !== 'undefined' && mongoUri && typeof mongoDbName !== 'undefined' && mongoDbName) {
+            mongoClient = new MongoClient(mongoUri); // Crear cliente
+            try {
+                await mongoClient.connect(); // Conectar
+                const db = mongoClient.db(mongoDbName);
+                const collection = db.collection('historial_acciones'); // O tu colección
+                const pipeline = [
+                    { $match: { username: { $in: allAssignedUsernames }, accion: { $regex: /mensaje/i } } },
+                    { $group: { _id: { $toLower: "$username" }, count: { $sum: 1 } } },
+                    { $project: { _id: 0, username: "$_id", count: 1 } }
+                ];
+                const results = await collection.aggregate(pipeline).toArray();
+                results.forEach(item => { mongoMessageCounts[item.username] = item.count; });
+            } catch (mongoError) {
+                console.error("Error connecting to or querying MongoDB:", mongoError);
+                // req.flash('error_msg', 'No se pudieron cargar los totales históricos de mensajes.');
+            }
+            // El cierre del cliente se hará en el finally del bloque try/catch principal
+        } else if (allAssignedUsernames.length > 0) {
+            console.warn("MongoDB URI or DB Name not configured. Skipping MongoDB message counts.");
+        }
+
+        // 7. Preparar datos finales para la vista (Se mantiene como estaba, con ajustes menores)
+        const vendedoresParaVista = vendedores.map(vendedor => {
+            let cuentasConDatos = [];
+            let totalMensajesHoy = 0;
+            let totalRespuestasHoy = 0;
+            let totalMensajesManualesHoy = 0;
+
+            // Procesar cuentas solo si existen y es un array
+            if (vendedor.cuentas_asignadas && Array.isArray(vendedor.cuentas_asignadas)) {
+                cuentasConDatos = vendedor.cuentas_asignadas.map(cuenta => {
+                    const cuentaLower = String(cuenta).toLowerCase();
+                    const desempenoCuentaHoy = desempenoHoyMap[vendedor.id]?.[cuentaLower] || {
+                        mensajes: 0,
+                        respuestas: 0,
+                        mensajesManuales: 0
+                    };
+
+                    totalMensajesHoy += desempenoCuentaHoy.mensajes;
+                    totalRespuestasHoy += desempenoCuentaHoy.respuestas;
+                    totalMensajesManualesHoy += desempenoCuentaHoy.mensajesManuales;
+
+                    return {
+                        nombre: cuenta,
+                        mensajesHoy: desempenoCuentaHoy.mensajes,
+                        respuestasHoy: desempenoCuentaHoy.respuestas,
+                        mensajesManualesHoy: desempenoCuentaHoy.mensajesManuales,
                     };
                 });
             }
-    
-            // 4. Obtener desempeño de HOY
-            let desempenoHoyMap = {};
-            if (vendedorIds.length > 0) { // Solo ejecutar si hay vendedores
-                const sqlQueryHoy = `
-                    SELECT vendedor_id, insta_username, mensajes_enviados, respuestas_recibidas, mensajes_manuales
-                    FROM vendedor_desempeno_diario
-                    WHERE fecha = $1 AND vendedor_id = ANY($2::int[]) -- Filtrar por IDs también puede ser más eficiente
-                `;
-                const desempenoHoyResult = await pool.query(sqlQueryHoy, [hoy, vendedorIds]);
-                // Reducir el resultado a un mapa anidado { vendedor_id: { username_lower: { datos... } } }
-                desempenoHoyMap = desempenoHoyResult.rows.reduce((map, item) => {
-                    if (!map[item.vendedor_id]) map[item.vendedor_id] = {};
-                    map[item.vendedor_id][item.insta_username.toLowerCase()] = {
-                        mensajes: item.mensajes_enviados || 0, // Default 0
-                        respuestas: item.respuestas_recibidas || 0, // Default 0
-                        mensajesManuales: item.mensajes_manuales || 0 // Default 0
-                    };
-                    return map;
-                }, {});
-            }
-    
-    
-            // 5. Obtener totales de MongoDB
-            let allAssignedUsernames = [];
-            vendedores.forEach(v => {
-                // Asegurarse que cuentas_asignadas es un array y no es null/undefined
-                if (v.cuentas_asignadas && Array.isArray(v.cuentas_asignadas)) {
-                    allAssignedUsernames.push(...v.cuentas_asignadas);
-                }
-            });
-            // Filtrar duplicados y convertir a minúsculas
-            allAssignedUsernames = [...new Set(allAssignedUsernames.map(u => String(u).toLowerCase()))]; // Asegurar string
-    
-            let mongoMessageCounts = {};
-            // Solo intentar conectar si hay usuarios y la configuración existe
-            if (allAssignedUsernames.length > 0 && mongoUri && mongoDbName) {
-                client = new MongoClient(mongoUri); // Crear cliente
-                try {
-                    await client.connect(); // Conectar
-                    const db = client.db(mongoDbName);
-                    const collection = db.collection('historial_acciones'); // O tu colección
-                    const pipeline = [
-                        // Filtrar por los usernames (en minúsculas) y acción tipo mensaje
-                        { $match: { username: { $in: allAssignedUsernames }, accion: { $regex: /mensaje/i } } },
-                        // Agrupar por username (convertido a minúsculas en la BD si es necesario, o aquí)
-                        { $group: { _id: { $toLower: "$username" }, count: { $sum: 1 } } },
-                        // Proyectar para formatear la salida
-                        { $project: { _id: 0, username: "$_id", count: 1 } }
-                    ];
-                    const results = await collection.aggregate(pipeline).toArray();
-                    // Crear el mapa { username_lower: count }
-                    results.forEach(item => { mongoMessageCounts[item.username] = item.count; });
-                } catch (mongoError) {
-                    console.error("Error connecting to or querying MongoDB:", mongoError);
-                    // Puedes notificar al usuario si es crítico
-                    // req.flash('error_msg', 'No se pudieron cargar los totales históricos de mensajes.');
-                } finally {
-                    // Asegurarse de cerrar la conexión MongoDB en el finally del bloque try/catch principal
-                     if (client) {
-                          await client.close();
-                          // console.log("MongoDB connection closed.");
-                     }
-                }
-            } else if (allAssignedUsernames.length > 0) {
-                // Advertir si no hay configuración pero sí hay usuarios
-                console.warn("MongoDB URI or DB Name not configured. Skipping MongoDB message counts.");
-            }
-    
-// 6. Preparar datos finales para la vista
-const vendedoresParaVista = vendedores.map(vendedor => {
-    let cuentasConDatos = [];
-    let totalMensajesHoy = 0;
-    let totalRespuestasHoy = 0;
-    let totalMensajesManualesHoy = 0;
-    let totalMensajesAcumulados = 0;  // Nuevo: Para acumular todos los mensajes hasta hoy
-    let totalRespuestasAcumuladas = 0; // Nuevo: Para acumular todas las respuestas hasta hoy
 
-    // Procesar cuentas solo si existen y es un array
-    if (vendedor.cuentas_asignadas && Array.isArray(vendedor.cuentas_asignadas)) {
-        cuentasConDatos = vendedor.cuentas_asignadas.map(cuenta => {
-            const cuentaLower = String(cuenta).toLowerCase();
-            // Obtener datos de hoy para esta cuenta
-            const desempenoCuentaHoy = desempenoHoyMap[vendedor.id]?.[cuentaLower] || { 
-                mensajes: 0, 
-                respuestas: 0, 
-                mensajesManuales: 0 
-            };
+            const desempenoTotalMes = desempenoMesMap[vendedor.id] || { mensajes: 0, respuestas: 0 };
+            const objetivoMensual = vendedor.objetivo_mensual || 0;
+            const progresoMensualPct = objetivoMensual > 0 ?
+                Math.min(100, Math.max(0, (desempenoTotalMes.mensajes / objetivoMensual) * 100)) : 0;
 
-            // Sumar a los totales del vendedor
-            totalMensajesHoy += desempenoCuentaHoy.mensajes;
-            totalRespuestasHoy += desempenoCuentaHoy.respuestas;
-            totalMensajesManualesHoy += desempenoCuentaHoy.mensajesManuales;
-
-            // Retornar objeto detallado para la cuenta
+            // Devolvemos un objeto completo para cada vendedor
             return {
-                nombre: cuenta,
-                mensajesHoy: desempenoCuentaHoy.mensajes,
-                respuestasHoy: desempenoCuentaHoy.respuestas,
-                mensajesManualesHoy: desempenoCuentaHoy.mensajesManuales,
-                // Mantenemos mensajesMongoTotal aunque no lo usemos para no romper la vista
-                mensajesMongoTotal: 0 
+                ...vendedor, // Incluye id, nombre, manager, plan, tipo_cuenta, estado, etc.
+                num_cuentas: vendedor.num_cuentas || 0,
+                cuentasDetalle: cuentasConDatos, // Array con detalles por cuenta para HOY
+                totalMensajesHoy,          // Total bot hoy para la card/resumen
+                totalRespuestasHoy,         // Total resp hoy para la card/resumen
+                totalMensajesManualesHoy,   // Total manual hoy para la card/resumen
+                total_mensajes_mes: desempenoTotalMes.mensajes, // Total bot del mes actual
+                total_respuestas_mes: desempenoTotalMes.respuestas, // Total resp del mes actual (puede no mostrarse pero está disponible)
+                progreso_mensajes_mes_pct: progresoMensualPct, // Porcentaje de progreso vs objetivo
+                // Asegúrate que todos los campos usados en vendedores.ejs estén aquí
+                // por ejemplo: porcentaje_cumplimiento, fecha_ingreso, notas_auditoria
             };
         });
-    }
 
-    // Calcular totales acumulados hasta hoy (incluyendo el mes actual)
-    const desempenoTotal = desempenoMesMap[vendedor.id] || { mensajes: 0, respuestas: 0 };
-    totalMensajesAcumulados = desempenoTotal.mensajes;
-    totalRespuestasAcumuladas = desempenoTotal.respuestas;
+        // 8. Renderizar la vista EJS con TODOS los datos necesarios
+        res.render('vendedores', {
+            vendedores: vendedoresParaVista,        // Array de vendedores con datos calculados
+            user: req.session.user,                 // Datos del usuario logueado
+            today: hoy,                             // Fecha de hoy para el modal de desempeño
+            initialDashboard: initialDashboardData, // Datos para el gráfico inicial
+            initialStartDate: initialStartDate,     // Fecha inicio para gráfico/filtros
+            initialEndDate: initialEndDate,         // Fecha fin para gráfico/filtros
+            distinctPlans: distinctPlans,           // Array de planes para el filtro
+            // *** NUEVO: Pasar datos de patrimonio al template ***
+            distinctClientNames: distinctClientNames,   // Array de strings para el datalist
+            clientDetailsMap: clientDetailsMap,         // Objeto con detalles {nombre: {usuarios:[], tipo_cuenta:''}}
+            // Los mensajes Flash (success_msg, error_msg) usualmente se manejan con middleware
+            // que los pone en res.locals, por lo que no necesitarías pasarlos explícitamente aquí.
+            // Si no usas middleware, descomenta las siguientes líneas:
+            // success: req.flash('success_msg')[0],
+            // error: req.flash('error_msg')[0]
+        });
 
-    // Calcular progreso mensual
-    const objetivoMensual = vendedor.objetivo_mensual || 0;
-    const progresoMensualPct = objetivoMensual > 0 ? 
-        Math.min(100, Math.max(0, (desempenoTotal.mensajes / objetivoMensual) * 100)) : 0;
+    } catch (error) {
+        // Captura errores generales (DB, lógica, etc.)
+        console.error("Error severo en GET /vendedores:", error);
 
-    return {
-        ...vendedor,
-        num_cuentas: vendedor.num_cuentas || 0,
-        cuentasDetalle: cuentasConDatos,
-        totalMensajesHoy,          // Para las cards (hoy)
-        totalRespuestasHoy,         // Para las cards (hoy)
-        totalMensajesManualesHoy,   // Para las cards (hoy)
-        total_mensajes_mes: desempenoTotal.mensajes, // Total mensual (para progreso)
-        total_mensajes_acumulados: totalMensajesAcumulados, // Nuevo: Total histórico
-        total_respuestas_acumuladas: totalRespuestasAcumuladas, // Nuevo: Total histórico
-        progreso_mensajes_mes_pct: progresoMensualPct,
-    };
-});
-    
-            // 7. Renderizar la vista EJS
-            res.render('vendedores', {
-                vendedores: vendedoresParaVista, // Array de vendedores con datos calculados
-                user: req.session.user, // Datos del usuario logueado (desde middleware o sesión)
-                // Mensajes Flash (ya deberían estar en res.locals si usas el middleware)
-                // success: req.flash('success_msg')[0], // Alternativa si no usas res.locals
-                // error: req.flash('error_msg')[0] || initialDashboardData.error, // Combina errores
-                today: hoy, // Fecha de hoy para el modal de desempeño
-                initialDashboard: initialDashboardData, // Datos para el gráfico inicial
-                initialStartDate: initialStartDate, // Fecha inicio para gráfico/filtros
-                initialEndDate: initialEndDate, // Fecha fin para gráfico/filtros
-                distinctPlans: distinctPlans // *** NUEVO: Pasar array de planes distintos ***
-            });
-    
-        } catch (error) {
-            // Captura errores generales (DB, lógica, etc.)
-            console.error("Error severo en GET /vendedores:", error);
-    
-             // Asegurarse de cerrar la conexión MongoDB si estaba abierta y falló antes del finally
-             if (client) {
-                 await client.close();
-                 console.log("MongoDB connection closed due to error.");
-             }
-    
-            // Enviar un mensaje de error genérico al usuario vía flash
-            req.flash('error_msg', 'Ocurrió un error inesperado al cargar la página de vendedores. Inténtalo de nuevo más tarde.');
-            // Renderizar una página de error o redirigir
-            // Opción 1: Redirigir a una página anterior o al dashboard
-             res.redirect(req.headers.referer || '/dashboard'); // Redirige a la página anterior o a /dashboard
-            // Opción 2: Renderizar una vista de error dedicada
-            /*
-            res.status(500).render('error', { // Asume que tienes una vista error.ejs
-                 message: 'Error al cargar la página de vendedores',
-                 // Mostrar detalles del error solo en desarrollo
-                 error: process.env.NODE_ENV !== 'production' ? error : { message: 'Error interno del servidor' },
-                 user: req.session.user
-            });
-            */
+        // Asegurarse de cerrar la conexión MongoDB si estaba abierta y falló antes del finally
+        if (mongoClient) {
+            try {
+                await mongoClient.close();
+                console.log("MongoDB connection closed due to error.");
+            } catch (closeErr) {
+                console.error("Error closing MongoDB connection during error handling:", closeErr);
+            }
         }
-    });
+
+        // Enviar un mensaje de error genérico al usuario vía flash
+        req.flash('error_msg', 'Ocurrió un error inesperado al cargar la página de clientes. Inténtalo de nuevo más tarde.');
+        // Redirigir a una página anterior o al dashboard
+        res.redirect(req.headers.referer || '/dashboard');
+
+    } finally {
+        // Asegurarse de cerrar la conexión MongoDB si se abrió correctamente y no hubo error antes
+        if (mongoClient && mongoClient.topology && mongoClient.topology.isConnected()) {
+            try {
+                await mongoClient.close();
+                // console.log("MongoDB connection closed successfully."); // Opcional: Log de cierre exitoso
+            } catch (closeErr) {
+                console.error("Error closing MongoDB connection in finally block:", closeErr);
+            }
+        }
+    }
+});
     // --- NUEVO ENDPOINT: GET /vendedores/dashboard-data (para AJAX) ---
     app.get('/vendedores/dashboard-data', isAuthenticated, async (req, res) => {
     const { from, to } = req.query;
@@ -3602,270 +3632,6 @@ app.get('/api/vendedores/agendas/resumen', isAuthenticated, async (req, res) => 
         });
     }
 });
-
-
-
-    // --- GET /vendedores (COMPLETO Y CORREGIDO) ---
-    app.get('/vendedores', isAuthenticated, async (req, res) => {
-        // Define fechas por defecto para el dashboard inicial (ej: último mes)
-        const defaultEndDate = new Date();
-        const defaultStartDate = new Date();
-        defaultStartDate.setDate(defaultEndDate.getDate() - 29); // 30 días incluyendo hoy
-        const initialStartDate = defaultStartDate.toISOString().slice(0, 10);
-        const initialEndDate = defaultEndDate.toISOString().slice(0, 10);
-        const hoy = new Date().toISOString().slice(0, 10); // Definir 'hoy' aquí
-    
-        let client; // Definir cliente Mongo fuera del try/finally para cerrarlo siempre
-    
-        try {
-            // 1. Obtener datos del dashboard inicial
-            // Se llama a getDashboardData ANTES de cualquier posible error en las queries de vendedor
-            const initialDashboardData = await getDashboardData(initialStartDate, initialEndDate);
-    
-            // *** NUEVO: Obtener planes distintos para el filtro ***
-            let distinctPlans = [];
-            try {
-                // Query para obtener planes únicos, no nulos y no vacíos
-                const plansResult = await pool.query(`
-                    SELECT DISTINCT plan
-                    FROM vendedores
-                    WHERE plan IS NOT NULL AND plan <> ''
-                    ORDER BY plan ASC
-                `);
-                // Mapea el resultado a un array de strings
-                distinctPlans = plansResult.rows.map(row => row.plan);
-            } catch (planError) {
-                console.error("Error fetching distinct plans:", planError);
-                // No es un error fatal, pero loguearlo es importante.
-                // El filtro de planes simplemente no mostrará opciones dinámicas.
-                // Puedes enviar un mensaje de error específico si quieres:
-                // req.flash('error_msg', 'No se pudieron cargar los filtros de planes.');
-            }
-            // *** FIN NUEVO ***
-    
-            // 2. Obtener datos de vendedores
-            const sqlQueryVendedores = `
-                SELECT v.*,
-                        COALESCE(jsonb_array_length(v.cuentas_asignadas), 0) as num_cuentas
-                FROM vendedores v ORDER BY v.nombre ASC
-            `;
-            const vendedoresResult = await pool.query(sqlQueryVendedores);
-            const vendedores = vendedoresResult.rows;
-            const vendedorIds = vendedores.map(v => v.id);
-    
-            // 3. Calcular fechas y desempeño MENSUAL
-            const nowForMonth = new Date();
-            const year = nowForMonth.getFullYear();
-            const month = nowForMonth.getMonth();
-            const firstDayOfMonth = new Date(year, month, 1).toISOString().slice(0, 10);
-            // Para el último día, es más seguro ir al primer día del mes siguiente y restar 1 día
-            const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().slice(0, 10); // Día 0 del mes siguiente es el último del actual
-    
-            let desempenoMesMap = {};
-            if (vendedorIds.length > 0) {
-                const sqlQueryMes = `
-                    SELECT
-                        vendedor_id,
-                        SUM(mensajes_enviados) as total_mensajes_mes,
-                        SUM(respuestas_recibidas) as total_respuestas_mes,
-                        SUM(mensajes_manuales) as total_manuales_mes -- Opcional: si quieres totalizar manuales del mes
-                    FROM vendedor_desempeno_diario
-                    WHERE vendedor_id = ANY($1::int[]) AND fecha >= $2 AND fecha <= $3
-                    GROUP BY vendedor_id;
-                `;
-                // Pasar parámetros correctamente
-                const desempenoMesResult = await pool.query(sqlQueryMes, [vendedorIds, firstDayOfMonth, lastDayOfMonth]);
-                desempenoMesResult.rows.forEach(item => {
-                    desempenoMesMap[item.vendedor_id] = {
-                        // Asegurar conversión a número y valor por defecto 0
-                        mensajes: parseInt(item.total_mensajes_mes, 10) || 0,
-                        respuestas: parseInt(item.total_respuestas_mes, 10) || 0,
-                        manuales: parseInt(item.total_manuales_mes, 10) || 0 // Opcional
-                    };
-                });
-            }
-    
-            // 4. Obtener desempeño de HOY
-            let desempenoHoyMap = {};
-            if (vendedorIds.length > 0) { // Solo ejecutar si hay vendedores
-                const sqlQueryHoy = `
-                    SELECT vendedor_id, insta_username, mensajes_enviados, respuestas_recibidas, mensajes_manuales
-                    FROM vendedor_desempeno_diario
-                    WHERE fecha = $1 AND vendedor_id = ANY($2::int[]) -- Filtrar por IDs también puede ser más eficiente
-                `;
-                const desempenoHoyResult = await pool.query(sqlQueryHoy, [hoy, vendedorIds]);
-                // Reducir el resultado a un mapa anidado { vendedor_id: { username_lower: { datos... } } }
-                desempenoHoyMap = desempenoHoyResult.rows.reduce((map, item) => {
-                    if (!map[item.vendedor_id]) map[item.vendedor_id] = {};
-                    map[item.vendedor_id][item.insta_username.toLowerCase()] = {
-                        mensajes: item.mensajes_enviados || 0, // Default 0
-                        respuestas: item.respuestas_recibidas || 0, // Default 0
-                        mensajesManuales: item.mensajes_manuales || 0 // Default 0
-                    };
-                    return map;
-                }, {});
-            }
-    
-    
-            // 5. Obtener totales de MongoDB
-            let allAssignedUsernames = [];
-            vendedores.forEach(v => {
-                // Asegurarse que cuentas_asignadas es un array y no es null/undefined
-                if (v.cuentas_asignadas && Array.isArray(v.cuentas_asignadas)) {
-                    allAssignedUsernames.push(...v.cuentas_asignadas);
-                }
-            });
-            // Filtrar duplicados y convertir a minúsculas
-            allAssignedUsernames = [...new Set(allAssignedUsernames.map(u => String(u).toLowerCase()))]; // Asegurar string
-    
-            let mongoMessageCounts = {};
-            // Solo intentar conectar si hay usuarios y la configuración existe
-            if (allAssignedUsernames.length > 0 && mongoUri && mongoDbName) {
-                client = new MongoClient(mongoUri); // Crear cliente
-                try {
-                    await client.connect(); // Conectar
-                    const db = client.db(mongoDbName);
-                    const collection = db.collection('historial_acciones'); // O tu colección
-                    const pipeline = [
-                        // Filtrar por los usernames (en minúsculas) y acción tipo mensaje
-                        { $match: { username: { $in: allAssignedUsernames }, accion: { $regex: /mensaje/i } } },
-                        // Agrupar por username (convertido a minúsculas en la BD si es necesario, o aquí)
-                        { $group: { _id: { $toLower: "$username" }, count: { $sum: 1 } } },
-                        // Proyectar para formatear la salida
-                        { $project: { _id: 0, username: "$_id", count: 1 } }
-                    ];
-                    const results = await collection.aggregate(pipeline).toArray();
-                    // Crear el mapa { username_lower: count }
-                    results.forEach(item => { mongoMessageCounts[item.username] = item.count; });
-                } catch (mongoError) {
-                    console.error("Error connecting to or querying MongoDB:", mongoError);
-                    // Puedes notificar al usuario si es crítico
-                    // req.flash('error_msg', 'No se pudieron cargar los totales históricos de mensajes.');
-                } finally {
-                    // Asegurarse de cerrar la conexión MongoDB en el finally del bloque try/catch principal
-                     if (client) {
-                          await client.close();
-                          // console.log("MongoDB connection closed.");
-                     }
-                }
-            } else if (allAssignedUsernames.length > 0) {
-                // Advertir si no hay configuración pero sí hay usuarios
-                console.warn("MongoDB URI or DB Name not configured. Skipping MongoDB message counts.");
-            }
-    
-            // 6. Preparar datos finales para la vista
-            const vendedoresParaVista = vendedores.map(vendedor => {
-                let cuentasConDatos = [];
-                let totalMensajesHoy = 0;
-                let totalRespuestasHoy = 0;
-                let totalMensajesManualesHoy = 0;
-                let totalMensajesMongo = 0;
-    
-                // Procesar cuentas solo si existen y es un array
-                if (vendedor.cuentas_asignadas && Array.isArray(vendedor.cuentas_asignadas)) {
-                    cuentasConDatos = vendedor.cuentas_asignadas.map(cuenta => {
-                        const cuentaLower = String(cuenta).toLowerCase(); // Asegurar string y minúsculas
-                        // Obtener datos de hoy para esta cuenta, con defaults 0
-                        const desempenoCuentaHoy = desempenoHoyMap[vendedor.id]?.[cuentaLower] || { mensajes: 0, respuestas: 0, mensajesManuales: 0 };
-                        // Obtener total histórico de Mongo, default 0
-                        const mensajesMongo = mongoMessageCounts[cuentaLower] || 0;
-    
-                        // Sumar a los totales del vendedor
-                        totalMensajesHoy += desempenoCuentaHoy.mensajes;
-                        totalRespuestasHoy += desempenoCuentaHoy.respuestas;
-                        totalMensajesManualesHoy += desempenoCuentaHoy.mensajesManuales;
-                        totalMensajesMongo += mensajesMongo;
-    
-                        // Retornar objeto detallado para la cuenta
-                        return {
-                            nombre: cuenta,
-                            mensajesHoy: desempenoCuentaHoy.mensajes,
-                            respuestasHoy: desempenoCuentaHoy.respuestas,
-                            mensajesManualesHoy: desempenoCuentaHoy.mensajesManuales,
-                            mensajesMongoTotal: mensajesMongo
-                        };
-                    });
-                }
-    
-                // Calcular progreso mensual
-                const objetivoMensual = vendedor.objetivo_mensual || 0;
-                // Usar mensajes (enviados, generalmente bot) del mes para el progreso
-                const mensajesEsteMes = desempenoMesMap[vendedor.id]?.mensajes || 0;
-                // Calcular porcentaje, asegurando que esté entre 0 y 100
-                const progresoMensualPct = objetivoMensual > 0 ? Math.min(100, Math.max(0, (mensajesEsteMes / objetivoMensual) * 100)) : 0;
-    
-                // Retornar el objeto completo del vendedor para la vista
-                return {
-                    ...vendedor, // Incluye id, nombre, plan, estado, etc.
-                    num_cuentas: vendedor.num_cuentas || 0, // Desde la query inicial
-                    cuentasDetalle: cuentasConDatos,
-                    totalMensajesHoy,
-                    totalRespuestasHoy,
-                    totalMensajesManualesHoy,
-                    totalMensajesMongo, // Total histórico de todas sus cuentas
-                    total_mensajes_mes: mensajesEsteMes, // Total mensajes (bot?) del mes
-                    progreso_mensajes_mes_pct: progresoMensualPct, // Porcentaje de progreso
-                };
-            });
-    
-            // 7. Renderizar la vista EJS
-            res.render('vendedores', {
-                vendedores: vendedoresParaVista, // Array de vendedores con datos calculados
-                user: req.session.user, // Datos del usuario logueado (desde middleware o sesión)
-                // Mensajes Flash (ya deberían estar en res.locals si usas el middleware)
-                // success: req.flash('success_msg')[0], // Alternativa si no usas res.locals
-                // error: req.flash('error_msg')[0] || initialDashboardData.error, // Combina errores
-                today: hoy, // Fecha de hoy para el modal de desempeño
-                initialDashboard: initialDashboardData, // Datos para el gráfico inicial
-                initialStartDate: initialStartDate, // Fecha inicio para gráfico/filtros
-                initialEndDate: initialEndDate, // Fecha fin para gráfico/filtros
-                distinctPlans: distinctPlans // *** NUEVO: Pasar array de planes distintos ***
-            });
-    
-        } catch (error) {
-            // Captura errores generales (DB, lógica, etc.)
-            console.error("Error severo en GET /vendedores:", error);
-    
-             // Asegurarse de cerrar la conexión MongoDB si estaba abierta y falló antes del finally
-             if (client) {
-                 await client.close();
-                 console.log("MongoDB connection closed due to error.");
-             }
-    
-            // Enviar un mensaje de error genérico al usuario vía flash
-            req.flash('error_msg', 'Ocurrió un error inesperado al cargar la página de vendedores. Inténtalo de nuevo más tarde.');
-            // Renderizar una página de error o redirigir
-            // Opción 1: Redirigir a una página anterior o al dashboard
-             res.redirect(req.headers.referer || '/dashboard'); // Redirige a la página anterior o a /dashboard
-            // Opción 2: Renderizar una vista de error dedicada
-            /*
-            res.status(500).render('error', { // Asume que tienes una vista error.ejs
-                 message: 'Error al cargar la página de vendedores',
-                 // Mostrar detalles del error solo en desarrollo
-                 error: process.env.NODE_ENV !== 'production' ? error : { message: 'Error interno del servidor' },
-                 user: req.session.user
-            });
-            */
-        }
-    });
-    // --- NUEVO ENDPOINT: GET /vendedores/dashboard-data (para AJAX) ---
-    app.get('/vendedores/dashboard-data', isAuthenticated, async (req, res) => {
-    const { from, to } = req.query;
-
-    // Validar fechas (básico)
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!from || !to || !dateRegex.test(from) || !dateRegex.test(to)) {
-        return res.status(400).json({ error: 'Fechas inválidas o faltantes (YYYY-MM-DD)' });
-    }
-
-    const dashboardData = await getDashboardData(from, to);
-
-    if (dashboardData.error) {
-        return res.status(500).json({ error: `Error al obtener datos del dashboard: ${dashboardData.error}` });
-    }
-
-    res.json(dashboardData); // Devuelve { totalMensajes, chartData }
-    });
 
 
     // --- POST /vendedores (Para Crear/Editar Vendedor - Desde Modal) ---

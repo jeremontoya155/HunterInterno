@@ -22,8 +22,18 @@
             padding: 0.3rem 0.5rem;
             white-space: nowrap;
         }
-        .link-col { max-width: 50px; overflow: hidden; text-overflow: ellipsis; }
-        .link-col a { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+        .link-col { 
+            max-width: 50px; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            position: relative;
+        }
+        .link-col a { 
+            display: inline-block; 
+            max-width: 100%; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
         .password-col { max-width: 100px; overflow: hidden; text-overflow: ellipsis; }
         .celular-col { max-width: 120px; }
         .table-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
@@ -48,6 +58,60 @@
         }
         .btn-archive:hover {
             background-color: #5a6268;
+        }
+        
+        /* Nuevos estilos para links expandibles */
+        .expandable-link {
+            position: relative;
+            cursor: pointer;
+        }
+        .expandable-link .full-link {
+            display: none;
+            position: absolute;
+            left: 0;
+            top: 100%;
+            background: white;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            z-index: 100;
+            white-space: normal;
+            word-break: break-all;
+            max-width: 300px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .expandable-link:hover .full-link {
+            display: block;
+        }
+        .link-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 3px;
+        }
+        .link-action-btn {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 2px 5px;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+        .link-action-btn:hover {
+            background: #e9ecef;
+        }
+        .link-action-btn.copy-btn {
+            color: #28a745;
+        }
+        .link-action-btn.expand-btn {
+            color: #007bff;
+        }
+        .expanded-link {
+            white-space: normal;
+            word-break: break-all;
+            background-color: #f8f9fa;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
         }
     </style>
 </head>
@@ -146,8 +210,42 @@
                                             <span class="password-display"><%= cuenta.contrasena_mail || '-' %></span>
                                         </td>
                                         <td class="codigos-col" title="<%= cuenta.codigos_respaldo ? 'Códigos registrados' : 'Sin códigos' %>"><%= cuenta.codigos_respaldo ? 'Registrados' : '-' %></td>
-                                        <td class="link-col"><%= cuenta.link ? '<a href="' + cuenta.link + '" target="_blank" title="Abrir perfil"><i class="fas fa-external-link-alt"></i></a>' : '-' %></td>
-                                        <td><%= cuenta.link_original || '-' %></td>
+                                        <td class="link-col">
+                                            <% if (cuenta.link) { %>
+                                                <div class="expandable-link">
+                                                    <a href="<%= cuenta.link %>" target="_blank" title="Abrir perfil"><i class="fas fa-external-link-alt"></i></a>
+                                                    <div class="full-link"><%= cuenta.link %></div>
+                                                    <div class="link-actions">
+                                                        <button class="link-action-btn copy-btn" onclick="copyToClipboard('<%= cuenta.link %>')" title="Copiar">
+                                                            <i class="fas fa-copy"></i>
+                                                        </button>
+                                                        <button class="link-action-btn expand-btn" onclick="toggleExpandLink(this)" title="Expandir">
+                                                            <i class="fas fa-expand"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            <% } else { %>
+                                                -
+                                            <% } %>
+                                        </td>
+                                        <td class="link-col">
+                                            <% if (cuenta.link_original) { %>
+                                                <div class="expandable-link">
+                                                    <span><%= cuenta.link_original.length > 20 ? cuenta.link_original.substring(0, 20) + '...' : cuenta.link_original %></span>
+                                                    <div class="full-link"><%= cuenta.link_original %></div>
+                                                    <div class="link-actions">
+                                                        <button class="link-action-btn copy-btn" onclick="copyToClipboard('<%= cuenta.link_original %>')" title="Copiar">
+                                                            <i class="fas fa-copy"></i>
+                                                        </button>
+                                                        <button class="link-action-btn expand-btn" onclick="toggleExpandLink(this)" title="Expandir">
+                                                            <i class="fas fa-expand"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            <% } else { %>
+                                                -
+                                            <% } %>
+                                        </td>
                                         <td><%= cuenta.ultima_carga_celular ? new Date(cuenta.ultima_carga_celular).toLocaleDateString('es-ES') : '-' %></td>
                                         <td class="actions-col">
                                             <button class="btn btn-sm btn-warning" onclick="openPatrimonioModal('<%= cuenta.id %>')" title="Editar"><i class="fas fa-edit"></i></button>
@@ -242,8 +340,42 @@
                                             <i class="fas fa-eye toggle-password-vis ml-1" title="Mostrar Contraseña Mail"></i>
                                         </td>
                                         <td class="codigos-col" title="<%= cuenta.codigos_respaldo ? 'Códigos registrados' : 'Sin códigos' %>"><%= cuenta.codigos_respaldo ? 'Registrados' : '-' %></td>
-                                        <td class="link-col"><%= cuenta.link ? '<a href="' + cuenta.link + '" target="_blank" title="Abrir perfil"><i class="fas fa-external-link-alt"></i></a>' : '-' %></td>
-                                        <td><%= cuenta.link_original || '-' %></td>
+                                        <td class="link-col">
+                                            <% if (cuenta.link) { %>
+                                                <div class="expandable-link">
+                                                    <a href="<%= cuenta.link %>" target="_blank" title="Abrir perfil"><i class="fas fa-external-link-alt"></i></a>
+                                                    <div class="full-link"><%= cuenta.link %></div>
+                                                    <div class="link-actions">
+                                                        <button class="link-action-btn copy-btn" onclick="copyToClipboard('<%= cuenta.link %>')" title="Copiar">
+                                                            <i class="fas fa-copy"></i>
+                                                        </button>
+                                                        <button class="link-action-btn expand-btn" onclick="toggleExpandLink(this)" title="Expandir">
+                                                            <i class="fas fa-expand"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            <% } else { %>
+                                                -
+                                            <% } %>
+                                        </td>
+                                        <td class="link-col">
+                                            <% if (cuenta.link_original) { %>
+                                                <div class="expandable-link">
+                                                    <span><%= cuenta.link_original.length > 20 ? cuenta.link_original.substring(0, 20) + '...' : cuenta.link_original %></span>
+                                                    <div class="full-link"><%= cuenta.link_original %></div>
+                                                    <div class="link-actions">
+                                                        <button class="link-action-btn copy-btn" onclick="copyToClipboard('<%= cuenta.link_original %>')" title="Copiar">
+                                                            <i class="fas fa-copy"></i>
+                                                        </button>
+                                                        <button class="link-action-btn expand-btn" onclick="toggleExpandLink(this)" title="Expandir">
+                                                            <i class="fas fa-expand"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            <% } else { %>
+                                                -
+                                            <% } %>
+                                        </td>
                                         <td class="text-center filter-verificacion"><%- cuenta.verificacion ? '<i class="fas fa-check-circle text-success" title="Verificada"></i>' : '<i class="fas fa-times-circle text-danger" title="No Verificada"></i>' %></td>
                                         <td><%= cuenta.ultima_carga_celular ? new Date(cuenta.ultima_carga_celular).toLocaleDateString('es-ES') : '-' %></td>
                                         <td class="actions-col">
@@ -339,8 +471,42 @@
                                             <i class="fas fa-eye toggle-password-vis ml-1" title="Mostrar Contraseña Mail"></i>
                                         </td>
                                         <td class="codigos-col" title="<%= cuenta.codigos_respaldo ? 'Códigos registrados' : 'Sin códigos' %>"><%= cuenta.codigos_respaldo ? 'Registrados' : '-' %></td>
-                                        <td class="link-col"><%= cuenta.link ? '<a href="' + cuenta.link + '" target="_blank" title="Abrir perfil"><i class="fas fa-external-link-alt"></i></a>' : '-' %></td>
-                                        <td><%= cuenta.link_original || '-' %></td>
+                                        <td class="link-col">
+                                            <% if (cuenta.link) { %>
+                                                <div class="expandable-link">
+                                                    <a href="<%= cuenta.link %>" target="_blank" title="Abrir perfil"><i class="fas fa-external-link-alt"></i></a>
+                                                    <div class="full-link"><%= cuenta.link %></div>
+                                                    <div class="link-actions">
+                                                        <button class="link-action-btn copy-btn" onclick="copyToClipboard('<%= cuenta.link %>')" title="Copiar">
+                                                            <i class="fas fa-copy"></i>
+                                                        </button>
+                                                        <button class="link-action-btn expand-btn" onclick="toggleExpandLink(this)" title="Expandir">
+                                                            <i class="fas fa-expand"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            <% } else { %>
+                                                -
+                                            <% } %>
+                                        </td>
+                                        <td class="link-col">
+                                            <% if (cuenta.link_original) { %>
+                                                <div class="expandable-link">
+                                                    <span><%= cuenta.link_original.length > 20 ? cuenta.link_original.substring(0, 20) + '...' : cuenta.link_original %></span>
+                                                    <div class="full-link"><%= cuenta.link_original %></div>
+                                                    <div class="link-actions">
+                                                        <button class="link-action-btn copy-btn" onclick="copyToClipboard('<%= cuenta.link_original %>')" title="Copiar">
+                                                            <i class="fas fa-copy"></i>
+                                                        </button>
+                                                        <button class="link-action-btn expand-btn" onclick="toggleExpandLink(this)" title="Expandir">
+                                                            <i class="fas fa-expand"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            <% } else { %>
+                                                -
+                                            <% } %>
+                                        </td>
                                         <td class="text-center filter-verificacion"><%- cuenta.verificacion ? '<i class="fas fa-check-circle text-success" title="Verificada"></i>' : '<i class="fas fa-times-circle text-danger" title="No Verificada"></i>' %></td>
                                         <td><%= cuenta.ultima_carga_celular ? new Date(cuenta.ultima_carga_celular).toLocaleDateString('es-ES') : '-' %></td>
                                         <td class="actions-col">
@@ -436,8 +602,42 @@
                                             <i class="fas fa-eye toggle-password-vis ml-1" title="Mostrar Contraseña Mail"></i>
                                         </td>
                                         <td class="codigos-col" title="<%= cuenta.codigos_respaldo ? 'Códigos registrados' : 'Sin códigos' %>"><%= cuenta.codigos_respaldo ? 'Registrados' : '-' %></td>
-                                        <td class="link-col"><%= cuenta.link ? '<a href="' + cuenta.link + '" target="_blank" title="Abrir perfil"><i class="fas fa-external-link-alt"></i></a>' : '-' %></td>
-                                        <td><%= cuenta.link_original || '-' %></td>
+                                        <td class="link-col">
+                                            <% if (cuenta.link) { %>
+                                                <div class="expandable-link">
+                                                    <a href="<%= cuenta.link %>" target="_blank" title="Abrir perfil"><i class="fas fa-external-link-alt"></i></a>
+                                                    <div class="full-link"><%= cuenta.link %></div>
+                                                    <div class="link-actions">
+                                                        <button class="link-action-btn copy-btn" onclick="copyToClipboard('<%= cuenta.link %>')" title="Copiar">
+                                                            <i class="fas fa-copy"></i>
+                                                        </button>
+                                                        <button class="link-action-btn expand-btn" onclick="toggleExpandLink(this)" title="Expandir">
+                                                            <i class="fas fa-expand"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            <% } else { %>
+                                                -
+                                            <% } %>
+                                        </td>
+                                        <td class="link-col">
+                                            <% if (cuenta.link_original) { %>
+                                                <div class="expandable-link">
+                                                    <span><%= cuenta.link_original.length > 20 ? cuenta.link_original.substring(0, 20) + '...' : cuenta.link_original %></span>
+                                                    <div class="full-link"><%= cuenta.link_original %></div>
+                                                    <div class="link-actions">
+                                                        <button class="link-action-btn copy-btn" onclick="copyToClipboard('<%= cuenta.link_original %>')" title="Copiar">
+                                                            <i class="fas fa-copy"></i>
+                                                        </button>
+                                                        <button class="link-action-btn expand-btn" onclick="toggleExpandLink(this)" title="Expandir">
+                                                            <i class="fas fa-expand"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            <% } else { %>
+                                                -
+                                            <% } %>
+                                        </td>
                                         <td class="text-center filter-verificacion"><%- cuenta.verificacion ? '<i class="fas fa-check-circle text-success" title="Verificada"></i>' : '<i class="fas fa-times-circle text-danger" title="No Verificada"></i>' %></td>
                                         <td><%= cuenta.ultima_carga_celular ? new Date(cuenta.ultima_carga_celular).toLocaleDateString('es-ES') : '-' %></td>
                                         <td class="actions-col">
@@ -615,6 +815,131 @@
                 });
             }
         }
+
+        // Función para copiar al portapapeles
+    // Función mejorada para copiar al portapapeles
+    function copyToClipboard(text) {
+        // Crear un elemento de texto temporal
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';  // Evitar que provoque scroll
+        document.body.appendChild(textarea);
+        textarea.select();
+        
+        try {
+            // Intentar copiar usando el API moderno
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showCopyFeedback(event.target);
+                }).catch(err => {
+                    console.error('Error con Clipboard API:', err);
+                    fallbackCopyText(text);
+                });
+            } else {
+                // Fallback para navegadores antiguos
+                fallbackCopyText(text);
+            }
+        } catch (err) {
+            console.error('Error al copiar:', err);
+            fallbackCopyText(text);
+        } finally {
+            document.body.removeChild(textarea);
+        }
+    }
+
+    // Método alternativo para navegadores que no soportan Clipboard API
+    function fallbackCopyText(text) {
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                showCopyFeedback(event.target);
+            } else {
+                console.error('Fallback copy failed');
+                alert('No se pudo copiar. Por favor copia manualmente: ' + text);
+            }
+        } catch (err) {
+            console.error('Error en fallback copy:', err);
+            alert('No se pudo copiar. Por favor copia manualmente: ' + text);
+        }
+    }
+
+    // Mostrar feedback visual cuando se copia
+    function showCopyFeedback(button) {
+        if (!button) return;
+        
+        const originalIcon = button.innerHTML;
+        const originalColor = button.style.color;
+        
+        button.innerHTML = '<i class="fas fa-check"></i>';
+        button.style.color = '#28a745';
+        
+        setTimeout(() => {
+            button.innerHTML = originalIcon;
+            button.style.color = originalColor;
+        }, 1000);
+    }
+
+    // Función para expandir/contraer links
+    function toggleExpandLink(button) {
+        const expandableLink = button.closest('.expandable-link');
+        const linkText = expandableLink.querySelector('span, a');
+        
+        if (!linkText) return;
+        
+        if (linkText.classList.contains('expanded-link')) {
+            // Contraer
+            linkText.classList.remove('expanded-link');
+            if (linkText.tagName === 'SPAN') {
+                const fullText = expandableLink.querySelector('.full-link').textContent;
+                linkText.textContent = fullText.length > 20 ? fullText.substring(0, 20) + '...' : fullText;
+            }
+            button.innerHTML = '<i class="fas fa-expand"></i>';
+            button.title = 'Expandir';
+        } else {
+            // Expandir
+            linkText.classList.add('expanded-link');
+            if (linkText.tagName === 'SPAN') {
+                linkText.textContent = expandableLink.querySelector('.full-link').textContent;
+            }
+            button.innerHTML = '<i class="fas fa-compress"></i>';
+            button.title = 'Contraer';
+        }
+    }
+
+        // Inicializar eventos para los botones de mostrar/ocultar contraseña
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.toggle-password-vis').forEach(icon => {
+                icon.addEventListener('click', function() {
+                    const passwordDisplay = this.previousElementSibling;
+                    if (passwordDisplay.classList.contains('visible')) {
+                        passwordDisplay.classList.remove('visible');
+                        if (passwordDisplay.textContent === '********') {
+                            // No hacer nada si ya está oculto
+                        } else {
+                            passwordDisplay.textContent = '********';
+                        }
+                        this.classList.remove('fa-eye-slash');
+                        this.classList.add('fa-eye');
+                        this.title = 'Mostrar Contraseña';
+                    } else {
+                        const row = this.closest('tr');
+                        const cuentaData = JSON.parse(row.getAttribute('data-cuenta'));
+                        const isMail = passwordDisplay.parentElement.classList.contains('password-col') && 
+                                      passwordDisplay.textContent.includes('@');
+                        
+                        if (isMail) {
+                            passwordDisplay.textContent = cuentaData.contrasena_mail || '-';
+                        } else {
+                            passwordDisplay.textContent = cuentaData.contrasena || '-';
+                        }
+                        passwordDisplay.classList.add('visible');
+                        this.classList.remove('fa-eye');
+                        this.classList.add('fa-eye-slash');
+                        this.title = 'Ocultar Contraseña';
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
