@@ -18,7 +18,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <%# Pasar datos iniciales a JS de forma segura %>
     <script>
-      // Define la variable global ANTES de que se cargue vendedores_manager.js
+      // Define la variable global ANTES de que se carguen otros scripts que la usen
       const initialDashboardDataForChart = <%- JSON.stringify(initialDashboard || { chartData: [], totalMensajes: 0 }) %>;
     </script>
 
@@ -28,23 +28,23 @@
 
     <div class="vendedor-main-container">
         <!-- ============================================= -->
-        <!--    ENCABEZADO Y FILTROS PARA VENDEDORES     -->
+        <!--    ENCABEZADO Y FILTROS PARA CLIENTES       -->
         <!-- ============================================= -->
         <div class="vendedor-section-header">
              <div class="header-title-button">
                 <h2><i class="fas fa-id-card-alt icon-header"></i> Auditoria Individuales</h2>
                 <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'auditoria')) { %>
                     <button class="btn btn-primary btn-add-vendedor" onclick="openVendedorModal()">
-                        <i class="fas fa-user-plus"></i> Agregar Cliente <%# Cambiado texto %>
+                        <i class="fas fa-user-plus"></i> Agregar Cliente
                     </button>
                 <% } %>
              </div>
-             <!-- Contenedor para ambos filtros -->
+             <!-- Contenedor para todos los filtros -->
              <div class="seller-filter-container">
                  <!-- Filtro por Nombre -->
                  <div class="filter-item">
                     <i class="fas fa-search filter-icon"></i>
-                    <input type="text" id="seller-name-filter" placeholder="Filtrar por nombre cliente..."> <%# Cambiado placeholder %>
+                    <input type="text" id="seller-name-filter" placeholder="Filtrar por nombre cliente...">
                  </div>
                  <!-- Filtro por Plan -->
                  <div class="filter-item">
@@ -53,24 +53,34 @@
                         <option value="">Todos los Planes</option>
                         <% if (typeof distinctPlans !== 'undefined' && distinctPlans && distinctPlans.length > 0) { %>
                             <% distinctPlans.forEach(plan => { %>
-                                <%# Asegurarse que el valor sea consistente (ej. lowercase) %>
                                 <option value="<%= plan.toLowerCase() %>"><%= plan %></option>
                             <% }); %>
                         <% } %>
                     </select>
                  </div>
+                 <!-- **** Filtro por Tipo Cuenta **** -->
+                 <div class="filter-item">
+                    <i class="fas fa-briefcase filter-icon"></i>
+                    <select id="tipo-cuenta-filter">
+                        <option value="">Todos los Tipos</option>
+                        <% if (typeof distinctTiposCuenta !== 'undefined' && distinctTiposCuenta && distinctTiposCuenta.length > 0) { %>
+                            <% distinctTiposCuenta.forEach(tipo => { %>
+                                <option value="<%= tipo.toLowerCase() %>"><%= tipo %></option>
+                            <% }); %>
+                        <% } %>
+                    </select>
+                 </div>
+                 <!-- **** FIN Filtro Tipo Cuenta **** -->
              </div>
-             <!-- Botón Mostrar Todos (se moverá aquí por JS) -->
-             <button id="show-all-btn" class="btn btn-info btn-sm" style="display: none;"> <%# Oculto inicialmente, JS lo configura y muestra %>
+             <!-- Botón Mostrar Todos -->
+             <button id="show-all-btn" class="btn btn-info btn-sm" style="display: inline-block;">
                 <i class="fas fa-eye"></i> Mostrar Todos
              </button>
         </div>
 
         <!-- Mensajes de Feedback Globales -->
-        <%# Asegúrate de tener configurado connect-flash y el middleware para que res.locals.success_msg y res.locals.error_msg funcionen %>
         <% if (locals.success_msg) { %><div class="alert alert-success global-feedback" role="alert"><%= locals.success_msg %></div><% } %>
         <% if (locals.error_msg) { %><div class="alert alert-danger global-feedback" role="alert"><%= locals.error_msg %></div><% } %>
-        <%# Fallback por si no usas res.locals %>
         <% if (!locals.success_msg && typeof success !== 'undefined' && success) { %><div class="alert alert-success global-feedback" role="alert"><%= success %></div><% } %>
         <% if (!locals.error_msg && typeof error !== 'undefined' && error && (!req || !req.originalUrl || !req.originalUrl.includes('dashboard-data'))) { %>
             <div class="alert alert-danger global-feedback" role="alert"><%= error %></div>
@@ -78,7 +88,7 @@
 
 
         <!-- ============================================= -->
-        <!--         NUEVA SECCIÓN DE RESUMEN             -->
+        <!--         SECCIÓN DE RESUMEN DE CLIENTES       -->
         <!-- ============================================= -->
         <div class="resumen-vendedores-container">
             <div class="resumen-header">
@@ -99,65 +109,50 @@
                                 <th>Bot (Hoy)</th>
                                 <th>Manual (Hoy)</th>
                                 <th>Resp (Hoy)</th>
-                                <th>Total Msgs (Mes)</th> <%# Clarificado %>
-                                <th>Total Resp (Mes)</th> <%# Clarificado %>
+                                <th>Total Msgs (Mes)</th>
+                                <th>Total Resp (Mes)</th>
                                 <th>Cumplimiento</th>
                                 <th>Progreso</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% vendedores.forEach(vendedor => { %>
-                                <%# --- INICIO: Lógica para determinar la clase CSS del estado --- %>
+                                <%# --- Lógica para determinar la clase CSS del estado --- %>
                                 <%
                                     let estadoClass = 'tag-estado-default';
                                     let estadoTexto = vendedor.estado || 'Desconocido';
                                     if (vendedor.estado) {
                                         const estadoLower = String(vendedor.estado).toLowerCase().trim();
-                                        if (estadoLower === 'al dia' || estadoLower === 'al día' || estadoLower === 'activo') {
-                                            estadoClass = 'tag-estado-verde';
-                                            estadoTexto = 'Al día';
-                                        } else if (estadoLower === '1 - 5') {
-                                            estadoClass = 'tag-estado-amarillo';
-                                            estadoTexto = '1 - 5';
-                                        } else if (estadoLower === '5 a 15') {
-                                            estadoClass = 'tag-estado-naranja';
-                                            estadoTexto = '5 a 15';
-                                        } else if (estadoLower === '+15') {
-                                            estadoClass = 'tag-estado-rojo';
-                                            estadoTexto = '+15';
-                                        } else if (estadoLower === 'inactivo') {
-                                            estadoClass = 'tag-estado-gris';
-                                            estadoTexto = 'Inactivo';
-                                        }
-                                        // Añade más estados si los tienes
+                                        if (estadoLower === 'al dia' || estadoLower === 'al día' || estadoLower === 'activo') { estadoClass = 'tag-estado-verde'; estadoTexto = 'Al día'; }
+                                        else if (estadoLower === '1 - 5') { estadoClass = 'tag-estado-amarillo'; estadoTexto = '1 - 5'; }
+                                        else if (estadoLower === '5 a 15') { estadoClass = 'tag-estado-naranja'; estadoTexto = '5 a 15'; }
+                                        else if (estadoLower === '+15') { estadoClass = 'tag-estado-rojo'; estadoTexto = '+15'; }
+                                        else if (estadoLower === 'inactivo') { estadoClass = 'tag-estado-gris'; estadoTexto = 'Inactivo'; }
                                     }
                                 %>
                                 <tr class="resumen-item"
                                     data-vendedor-id="<%= vendedor.id %>"
                                     data-plan="<%= vendedor.plan ? vendedor.plan.toLowerCase() : '' %>"
-                                    data-nombre="<%= vendedor.nombre.toLowerCase() %>">
+                                    data-nombre="<%= vendedor.nombre.toLowerCase() %>"
+                                    data-tipo-cuenta="<%= vendedor.tipo_cuenta ? vendedor.tipo_cuenta.toLowerCase() : '' %>"> <%# Atributo tipo cuenta añadido %>
                                     <td class="resumen-nombre">
                                         <span><%= vendedor.nombre %></span>
                                         <% if (vendedor.manager_asignado) { %>
                                             <small><i class="fas fa-user-tie"></i> <%= vendedor.manager_asignado %></small>
                                         <% } %>
                                     </td>
-                                    <td>
-                                        <span class="tag tag-estado <%= estadoClass %>"><%= estadoTexto %></span>
-                                    </td>
+                                    <td><span class="tag tag-estado <%= estadoClass %>"><%= estadoTexto %></span></td>
                                     <td><%= vendedor.num_cuentas || 0 %></td>
                                     <td class="mensaje-count"><%= vendedor.totalMensajesHoy || 0 %></td>
                                     <td class="mensaje-count"><%= vendedor.totalMensajesManualesHoy || 0 %></td>
                                     <td class="mensaje-count"><%= vendedor.totalRespuestasHoy || 0 %></td>
                                     <td class="mensaje-count"><%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %></td>
-                                    <td class="mensaje-count"><%= (vendedor.total_respuestas_mes || 0).toLocaleString('es-ES') %></td> <%# Mostrando total de respuestas del mes %>
+                                    <td class="mensaje-count"><%= (vendedor.total_respuestas_mes || 0).toLocaleString('es-ES') %></td>
                                     <td><%= parseFloat(vendedor.porcentaje_cumplimiento || 0).toFixed(1) %>%</td>
                                     <td>
-                                        <%# Progreso basado en mensajes del mes vs objetivo %>
                                         <div class="mini-progress-container" title="Progreso Objetivo Msgs: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(1) %>% (<%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %> / <%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? (vendedor.objetivo_mensual || 0).toLocaleString('es-ES') : 'N/A' %>)">
                                             <div class="mini-progress-bar"
-                                                 style="width: <%= Math.min(100, parseFloat(vendedor.progreso_mensajes_mes_pct || 0)) %>%;
-                                                        background-color: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0) >= 100 ? 'var(--color-green-progress)' : (parseFloat(vendedor.progreso_mensajes_mes_pct || 0) > 50 ? 'var(--color-accent)' : 'var(--color-warning)') %>;">
+                                                 style="width: <%= Math.min(100, parseFloat(vendedor.progreso_mensajes_mes_pct || 0)) %>%; background-color: <%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0) >= 100 ? 'var(--color-green-progress)' : (parseFloat(vendedor.progreso_mensajes_mes_pct || 0) > 50 ? 'var(--color-accent)' : 'var(--color-warning)') %>;">
                                             </div>
                                             <span class="mini-progress-text"><%= parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(0) %>%</span>
                                         </div>
@@ -172,8 +167,8 @@
             </div>
         </div>
 
-        <!-- Contenedor de Cards de Vendedores (oculto inicialmente) -->
-        <div class="vendedor-cards-grid" id="vendedor-cards-container">
+        <!-- Contenedor de Cards de Clientes (oculto inicialmente) -->
+        <div class="vendedor-cards-grid" id="vendedor-cards-container" style="display: none;">
             <% if (typeof vendedores !== 'undefined' && vendedores && Array.isArray(vendedores) && vendedores.length > 0) { %>
                 <% vendedores.forEach(vendedor => { %>
                      <%# --- Lógica para determinar la clase CSS del estado (para la tarjeta) --- %>
@@ -182,30 +177,19 @@
                         let estadoCardTexto = vendedor.estado || 'Desconocido';
                         if (vendedor.estado) {
                              const estadoLower = String(vendedor.estado).toLowerCase().trim();
-                             if (estadoLower === 'al dia' || estadoLower === 'al día' || estadoLower === 'activo') {
-                                 estadoCardClass = 'tag-estado-verde';
-                                 estadoCardTexto = 'Al día';
-                             } else if (estadoLower === '1 - 5') {
-                                 estadoCardClass = 'tag-estado-amarillo';
-                                 estadoCardTexto = '1 - 5';
-                             } else if (estadoLower === '5 a 15') {
-                                 estadoCardClass = 'tag-estado-naranja';
-                                 estadoCardTexto = '5 a 15';
-                             } else if (estadoLower === '+15') {
-                                 estadoCardClass = 'tag-estado-rojo';
-                                 estadoCardTexto = '+15';
-                             } else if (estadoLower === 'inactivo') {
-                                 estadoCardClass = 'tag-estado-gris';
-                                 estadoCardTexto = 'Inactivo';
-                             }
-                             // Añade más estados si los tienes
+                             if (estadoLower === 'al dia' || estadoLower === 'al día' || estadoLower === 'activo') { estadoCardClass = 'tag-estado-verde'; estadoCardTexto = 'Al día'; }
+                             else if (estadoLower === '1 - 5') { estadoCardClass = 'tag-estado-amarillo'; estadoCardTexto = '1 - 5'; }
+                             else if (estadoLower === '5 a 15') { estadoCardClass = 'tag-estado-naranja'; estadoCardTexto = '5 a 15'; }
+                             else if (estadoLower === '+15') { estadoCardClass = 'tag-estado-rojo'; estadoCardTexto = '+15'; }
+                             else if (estadoLower === 'inactivo') { estadoCardClass = 'tag-estado-gris'; estadoCardTexto = 'Inactivo'; }
                         }
                      %>
                     <div class="vendedor-card"
                          id="vendedor-card-<%= vendedor.id %>"
-                         data-vendedor='<%- JSON.stringify(vendedor) %>' <%# Pasar todos los datos del vendedor %>
+                         data-vendedor='<%- JSON.stringify(vendedor) %>'
                          data-plan="<%= vendedor.plan ? vendedor.plan.toLowerCase() : '' %>"
-                         data-nombre="<%= vendedor.nombre.toLowerCase() %>">
+                         data-nombre="<%= vendedor.nombre.toLowerCase() %>"
+                         data-tipo-cuenta="<%= vendedor.tipo_cuenta ? vendedor.tipo_cuenta.toLowerCase() : '' %>"> <%# Atributo tipo cuenta añadido %>
                         <div class="card-header">
                              <span class="tag tag-estado <%= estadoCardClass %>" title="Estado: <%= estadoCardTexto %>"><%= estadoCardTexto %></span>
                             <h3 class="vendedor-nombre"><%= vendedor.nombre %></h3>
@@ -214,69 +198,40 @@
                         <div class="card-body">
                             <div class="card-section">
                                 <h4><i class="fab fa-instagram"></i> Cuentas (<%= vendedor.num_cuentas || 0 %>)</h4>
-                                <%# Mostrar cuentas del vendedor (del campo cuentas_asignadas) %>
                                 <% if (vendedor.cuentas_asignadas && Array.isArray(vendedor.cuentas_asignadas) && vendedor.cuentas_asignadas.length > 0) { %>
                                     <ul class="account-list custom-scrollbar">
                                         <%
-                                            // Usamos cuentasDetalle para obtener los datos de HOY para cada cuenta asignada
                                             const cuentasHoyMap = (vendedor.cuentasDetalle || []).reduce((map, detalle) => {
-                                                map[detalle.nombre] = detalle;
+                                                if (detalle.nombre) map[detalle.nombre] = detalle;
                                                 return map;
                                             }, {});
                                         %>
                                         <% vendedor.cuentas_asignadas.forEach(cuentaNombre => { %>
-                                            <% const detalleCuentaHoy = cuentasHoyMap[cuentaNombre] || { mensajesHoy: 0, mensajesManualesHoy: 0, respuestasHoy: 0 }; %>
-                                            <li>
-                                                <span class="tag tag-cuenta"><%= cuentaNombre %></span>
-                                                <span class="account-stats" title="Hoy (Bot/Manual/Resp)">
-                                                     (<%= detalleCuentaHoy.mensajesHoy %> / <%= detalleCuentaHoy.mensajesManualesHoy %> / <%= detalleCuentaHoy.respuestasHoy %>)
-                                                </span>
-                                            </li>
+                                            <% if (cuentaNombre) { %>
+                                                <% const detalleCuentaHoy = cuentasHoyMap[cuentaNombre] || { mensajesHoy: 0, mensajesManualesHoy: 0, respuestasHoy: 0 }; %>
+                                                <li>
+                                                    <span class="tag tag-cuenta"><%= cuentaNombre %></span>
+                                                    <span class="account-stats" title="Hoy (Bot/Manual/Resp)">
+                                                         (<%= detalleCuentaHoy.mensajesHoy %> / <%= detalleCuentaHoy.mensajesManualesHoy %> / <%= detalleCuentaHoy.respuestasHoy %>)
+                                                    </span>
+                                                </li>
+                                            <% } %>
                                         <% }); %>
                                     </ul>
                                 <% } else { %><p class="no-data"><small>Sin cuentas asignadas.</small></p><% } %>
                             </div>
                             <div class="card-section card-stats">
-                                <div class="stat-item">
-                                    <label><i class="far fa-clock"></i> Hoy</label>
-                                    <span title="Bot / Manual / Respuestas"><%= vendedor.totalMensajesHoy || 0 %> B / <%= vendedor.totalMensajesManualesHoy || 0 %> M / <%= vendedor.totalRespuestasHoy || 0 %> R</span>
-                                </div>
-                                <div class="stat-item">
-                                    <label><i class="fas fa-chart-line"></i> Total Mensajes (Mes)</label>
-                                    <span><%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %></span>
-                                </div>
-                                <div class="stat-item">
-                                    <label><i class="fas fa-reply"></i> Total Respuestas (Mes)</label>
-                                    <span><%= (vendedor.total_respuestas_mes || 0).toLocaleString('es-ES') %></span>
-                                </div>
-                                <% if (vendedor.fecha_ingreso) { %>
-                                <div class="stat-item">
-                                    <label><i class="far fa-calendar-alt"></i> Ingreso</label>
-                                    <span><%= new Date(vendedor.fecha_ingreso).toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit'}) %></span>
-                                </div>
-                                <% } %>
-                                <% if (vendedor.plan) { %> <%# Mostrar Plan si existe %>
-                                <div class="stat-item">
-                                    <label><i class="fas fa-tag"></i> Plan</label>
-                                    <span><%= vendedor.plan %></span>
-                                </div>
-                                <% } %>
-                                <% if (vendedor.tipo_cuenta) { %> <%# Mostrar Tipo Cuenta si existe %>
-                                <div class="stat-item">
-                                    <label><i class="fas fa-briefcase"></i> Tipo</label>
-                                    <span><%= vendedor.tipo_cuenta %></span>
-                                </div>
-                                <% } %>
-
+                                <div class="stat-item"><label><i class="far fa-clock"></i> Hoy</label><span title="Bot / Manual / Respuestas"><%= vendedor.totalMensajesHoy || 0 %> B / <%= vendedor.totalMensajesManualesHoy || 0 %> M / <%= vendedor.totalRespuestasHoy || 0 %> R</span></div>
+                                <div class="stat-item"><label><i class="fas fa-chart-line"></i> Total Msgs (Mes)</label><span><%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %></span></div>
+                                <div class="stat-item"><label><i class="fas fa-reply"></i> Total Resp (Mes)</label><span><%= (vendedor.total_respuestas_mes || 0).toLocaleString('es-ES') %></span></div>
+                                <% if (vendedor.fecha_ingreso) { %><div class="stat-item"><label><i class="far fa-calendar-alt"></i> Ingreso</label><span><%= new Date(vendedor.fecha_ingreso).toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit'}) %></span></div><% } %>
+                                <% if (vendedor.plan) { %><div class="stat-item"><label><i class="fas fa-tag"></i> Plan</label><span><%= vendedor.plan %></span></div><% } %>
+                                <% if (vendedor.tipo_cuenta) { %><div class="stat-item"><label><i class="fas fa-briefcase"></i> Tipo</label><span><%= vendedor.tipo_cuenta %></span></div><% } %>
                                 <div class="stat-item stat-progress">
                                     <label><i class="fas fa-tasks"></i> Progreso Mes (Msgs)</label>
                                     <div class="progress-info">
-                                         <span class="progress-numbers" title="Mensajes enviados este mes / Objetivo mensual">
-                                             <%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %> / <%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? (vendedor.objetivo_mensual || 0).toLocaleString('es-ES') : 'N/A' %>
-                                         </span>
-                                         <span class="progress-percentage">
-                                             (<%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(0) + '%' : '--' %>)
-                                         </span>
+                                         <span class="progress-numbers" title="Mensajes enviados este mes / Objetivo mensual"><%= (vendedor.total_mensajes_mes || 0).toLocaleString('es-ES') %> / <%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? (vendedor.objetivo_mensual || 0).toLocaleString('es-ES') : 'N/A' %></span>
+                                         <span class="progress-percentage">(<%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(0) + '%' : '--' %>)</span>
                                     </div>
                                     <div class="progress-bar-container" title="<%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? parseFloat(vendedor.progreso_mensajes_mes_pct || 0).toFixed(1) + '% del objetivo mensual' : 'Sin objetivo definido' %>">
                                         <div class="progress-bar" style="width: <%= (vendedor.objetivo_mensual && vendedor.objetivo_mensual > 0) ? Math.min(100, parseFloat(vendedor.progreso_mensajes_mes_pct || 0)) : 0 %>%;"></div>
@@ -293,7 +248,7 @@
                         <div class="card-footer">
                              <% if (typeof user !== 'undefined' && user && (user.role === 'admin' || user.role === 'auditoria')) { %>
                                 <button class="btn btn-sm btn-secondary" onclick="openDesempenoModal('<%= vendedor.id %>')" title="Registrar desempeño diario"><i class="fas fa-calendar-plus"></i> Registrar Hoy</button>
-                                <button class="btn btn-sm btn-warning" onclick="openVendedorModal('<%= vendedor.id %>')" title="Editar cliente"><i class="fas fa-edit"></i> Editar</button> <%# Cambiado title %>
+                                <button class="btn btn-sm btn-warning" onclick="openVendedorModal('<%= vendedor.id %>')" title="Editar cliente"><i class="fas fa-edit"></i> Editar</button>
                             <% } %>
                             <a href="/vendedores/<%= vendedor.id %>/historial" class="btn btn-sm btn-info" title="Ver historial"><i class="fas fa-history"></i> Historial</a>
                         </div>
@@ -308,13 +263,13 @@
     </div> <!-- Fin vendedor-main-container -->
 
     <!-- ============================================= -->
-    <!--         MODAL AGREGAR/EDITAR VENDEDOR         -->
+    <!--         MODAL AGREGAR/EDITAR CLIENTE          -->
     <!-- ============================================= -->
     <div id="vendedorModalOverlay" class="modal-overlay">
          <div class="modal-content" id="vendedorModalContent">
-            <form action="/vendedores" method="POST" id="vendedor-form"> <%# Acción apunta a /vendedores para POST %>
+            <form action="/vendedores" method="POST" id="vendedor-form">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="vendedorModalLabel">Agregar Cliente</h5> <%# Título por defecto %>
+                    <h5 class="modal-title" id="vendedorModalLabel">Agregar Cliente</h5>
                     <button type="button" class="modal-close-btn" onclick="closeVendedorModal()" title="Cerrar">×</button>
                 </div>
                 <div class="modal-body custom-scrollbar">
@@ -322,7 +277,6 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="modal_nombre"><i class="fas fa-user fa-fw"></i> Nombre Cliente*</label>
-                            <!-- **** MODIFICADO: Input con datalist **** -->
                             <input type="text" id="modal_nombre" name="nombre" list="clientes-datalist" required autocomplete="off" placeholder="Escriba o seleccione un cliente...">
                             <datalist id="clientes-datalist">
                                 <% if (typeof distinctClientNames !== 'undefined' && distinctClientNames && distinctClientNames.length > 0) { %>
@@ -331,7 +285,6 @@
                                     <% }); %>
                                 <% } %>
                             </datalist>
-                            <!-- **** FIN MODIFICADO **** -->
                         </div>
                         <div class="form-group">
                              <label for="modal_manager_asignado"><i class="fas fa-user-tie fa-fw"></i> Manager Asignado</label>
@@ -340,9 +293,7 @@
                     </div>
                     <div class="form-group">
                         <label for="modal_cuentas_asignadas"><i class="fab fa-instagram fa-fw"></i> Cuentas Instagram (separadas por coma)</label>
-                        <!-- **** MODIFICADO: Placeholder **** -->
                         <input type="text" id="modal_cuentas_asignadas" name="cuentas_asignadas" placeholder="Se autocompletarán si selecciona un cliente existente">
-                        <!-- **** FIN MODIFICADO **** -->
                     </div>
                     <div class="form-row">
                          <div class="form-group">
@@ -361,9 +312,7 @@
                          </div>
                          <div class="form-group">
                              <label for="modal_tipo_cuenta"><i class="fas fa-briefcase fa-fw"></i> Tipo Cuenta</label>
-                             <!-- **** MODIFICADO: Sin value, con placeholder **** -->
                              <input type="text" id="modal_tipo_cuenta" name="tipo_cuenta" placeholder="Se autocompletará si selecciona un cliente">
-                             <!-- **** FIN MODIFICADO **** -->
                          </div>
                      </div>
                     <div class="form-row">
@@ -374,11 +323,10 @@
                          <div class="form-group">
                              <label for="modal_estado"><i class="fas fa-toggle-on fa-fw"></i> Estado</label>
                             <select id="modal_estado" name="estado">
-                                <option value="Al dia" selected>Al dia</option> <%# Debería ser 'Al día'? Ajusta según tus valores %>
+                                <option value="Al dia" selected>Al día</option>
                                 <option value="1 - 5">1 - 5</option>
                                 <option value="5 a 15">5 a 15</option>
                                 <option value="+15">+15</option>
-                                <option value="Activo">Activo</option> <%# Considera si 'Al día' y 'Activo' son distintos %>
                                 <option value="Inactivo">Inactivo</option>
                             </select>
                          </div>
@@ -412,19 +360,16 @@
                         <label for="desempeno_fecha"><i class="far fa-calendar-alt fa-fw"></i> Fecha del Registro</label>
                         <input type="date" id="desempeno_fecha" name="fecha" value="<%= typeof today !== 'undefined' ? today : new Date().toISOString().slice(0,10) %>" required>
                     </div>
-
                     <div class="form-group">
                         <label for="desempeno_notas"><i class="fas fa-clipboard-check fa-fw"></i> Notas de Auditoría</label>
                         <textarea id="desempeno_notas" name="notas_auditoria" rows="2" placeholder="Observaciones o comentarios relevantes..."></textarea>
                     </div>
-
                     <hr class="modal-hr">
                     <label class="accounts-title"><i class="fas fa-tasks"></i> Ingresar Datos por Cuenta:</label>
                     <div id="desempeno-accounts-container">
-                        <%# El contenido se genera dinámicamente por JS al abrir el modal %>
                         <p class="no-data">Seleccione un Cliente para cargar cuentas.</p>
                     </div>
-                    <div id="desempeno-feedback" class="feedback-message"></div> <%# Para mostrar mensajes AJAX %>
+                    <div id="desempeno-feedback" class="feedback-message"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeDesempenoModal()">Cancelar</button>
@@ -434,24 +379,25 @@
         </div>
     </div>
 
-    <!-- Scripts (Navbar, Lógica Vendedores) -->
+    <!-- Scripts (Navbar) -->
     <script defer src="/static/js/navbar.js"></script>
 
-    <%# Script inline para filtros y manejo de UI (se mantiene) %>
+    <!-- Script inline para filtros y manejo de UI (CON FILTRO TIPO CUENTA) -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const toggleBtn = document.getElementById('toggle-resumen');
             const resumenList = document.getElementById('resumen-list');
-            const resumenTableBody = resumenList ? resumenList.querySelector('tbody') : null;
             const cardsContainer = document.getElementById('vendedor-cards-container');
             const sellerNameFilter = document.getElementById('seller-name-filter');
             const planFilter = document.getElementById('plan-filter');
+            const tipoCuentaFilter = document.getElementById('tipo-cuenta-filter'); // *** Referencia al nuevo filtro ***
             const noSellerMsg = document.getElementById('no-seller-found-message');
             const showAllBtn = document.getElementById('show-all-btn');
+            const resumenTableBody = resumenList ? resumenList.querySelector('tbody') : null;
 
             // Configuración inicial
-            if (cardsContainer) cardsContainer.style.display = 'none'; // Ocultar cards por defecto
-            if (showAllBtn) showAllBtn.style.display = 'inline-block'; // Mostrar botón "Mostrar Todos"
+            if (cardsContainer) cardsContainer.style.display = 'none'; // Cards ocultas por defecto
+            if (showAllBtn) showAllBtn.style.display = 'inline-block'; // Botón visible
 
             // Toggle para expandir/contraer el resumen
             if (toggleBtn && resumenList) {
@@ -459,7 +405,6 @@
                     const isCollapsed = resumenList.classList.toggle('collapsed');
                     const icon = this.querySelector('i');
                     icon.className = isCollapsed ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
-                    // Acceder al nodo de texto después del icono para cambiar el texto
                     const textNode = this.childNodes[1];
                     if (textNode && textNode.nodeType === Node.TEXT_NODE) {
                         textNode.nodeValue = isCollapsed ? ' Expandir' : ' Contraer';
@@ -467,52 +412,60 @@
                 });
             }
 
-            // --- FUNCIÓN CENTRALIZADA DE FILTRADO ---
+            // --- FUNCIÓN CENTRALIZADA DE FILTRADO (ACTUALIZADA) ---
             function applyFilters() {
-                if (!resumenTableBody && !cardsContainer) return;
+                if (!resumenTableBody && !cardsContainer) {
+                    console.warn("Elementos de resumen o cards no encontrados para filtrar.");
+                    return;
+                }
 
                 const nameValue = sellerNameFilter.value.toLowerCase().trim();
-                const planValue = planFilter.value.toLowerCase(); // Ya está en minúsculas por el EJS
+                const planValue = planFilter.value.toLowerCase();
+                const tipoCuentaValue = tipoCuentaFilter.value.toLowerCase(); // *** Leer valor del nuevo filtro ***
 
                 let resumenVisibleCount = 0;
                 let cardsVisibleCount = 0;
-                // Verificar si las cards están VISIBLES globalmente (no solo display:none)
-                const cardsAreGloballyVisible = cardsContainer && !cardsContainer.hasAttribute('style') || cardsContainer.style.display === 'grid';
+                const cardsAreGloballyVisible = cardsContainer && (!cardsContainer.style.display || cardsContainer.style.display === 'grid' || cardsContainer.style.display === 'block');
 
-                // 1. Filtrar en el resumen (siempre visible)
+                // 1. Filtrar en el resumen
                 if (resumenTableBody) {
                     document.querySelectorAll('.resumen-item').forEach(row => {
                         const nombre = row.dataset.nombre || '';
-                        const plan = row.dataset.plan || ''; // Ya está en minúsculas por el EJS
+                        const plan = row.dataset.plan || '';
+                        const tipoCuenta = row.dataset.tipoCuenta || ''; // *** Leer data attribute ***
 
-                        const nameMatch = nombre.includes(nameValue);
-                        const planMatch = (planValue === '' || plan === planValue);
+                        const nameMatch = !nameValue || nombre.includes(nameValue);
+                        const planMatch = !planValue || plan === planValue;
+                        const tipoCuentaMatch = !tipoCuentaValue || tipoCuenta === tipoCuentaValue; // *** Condición nueva ***
 
-                        const isVisible = nameMatch && planMatch;
-                        row.style.display = isVisible ? '' : 'none'; // '' revierte a display de tabla
+                        const isVisible = nameMatch && planMatch && tipoCuentaMatch; // *** Incluir tipoCuentaMatch ***
+                        row.style.display = isVisible ? '' : 'none';
                         if (isVisible) resumenVisibleCount++;
                     });
                 }
 
-                // 2. Filtrar en las cards (SOLO si el contenedor de cards está visible)
+                // 2. Filtrar en las cards (SOLO si el contenedor está visible)
                 if (cardsAreGloballyVisible && cardsContainer) {
                     document.querySelectorAll('.vendedor-card').forEach(card => {
-                        // Si las cards fueron filtradas por ID, ignoramos los filtros generales
                         if (cardsContainer.dataset.filteredById && card.id !== cardsContainer.dataset.filteredById) {
                             card.style.display = 'none';
-                            return; // Pasar a la siguiente card
+                            return;
                         }
 
                         const nombre = card.dataset.nombre || '';
                         const plan = card.dataset.plan || '';
+                        const tipoCuenta = card.dataset.tipoCuenta || ''; // *** Leer data attribute ***
 
-                        const nameMatch = nombre.includes(nameValue);
-                        const planMatch = (planValue === '' || plan === planValue);
+                        const nameMatch = !nameValue || nombre.includes(nameValue);
+                        const planMatch = !planValue || plan === planValue;
+                        const tipoCuentaMatch = !tipoCuentaValue || tipoCuenta === tipoCuentaValue; // *** Condición nueva ***
 
-                        const isVisible = nameMatch && planMatch;
-                        card.style.display = isVisible ? 'block' : 'none'; // 'block' para cards
+                        const isVisible = nameMatch && planMatch && tipoCuentaMatch; // *** Incluir tipoCuentaMatch ***
+                        card.style.display = isVisible ? 'block' : 'none';
                         if (isVisible) cardsVisibleCount++;
                     });
+                } else if (cardsContainer){
+                    document.querySelectorAll('.vendedor-card').forEach(card => card.style.display = 'none');
                 }
 
                 // 3. Mostrar/Ocultar mensaje "No encontrado"
@@ -523,45 +476,44 @@
             }
 
             // --- EVENT LISTENERS PARA FILTROS ---
-            if (sellerNameFilter) {
-                sellerNameFilter.addEventListener('input', applyFilters);
-            }
-            if (planFilter) {
-                planFilter.addEventListener('change', applyFilters);
-            }
+            const addFilterListener = (element, eventType) => {
+                if (element) {
+                    element.addEventListener(eventType, () => {
+                        if (cardsContainer) delete cardsContainer.dataset.filteredById; // Quitar filtro por ID al usar filtros generales
+                        applyFilters();
+                    });
+                }
+            };
 
-            // Clic en item del resumen muestra la card correspondiente y oculta las demás
+            addFilterListener(sellerNameFilter, 'input');
+            addFilterListener(planFilter, 'change');
+            addFilterListener(tipoCuentaFilter, 'change'); // *** Listener para nuevo filtro ***
+
+            // Clic en item del resumen muestra la card correspondiente
             if (resumenTableBody) {
                 resumenTableBody.addEventListener('click', function(event) {
                     const targetRow = event.target.closest('.resumen-item');
-                    if (!targetRow) return;
+                    if (!targetRow || !cardsContainer) return;
 
                     const vendedorId = targetRow.getAttribute('data-vendedor-id');
                     const cardId = `vendedor-card-${vendedorId}`;
                     const targetCard = document.getElementById(cardId);
 
-                    if (targetCard && cardsContainer) {
-                        cardsContainer.style.display = 'grid'; // Asegurarse que el grid esté visible
+                    if (targetCard) {
+                        cardsContainer.style.display = 'grid';
                         cardsContainer.classList.add('visible');
-                        cardsContainer.dataset.filteredById = cardId; // Marcar que filtramos por ID
+                        cardsContainer.dataset.filteredById = cardId;
 
-                        // Oculta TODAS las cards primero
                         document.querySelectorAll('.vendedor-card').forEach(c => {
-                            c.style.display = 'none';
+                            c.style.display = (c.id === cardId) ? 'block' : 'none';
                         });
-                         // Muestra SOLO la seleccionada
-                        targetCard.style.display = 'block';
 
-                        // Opcional: Quitar highlight de otras cards si lo hubiera
                         document.querySelectorAll('.vendedor-card.highlighted').forEach(h => h.classList.remove('highlighted'));
-
-                        // Scroll y highlight
                         targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         targetCard.classList.add('highlighted');
-                        setTimeout(() => targetCard.classList.remove('highlighted'), 2000); // Quita highlight después de 2s
+                        setTimeout(() => targetCard.classList.remove('highlighted'), 2000);
 
-                        if (noSellerMsg) noSellerMsg.style.display = 'none'; // Ocultar msg no encontrado al seleccionar uno
-                        applyFilters(); // Reaplicar filtros (para que el conteo se actualice, aunque solo una sea visible)
+                        if (noSellerMsg) noSellerMsg.style.display = 'none';
                     }
                 });
             }
@@ -570,39 +522,40 @@
             if (showAllBtn) {
                 showAllBtn.addEventListener('click', function() {
                     if (cardsContainer) {
-                         cardsContainer.style.display = 'grid'; // Mostrar grid
+                         cardsContainer.style.display = 'grid';
                          cardsContainer.classList.add('visible');
-                         delete cardsContainer.dataset.filteredById; // Quitar filtro por ID
+                         delete cardsContainer.dataset.filteredById;
                     }
-                    // Resetear filtros
+                    // Resetear TODOS los filtros
                     if(sellerNameFilter) sellerNameFilter.value = '';
                     if(planFilter) planFilter.value = '';
+                    if(tipoCuentaFilter) tipoCuentaFilter.value = ''; // *** Resetear nuevo filtro ***
 
-                    // Re-aplicar filtros (ahora vacíos) para mostrar todo
                     applyFilters();
 
-                    // Asegurar que no quede el mensaje "no encontrado" si ahora hay resultados
-                    if (noSellerMsg && document.querySelectorAll('.vendedor-card[style*="display: block"]').length > 0) {
+                    // Ocultar mensaje "no encontrado" si hay resultados visibles
+                    const anyResumenVisible = resumenTableBody && resumenTableBody.querySelector('tr:not([style*="display: none"])');
+                    const anyCardVisible = cardsContainer && cardsContainer.querySelector('.vendedor-card:not([style*="display: none"])');
+                    if (noSellerMsg && (anyResumenVisible || anyCardVisible)) {
                        noSellerMsg.style.display = 'none';
                     }
                 });
             }
 
-            // Llamada inicial para aplicar filtros si hay valores pre-cargados (poco probable aquí)
+            // Llamada inicial para aplicar filtros al cargar la página
             applyFilters();
         });
     </script>
 
-    <!-- **** NUEVO: Embed client details data **** -->
-    <!-- Colocar ANTES del script vendedores_manager.js -->
+    <!-- Script para pasar datos de cliente (para autocomplete) -->
     <script>
-      // Pasar el mapa de detalles de cliente desde el backend a JS
       // Asegurarse que clientDetailsMap es pasado correctamente en res.render
+      // Debe existir aunque esté vacío: {}
       const clientDetailsData = <%- JSON.stringify(clientDetailsMap || {}) %>;
-      // console.log("Client Details Data:", clientDetailsData); // Para depuración en el navegador
+      // console.log("Client Details Data (for autocomplete):", clientDetailsData); // Descomentar para depurar
     </script>
 
-    <%# Incluir el script de vendedores_manager.js DESPUÉS del script inline y del data script %>
+    <!-- Incluir el script de vendedores_manager.js (CON LÓGICA DE AUTOCOMPLETE) -->
     <script defer src="/static/js/vendedores_manager.js"></script>
 
 </body>

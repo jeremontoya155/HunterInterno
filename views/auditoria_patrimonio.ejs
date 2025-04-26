@@ -216,7 +216,7 @@
                                                     <a href="<%= cuenta.link %>" target="_blank" title="Abrir perfil"><i class="fas fa-external-link-alt"></i></a>
                                                     <div class="full-link"><%= cuenta.link %></div>
                                                     <div class="link-actions">
-                                                        <button class="link-action-btn copy-btn" onclick="copyToClipboard('<%= cuenta.link %>')" title="Copiar">
+                                                        <button class="link-action-btn copy-btn" onclick="copyToClipboard('<%= cuenta.link %>', this)" title="Copiar">
                                                             <i class="fas fa-copy"></i>
                                                         </button>
                                                         <button class="link-action-btn expand-btn" onclick="toggleExpandLink(this)" title="Expandir">
@@ -818,35 +818,60 @@
 
         // Función para copiar al portapapeles
     // Función mejorada para copiar al portapapeles
-    function copyToClipboard(text) {
-        // Crear un elemento de texto temporal
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';  // Evitar que provoque scroll
-        document.body.appendChild(textarea);
-        textarea.select();
-        
-        try {
-            // Intentar copiar usando el API moderno
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(text).then(() => {
-                    showCopyFeedback(event.target);
-                }).catch(err => {
-                    console.error('Error con Clipboard API:', err);
-                    fallbackCopyText(text);
-                });
-            } else {
-                // Fallback para navegadores antiguos
-                fallbackCopyText(text);
-            }
-        } catch (err) {
-            console.error('Error al copiar:', err);
-            fallbackCopyText(text);
-        } finally {
-            document.body.removeChild(textarea);
+        // Función mejorada para copiar al portapapeles
+function copyToClipboard(text, element) {
+    // Crear un elemento de texto temporal
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';  // Evitar que provoque scroll
+    document.body.appendChild(textarea);
+    textarea.select();
+    
+    try {
+        // Intentar copiar usando el API moderno
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showCopyFeedback(element);
+            return true;
         }
+    } catch (err) {
+        console.error('Error al copiar:', err);
+    } finally {
+        document.body.removeChild(textarea);
     }
 
+    // Fallback para navegadores modernos
+    try {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(() => {
+                showCopyFeedback(element);
+            });
+            return true;
+        }
+    } catch (err) {
+        console.error('Error con Clipboard API:', err);
+    }
+
+    // Último fallback
+    alert('No se pudo copiar. Por favor copia manualmente: ' + text);
+    return false;
+}
+
+// Mostrar feedback visual cuando se copia
+function showCopyFeedback(button) {
+    if (!button) return;
+    
+    const icon = button.querySelector('i') || button;
+    const originalIconClass = icon.className;
+    
+    icon.className = 'fas fa-check';
+    button.style.color = '#28a745';
+    
+    setTimeout(() => {
+        icon.className = originalIconClass;
+        button.style.color = '';
+    }, 1000);
+}
     // Método alternativo para navegadores que no soportan Clipboard API
     function fallbackCopyText(text) {
         try {
