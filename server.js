@@ -2329,6 +2329,7 @@ async function calculateSprintProgress(sprintId) {
         // POST /sprints/:id/cerrar - Cerrar sprint con porcentaje (solo admin)
         // --- POST /sprints/:id/cerrar - Cerrar sprint con porcentaje (solo admin) ---
  // POST /sprints/:id/cerrar - Cerrar sprint con porcentaje (solo admin)
+// POST /sprints/:id/cerrar - Cerrar sprint con porcentaje (solo admin)
 app.post('/sprints/:id/cerrar', isAuthenticated, async (req, res) => {
     if (req.session.user.role !== 'admin') {
         return res.status(403).json({ success: false, error: 'Acceso no autorizado' });
@@ -2336,47 +2337,165 @@ app.post('/sprints/:id/cerrar', isAuthenticated, async (req, res) => {
 
     const { id } = req.params;
     const { porcentaje_cumplimiento, comentarios_cierre } = req.body;
-    
+
     // Validación del porcentaje
     const porcentaje = parseInt(porcentaje_cumplimiento, 10);
     if (isNaN(porcentaje) || porcentaje < 0 || porcentaje > 100) {
-        return res.status(400).json({ 
-            success: false, 
-            error: 'Porcentaje inválido. Debe ser un número entre 0 y 100' 
+        return res.status(400).json({
+            success: false,
+            error: 'Porcentaje inválido. Debe ser un número entre 0 y 100'
         });
     }
 
     try {
+        // --- QUERY CORREGIDA ---
         const query = `
             UPDATE sprints SET
-                porcentaje_cumplimiento = $1,
-                cerrado = TRUE,
-                descripcion = COALESCE($2, descripcion),
-                updated_at = CURRENT_TIMESTAMP
+                porcentaje_cumplimiento = $1, -- Ahora esta columna existe
+                comentarios_cierre = $2,     -- Guarda los comentarios en la nueva columna
+                cerrado = TRUE,              -- Marca el sprint como cerrado
+                updated_at = CURRENT_TIMESTAMP -- Actualiza la fecha de modificación
             WHERE id = $3
             RETURNING id
         `;
+        // --- PARÁMETROS CORRECTOS ---
         const result = await pool.query(query, [
-            porcentaje,
-            comentarios_cierre || null,
-            id
+            porcentaje,                 // $1 -> porcentaje_cumplimiento
+            comentarios_cierre || null, // $2 -> comentarios_cierre
+            id                          // $3 -> id del sprint
         ]);
+        // --- FIN CORRECCIÓN ---
 
         if (result.rowCount === 0) {
             return res.status(404).json({ success: false, error: 'Sprint no encontrado' });
         }
 
-        res.json({ 
+        res.json({
             success: true,
             message: 'Sprint cerrado correctamente',
             sprintId: id
         });
     } catch (error) {
+        // Ahora, si hay un error aquí, será por otra causa (ej: problema de conexión)
+        // o si olvidaste aplicar el SQL del Paso 1.
         console.error("Error en POST /sprints/:id/cerrar:", error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Error interno al cerrar el sprint' 
+        res.status(500).json({
+            success: false,
+            // Puedes devolver el mensaje de error específico si estás en desarrollo
+            // error: error.message
+            error: 'Error interno al cerrar el sprint'
         });
+    }
+});
+
+// POST /weekly-feedback - Agregar feedback semanal
+app.post('/weekly-feedback', isAuthenticated, async (req, res) => {
+    if (req.session.user.role !== 'admin') {
+        return res.status(403).json({ success: false, error: 'Acceso no autorizado' });
+    }
+
+    const { sprint_id, user_id, feedback } = req.body;
+    
+    try {
+        const query = `
+            INSERT INTO weekly_feedbacks (sprint_id, user_id, feedback)
+            VALUES ($1, $2, $3)
+            RETURNING *
+        `;
+        const result = await pool.query(query, [sprint_id, user_id, feedback]);
+        
+        res.json({ success: true, feedback: result.rows[0] });
+    } catch (error) {
+        console.error("Error en POST /weekly-feedback:", error);
+        res.status(500).json({ success: false, error: 'Error al guardar el feedback' });
+    }
+});
+
+// GET /user-performance/:user_id - Obtener rendimiento mensual
+app.get('/user-performance/:user_id', isAuthenticated, async (req, res) => {
+    if (req.session.user.role !== 'admin') {
+        return res.status(403).json({ success: false, error: 'Acceso no autorizado' });
+    }
+
+    const { user_id } = req.params;
+    const { month, year } = req.query;
+    
+    try {
+        // Obtener todos los sprints del usuario en el mes
+        const sprintsQuery = `
+            SELECT s.id, s.nombre, s.porcentaje_cumplimiento, 
+                   wf.feedback as weekly_feedback
+            FROM sprints s
+            LEFT JOIN weekly_feedbacks wf ON s.id = wf.sprint_id AND wf.user_id = $1
+            WHERE s.asignado_a = $1 
+            AND EXTRACT(MONTH FROM s.fecha_fin) = $2
+            AND EXTRACT(YEAR FROM s.fecha_fin) = $3
+            AND s.cerrado = true
+        `;
+        
+        const sprintsResult = await pool.query(sprintsQuery, [user_id, month, year]);
+        
+        // Calcular promedio
+        const totalSprints = sprintsResult.rows.length;
+        const totalPerformance = sprintsResult.rows.reduce((sum, sprint) => sum + (sprint.porcentaje_cumplimiento || 0), 0);
+        const average = totalSprints > 0 ? (totalPerformance / totalSprints) : 0;
+        
+        res.json({
+            success: true,
+            performance: {
+                average: Math.round(average),
+                sprints: sprintsResult.rows,
+                totalSprints,
+                totalCompleted: sprintsResult.rows.filter(s => s.porcentaje_cumplimiento >= 70).length
+            }
+        });
+    } catch (error) {
+        console.error("Error en GET /user-performance:", error);
+        res.status(500).json({ success: false, error: 'Error al calcular rendimiento' });
+    }
+});
+
+// POST /monthly-evaluation - Guardar evaluación mensual
+app.post('/monthly-evaluation', isAuthenticated, async (req, res) => {
+    if (req.session.user.role !== 'admin') {
+        return res.status(403).json({ success: false, error: 'Acceso no autorizado' });
+    }
+
+    const { user_id, month, year, notes } = req.body;
+    
+    try {
+        // Calcular promedio primero
+        const performanceRes = await pool.query(`
+            SELECT AVG(porcentaje_cumplimiento) as average
+            FROM sprints 
+            WHERE asignado_a = $1 
+            AND EXTRACT(MONTH FROM fecha_fin) = $2
+            AND EXTRACT(YEAR FROM fecha_fin) = $3
+            AND cerrado = true
+        `, [user_id, month, year]);
+        
+        const average = performanceRes.rows[0].average || 0;
+        
+        const query = `
+            INSERT INTO monthly_evaluations (user_id, month, year, average_performance, notes)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (user_id, month, year) 
+            DO UPDATE SET average_performance = $4, notes = $5, updated_at = CURRENT_TIMESTAMP
+            RETURNING *
+        `;
+        
+        const result = await pool.query(query, [
+            user_id,
+            month,
+            year,
+            average,
+            notes
+        ]);
+        
+        res.json({ success: true, evaluation: result.rows[0] });
+    } catch (error) {
+        console.error("Error en POST /monthly-evaluation:", error);
+        res.status(500).json({ success: false, error: 'Error al guardar evaluación' });
     }
 });
 

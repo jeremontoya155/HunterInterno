@@ -658,6 +658,128 @@
         ::-webkit-scrollbar-thumb { background-color: var(--color-border-light); border-radius: 10px; border: 2px solid var(--color-background); }
         ::-webkit-scrollbar-thumb:hover { background-color: var(--color-text-secondary); }
 
+        /* Estilos para la evaluación mensual */
+.evaluation-summary {
+    background-color: var(--color-background-soft);
+    border-radius: var(--border-radius-base);
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid var(--color-border-light);
+}
+
+.evaluation-summary h4 {
+    margin-top: 0;
+    color: var(--color-text-primary);
+    border-bottom: 1px solid var(--color-border-light);
+    padding-bottom: 8px;
+}
+
+.evaluation-summary p {
+    margin: 8px 0;
+    color: var(--color-text-secondary);
+}
+
+.evaluation-summary p strong {
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+/* Estilo para el análisis final */
+#monthlyEvalNotes {
+    min-height: 120px;
+}
+
+
+/* --- Evaluación del Administrador (Estilos Específicos) --- */
+
+/* Contenedor principal de la evaluación del admin */
+.admin-evaluation-section {
+    background-color: var(--color-background-soft); /* Fondo ligeramente distinto o el mismo que las tareas */
+    /* Opcional: si quieres un fondo más destacado: var(--color-background-soft-accent); */
+    padding: 20px 25px; /* Padding interno */
+    margin-top: 30px; /* Espacio arriba */
+    border-radius: var(--border-radius-base);
+    border: 1px solid var(--color-border-light);
+}
+
+/* Título de la sección */
+.admin-evaluation-section .evaluaciones-title {
+    color: var(--color-primary); /* Título en azul primario */
+    font-size: 1.2em; /* Tamaño del título */
+    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 20px; /* Espacio debajo del título */
+    padding-bottom: 10px; /* Espacio antes del borde */
+    border-bottom: 1px solid var(--color-border-light); /* Línea separadora sutil */
+}
+.admin-evaluation-section .evaluaciones-title i {
+      margin-right: 8px;
+      color: var(--color-primary); /* Icono también azul */
+}
+
+/* Contenedor interno (opcional, si necesitas más estilos) */
+.admin-evaluation-content {
+    /* Puedes añadir estilos aquí si es necesario */
+}
+
+/* Área que contiene la barra y el texto de progreso */
+.admin-progress-area {
+    display: flex; /* Usar flexbox para alinear barra y texto */
+    align-items: center; /* Centrar verticalmente */
+    gap: 15px; /* Espacio entre la barra y el texto */
+    margin-bottom: 15px; /* Espacio debajo, antes del comentario */
+}
+
+/* Estilo específico para la barra de progreso del admin */
+.admin-progress-area .progress-bar {
+    flex-grow: 1; /* Hacer que la barra ocupe el espacio disponible */
+    height: 10px; /* Altura de la barra */
+    background-color: var(--color-progress-bg); /* Fondo de la barra (grisáceo) */
+    border-radius: var(--border-radius-large); /* Bordes redondeados */
+    overflow: hidden; /* Para que el relleno no se salga */
+}
+
+/* Relleno de la barra (el color azul se aplica inline en el HTML) */
+.admin-progress-area .progress-fill {
+    height: 100%;
+    border-radius: var(--border-radius-large);
+    transition: width 0.3s ease;
+}
+
+/* Texto al lado de la barra de progreso */
+.admin-progress-area .progress-text {
+    font-size: 13px; /* Tamaño del texto */
+    color: var(--color-text-secondary); /* Color secundario */
+    font-weight: 500;
+    white-space: nowrap; /* Evitar que el texto se parta en dos líneas */
+    flex-shrink: 0; /* Evitar que el texto se encoja si no hay espacio */
+}
+
+/* Estilo para el comentario del administrador */
+.admin-evaluation-comment {
+    background-color: var(--color-background); /* Fondo oscuro, como una cita */
+    padding: 12px 18px; /* Padding interno */
+    border-radius: var(--border-radius-small); /* Bordes redondeados */
+    border: 1px solid var(--color-border-light); /* Borde sutil */
+    /* Opcional: borde izquierdo distintivo */
+    border-left: 3px solid var(--color-primary);
+    color: var(--color-text-primary); /* Color del texto del comentario */
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0; /* Quitar margen por defecto del párrafo */
+    white-space: pre-wrap; /* Respetar saltos de línea y espacios */
+    word-wrap: break-word; /* Ajustar palabras largas */
+}
+
+/* Estilo cuando NO hay comentario */
+.admin-evaluation-comment.no-comment {
+    font-style: italic;
+    color: var(--color-text-secondary);
+    background-color: transparent; /* Sin fondo especial */
+    border: 1px dashed var(--color-border-light); /* Borde punteado */
+    border-left: none; /* Sin borde izquierdo especial */
+    text-align: center;
+}
     </style>
     
 </head>
@@ -865,22 +987,30 @@
                                         <!-- Fin Sección de Tareas -->
 
                                         <!-- Evaluación del Admin (Interna) -->
-                                        <% if (sprint.cerrado && sprint.porcentaje_cumplimiento !== null) { %>
-                                            <div class="evaluaciones-container" style="background-color: var(--color-background-soft-accent);"> <%# Fondo distinto para admin %>
-                                                 <h4 class="evaluaciones-title" style="color: var(--color-primary);"><i class="fas fa-user-tie"></i> Evaluación del Administrador</h4>
-                                                  <div class="evaluacion-item" style="background-color: #fff;">
-                                                      <div class="progress-bar">
-                                                            <div class="progress-fill" style="width: <%= sprint.porcentaje_cumplimiento %>%; background-color: var(--color-primary);"></div>
-                                                        </div>
-                                                        <div class="progress-text">Cumplimiento (Admin): <%= sprint.porcentaje_cumplimiento %>%</div>
-                                                        <% if (sprint.comentarios_cierre) { %>
-                                                            <p class="evaluacion-comentario" style="border-left-color: var(--color-primary);"><%= sprint.comentarios_cierre %></p>
-                                                        <% } else { %>
-                                                            <p class="evaluacion-comentario" style="font-style: italic; color: var(--color-text-secondary);">Sin comentarios de cierre.</p>
-                                                        <% } %>
-                                                  </div>
-                                            </div>
-                                        <% } %>
+                           <!-- Evaluación del Admin (Interna) -->
+<% if (sprint.cerrado && sprint.porcentaje_cumplimiento !== null) { %>
+    <div class="evaluaciones-container admin-evaluation-section"> <%# Clase específica para la sección del admin %>
+         <h4 class="evaluaciones-title"><i class="fas fa-user-tie"></i> Evaluación del Administrador</h4> <%# Quitamos estilos inline %>
+          <div class="admin-evaluation-content"> <%# Contenedor interno para los detalles %>
+
+              <div class="admin-progress-area"> <%# Wrapper para barra y texto %>
+                  <div class="progress-bar"> <%# Barra de progreso %>
+                      <%# Usamos el color primario (azul) para la barra del admin como se ve en el HTML original %>
+                      <div class="progress-fill" style="width: <%= sprint.porcentaje_cumplimiento %>%; background-color: var(--color-primary);"></div>
+                  </div>
+                  <span class="progress-text">Cumplimiento (Admin): <%= sprint.porcentaje_cumplimiento %>%</span> <%# Texto al lado %>
+              </div>
+
+              <%# Mostramos el comentario de cierre del admin %>
+              <% if (sprint.comentarios_cierre) { %>
+                  <p class="admin-evaluation-comment"><%= sprint.comentarios_cierre %></p> <%# Clase específica para el comentario %>
+              <% } else { %>
+                  <%# Mensaje si no hay comentarios, con estilo distinto %>
+                  <p class="admin-evaluation-comment no-comment">Sin comentarios de cierre.</p>
+              <% } %>
+          </div>
+    </div>
+<% } %>
 
                                         <!-- Evaluaciones de Usuarios (Interna) -->
                                         <% if (sprint.cerrado && sprint.evaluaciones_usuario && Object.keys(sprint.evaluaciones_usuario).length > 0) { %>
@@ -977,6 +1107,28 @@
                                             <% } %>
                                         </div>
 
+                                        <!-- En la sección de botones de acción del sprint (dentro de sprint-card-details) -->
+<% if (user.role === 'admin' && sprint.cerrado) { %>
+    <button class="btn btn-info btn-sm" 
+            onclick="event.stopPropagation(); openWeeklyFeedback(
+                '<%= sprint.id %>', 
+                '<%= sprint.asignado_a %>', 
+                '<%= sprint.nombre %>', 
+                '<%= sprint.asignado_a_username %>'
+            )">
+        <i class="fas fa-comment-medical"></i> Feedback Semanal
+    </button>
+    
+    <button class="btn btn-warning btn-sm" 
+            onclick="event.stopPropagation(); openMonthlyEvaluation(
+                '<%= sprint.asignado_a %>', 
+                '<%= sprint.asignado_a_username %>', 
+                '<%= new Date(sprint.fecha_fin).getMonth() + 1 %>', 
+                '<%= new Date(sprint.fecha_fin).getFullYear() %>'
+            )">
+        <i class="fas fa-chart-line"></i> Evaluación Mensual
+    </button>
+<% } %>
                                     </div> <%# Fin sprint-card-details %>
                                 </td>
                             </tr>
@@ -992,8 +1144,68 @@
     <!-- ====================================== -->
 
     <!-- Modal para nuevo sprint (solo admin) -->
+
     <% if (user.role === 'admin') { %>
-    <div class="modal" id="sprintModal">
+        <div class="modal" id="weeklyFeedbackModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Feedback Semanal</h3>
+                    <button class="close-modal" onclick="closeModal('weeklyFeedbackModal')">×</button>
+                </div>
+                <form id="weeklyFeedbackForm" onsubmit="event.preventDefault(); submitWeeklyFeedback();">
+                    <input type="hidden" id="feedbackSprintId" name="sprint_id">
+                    <input type="hidden" id="feedbackUserId" name="user_id">
+                    <div class="form-group">
+                        <label class="form-label">Sprint: <span id="feedbackSprintName"></span></label>
+                        <label class="form-label">Usuario: <span id="feedbackUserName"></span></label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="weeklyFeedback">Observaciones Semanales</label>
+                        <textarea class="form-control" id="weeklyFeedback" name="feedback" rows="6" required 
+                                  placeholder="Ej: Sprint 1 - 50% / Se rascó las bolas"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('weeklyFeedbackModal')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Feedback</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="modal" id="monthlyEvaluationModal">
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">Evaluación Mensual</h3>
+                    <button class="close-modal" onclick="closeModal('monthlyEvaluationModal')">×</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Usuario: <span id="evalUserName"></span></label>
+                    <label class="form-label">Mes: <span id="evalMonthYear"></span></label>
+                </div>
+                
+                <div id="performanceResults" style="margin-bottom: 20px;">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+                
+                <form id="monthlyEvalForm" onsubmit="event.preventDefault(); submitMonthlyEvaluation();">
+                    <input type="hidden" id="evalUserId" name="user_id">
+                    <input type="hidden" id="evalMonth" name="month">
+                    <input type="hidden" id="evalYear" name="year">
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="monthlyEvalNotes">Análisis Final y Decisiones</label>
+                        <textarea class="form-control" id="monthlyEvalNotes" name="notes" rows="6" 
+                                  placeholder="Ej: Problema de capacitación, comunicacion, inteligencia, persona incorrecta?"></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('monthlyEvaluationModal')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Evaluación</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="modal" id="sprintModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">Nuevo Sprint</h3>
@@ -1213,6 +1425,125 @@
     <!--               SCRIPTS                  -->
     <!-- ====================================== -->
     <script>
+        // Abrir modal de feedback semanal
+function openWeeklyFeedback(sprintId, userId, sprintName, userName) {
+    const modal = document.getElementById('weeklyFeedbackModal');
+    modal.querySelector('#feedbackSprintId').value = sprintId;
+    modal.querySelector('#feedbackUserId').value = userId;
+    modal.querySelector('#feedbackSprintName').textContent = sprintName;
+    modal.querySelector('#feedbackUserName').textContent = userName;
+    openModal('weeklyFeedbackModal');
+}
+
+// Enviar feedback semanal
+function submitWeeklyFeedback() {
+    const form = document.getElementById('weeklyFeedbackForm');
+    const formData = {
+        sprint_id: form.querySelector('#feedbackSprintId').value,
+        user_id: form.querySelector('#feedbackUserId').value,
+        feedback: form.querySelector('#weeklyFeedback').value
+    };
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+    fetch('/weekly-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+    })
+    .then(handleResponse)
+    .then(data => {
+        showFlashMessage('success', 'Feedback semanal guardado correctamente.');
+        closeModal('weeklyFeedbackModal');
+    })
+    .catch(error => {
+        console.error('Error saving weekly feedback:', error);
+        showFlashMessage('error', `Error: ${error.message || 'Error desconocido'}`);
+    })
+    .finally(() => {
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Guardar Feedback';
+    });
+}
+
+// Abrir evaluación mensual
+function openMonthlyEvaluation(userId, userName, month, year) {
+    const modal = document.getElementById('monthlyEvaluationModal');
+    modal.querySelector('#evalUserId').value = userId;
+    modal.querySelector('#evalUserName').textContent = userName;
+    modal.querySelector('#evalMonth').value = month;
+    modal.querySelector('#evalYear').value = year;
+    modal.querySelector('#evalMonthYear').textContent = `${month}/${year}`;
+    
+    // Cargar datos de rendimiento
+    fetch(`/user-performance/${userId}?month=${month}&year=${year}`)
+    .then(handleResponse)
+    .then(data => {
+        const container = modal.querySelector('#performanceResults');
+        container.innerHTML = `
+            <div style="background: var(--color-background-soft); padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                <h4 style="margin-top: 0;">Resumen de Rendimiento</h4>
+                <p><strong>Promedio Mensual:</strong> ${data.performance.average}%</p>
+                <p><strong>Sprints Completados:</strong> ${data.performance.totalCompleted}/${data.performance.totalSprints}</p>
+            </div>
+            <h4>Detalle por Sprint:</h4>
+            <div class="evaluaciones-usuarios">
+                ${data.performance.sprints.map(sprint => `
+                    <div class="evaluacion-item">
+                        <div class="evaluacion-header">
+                            <strong>${sprint.nombre}</strong>
+                            <span>${sprint.porcentaje_cumplimiento}%</span>
+                        </div>
+                        ${sprint.weekly_feedback ? `
+                            <p class="evaluacion-comentario">${sprint.weekly_feedback}</p>
+                        ` : '<p class="evaluacion-comentario" style="font-style: italic;">Sin feedback semanal</p>'}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        openModal('monthlyEvaluationModal');
+    })
+    .catch(error => {
+        console.error('Error loading performance data:', error);
+        showFlashMessage('error', `Error al cargar datos: ${error.message}`);
+    });
+}
+
+// Enviar evaluación mensual
+function submitMonthlyEvaluation() {
+    const form = document.getElementById('monthlyEvalForm');
+    const formData = {
+        user_id: form.querySelector('#evalUserId').value,
+        month: form.querySelector('#evalMonth').value,
+        year: form.querySelector('#evalYear').value,
+        notes: form.querySelector('#monthlyEvalNotes').value
+    };
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+    fetch('/monthly-evaluation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+    })
+    .then(handleResponse)
+    .then(data => {
+        showFlashMessage('success', 'Evaluación mensual guardada correctamente.');
+        closeModal('monthlyEvaluationModal');
+    })
+    .catch(error => {
+        console.error('Error saving monthly evaluation:', error);
+        showFlashMessage('error', `Error: ${error.message || 'Error desconocido'}`);
+    })
+    .finally(() => {
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Guardar Evaluación';
+    });
+}
         // --- Funciones para manejar modales ---
         function openModal(modalId, data = null) {
             const modal = document.getElementById(modalId);
