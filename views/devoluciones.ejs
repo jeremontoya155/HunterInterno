@@ -780,6 +780,96 @@
     border-left: none; /* Sin borde izquierdo especial */
     text-align: center;
 }
+
+/* --- Estilos para Notas de Tarea --- */
+.task-notes-section {
+    margin-top: 15px; /* Espacio arriba */
+    padding-top: 10px;
+    border-top: 1px dashed var(--color-border-light); /* Separador sutil */
+}
+
+.task-notes-title {
+    font-size: 0.9em;
+    color: var(--color-text-secondary);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.task-notes-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 10px;
+    max-height: 150px; /* Limitar altura y hacer scroll si hay muchas notas */
+    overflow-y: auto;
+    padding-right: 5px; /* Espacio para el scrollbar */
+}
+
+.task-note-item {
+    background-color: var(--color-background); /* Fondo ligeramente más oscuro */
+    border: 1px solid var(--color-border-subtle);
+    border-left: 3px solid var(--color-secondary); /* Borde izquierdo gris */
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: var(--border-radius-small);
+}
+
+.task-note-meta {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    display: block;
+    margin-bottom: 4px;
+}
+ .task-note-meta i { margin-right: 4px; }
+ .task-note-meta strong { color: var(--color-text-primary); }
+ .task-note-date { margin-left: 5px; opacity: 0.8;}
+
+
+.task-note-text {
+    font-size: 13px;
+    color: var(--color-text-primary);
+    margin: 0;
+    line-height: 1.5;
+    white-space: pre-wrap; /* Respetar saltos de línea */
+    word-wrap: break-word;
+}
+
+.task-notes-list .no-notes {
+    font-style: italic;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    text-align: center;
+    padding: 10px 0;
+    background: none;
+    border: none;
+    margin: 0;
+}
+
+/* Estilos para el área de añadir nota */
+.add-note-area {
+    margin-top: 10px;
+}
+
+.add-note-form {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start; /* Alinear arriba por si el textarea crece */
+}
+
+.add-note-input {
+    flex-grow: 1; /* Ocupa el espacio disponible */
+    font-size: 13px;
+    min-height: 40px; /* Altura mínima */
+    line-height: 1.4;
+    padding: 6px 10px;
+    resize: vertical; /* Permitir redimensionar verticalmente */
+}
+
+.add-note-button {
+    flex-shrink: 0; /* No encoger el botón */
+    padding: 6px 10px; /* Ajustar padding */
+    align-self: flex-end; /* Alinear botón abajo */
+}
+.add-note-button i { margin-right: 4px; }
     </style>
     
 </head>
@@ -818,6 +908,23 @@
                     <label for="filtroFechaFin" class="filter-label">Fecha hasta</label>
                     <input type="date" id="filtroFechaFin" name="fecha_fin" value="<%= req.query.fecha_fin || '' %>" class="form-control">
                 </div>
+                <div class="filter-group">
+                    <label for="filtroRol" class="filter-label">Área (Rol)</label>
+                    <select id="filtroRol" name="role" class="form-control">
+                        <option value="">Todas las Áreas</option>
+                        <%
+                            // Define las áreas/roles relevantes que quieres poder filtrar
+                            const rolesDisponibles = ['ventas', 'auditoria', 'fulfillment', 'desarrollo']; // Ajusta según tus roles reales
+                        %>
+                        <% rolesDisponibles.forEach(rol => { %>
+                            <option value="<%= rol %>" <%= req.query.role === rol ? 'selected' : '' %>>
+                                <%# Capitalizar primera letra para mostrar %>
+                                <%= rol.charAt(0).toUpperCase() + rol.slice(1) %>
+                            </option>
+                        <% }); %>
+                    </select>
+                </div>
+                <!-- ***** FIN NUEVO FILTRO ***** -->
                 <!-- Filtro asignado a (solo admin) -->
                 <% if (user.role === 'admin') { %>
                 <div class="filter-group">
@@ -978,6 +1085,38 @@
                                                                         </span>
                                                                      <% } %>
                                                                 </div>
+                                                                <!-- Sección de Notas de Tarea -->
+<div class="task-notes-section" id="notes-for-task-<%= task.id %>">
+    <h5 class="task-notes-title">Notas (<%= task.notes ? task.notes.length : 0 %>)</h5>
+    <ul class="task-notes-list">
+        <% if (task.notes && task.notes.length > 0) { %>
+            <% task.notes.forEach(note => { %>
+                <li class="task-note-item" data-note-id="<%= note.id %>">
+                    <span class="task-note-meta">
+                        <i class="far fa-user"></i> <strong><%= note.user_username || 'Usuario' %></strong>
+                        <span class="task-note-date">
+                          (<%= new Date(note.created_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year:'2-digit', hour: '2-digit', minute: '2-digit'}) %>):
+                        </span>
+                    </span>
+                    <p class="task-note-text"><%= note.note_text %></p>
+                </li>
+            <% }); %>
+        <% } else { %>
+            <li class="no-notes" style="display: list-item;">No hay notas aún.</li> <%# Mostrar si no hay notas %>
+        <% } %>
+        <%# Solo mostrar si el sprint NO está cerrado Y (el usuario es admin O es el usuario asignado al sprint) %>
+<% if (!sprint.cerrado && (user.role === 'admin' || user.id === sprint.asignado_a)) { %>
+    <div class="add-note-area">
+        <form class="add-note-form" data-task-id="<%= task.id %>" onsubmit="event.preventDefault(); submitTaskNote(this);">
+            <textarea class="form-control add-note-input" placeholder="Escribe una nota sobre esta tarea..." rows="2" required></textarea>
+            <button type="submit" class="btn btn-secondary btn-sm add-note-button" title="Añadir Nota">
+                <i class="fas fa-paper-plane"></i> Enviar
+            </button>
+        </form>
+    </div>
+<% } %>
+    </ul>
+</div>
                                                             </div>
                                                         </div>
                                                     <% }); %>
@@ -1425,6 +1564,98 @@
     <!--               SCRIPTS                  -->
     <!-- ====================================== -->
     <script>
+        // --- Función para enviar una nota de tarea vía AJAX ---
+function submitTaskNote(formElement) {
+    const taskId = formElement.dataset.taskId;
+    const textArea = formElement.querySelector('.add-note-input');
+    const noteText = textArea.value.trim();
+    const submitButton = formElement.querySelector('.add-note-button');
+    const notesList = document.getElementById(`notes-for-task-${taskId}`)?.querySelector('.task-notes-list');
+
+    if (!noteText || !notesList) {
+        showFlashMessage('error', 'No se puede enviar una nota vacía o no se encontró la lista de notas.');
+        return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; // Feedback visual
+
+    fetch(`/tasks/${taskId}/notes`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json' // Asegurarse de aceptar JSON
+        },
+        body: JSON.stringify({ note_text: noteText })
+    })
+    .then(handleResponse) // Usar tu función existente para manejar respuestas
+    .then(data => {
+        // Éxito: Añadir la nota a la lista dinámicamente
+        const newNote = data.note; // El backend devuelve la nota creada con username
+
+        // Quitar el mensaje "No hay notas aún" si existe
+        const noNotesLi = notesList.querySelector('.no-notes');
+        if (noNotesLi) {
+            noNotesLi.style.display = 'none'; // Ocultarlo o removerlo
+        }
+
+        // Crear el nuevo elemento <li> para la nota
+        const noteLi = document.createElement('li');
+        noteLi.classList.add('task-note-item');
+        noteLi.dataset.noteId = newNote.id;
+
+        const noteDate = new Date(newNote.created_at).toLocaleString('es-ES', {
+             day: '2-digit', month: '2-digit', year:'2-digit', hour: '2-digit', minute: '2-digit'
+        });
+
+        noteLi.innerHTML = `
+            <span class="task-note-meta">
+                <i class="far fa-user"></i> <strong>${newNote.user_username || 'Usuario'}</strong>
+                <span class="task-note-date">(${noteDate}):</span>
+            </span>
+            <p class="task-note-text">${escapeHtml(newNote.note_text)}</p> <%# Usar escapeHtml si es necesario %>
+        `;
+
+        // Añadir la nueva nota al principio o final de la lista
+        notesList.appendChild(noteLi); // Añade al final
+        // notesList.insertBefore(noteLi, notesList.firstChild); // Añade al principio
+
+        // Limpiar el textarea
+        textArea.value = '';
+
+        // Opcional: Hacer scroll para ver la nueva nota si la lista es larga
+        notesList.scrollTop = notesList.scrollHeight;
+
+        // Actualizar contador de notas (opcional)
+        const notesTitle = document.getElementById(`notes-for-task-${taskId}`)?.querySelector('.task-notes-title');
+        if(notesTitle) {
+            const currentCount = parseInt(notesTitle.textContent.match(/\((\d+)\)/)?.[1] || 0);
+            notesTitle.textContent = `Notas (${currentCount + 1})`;
+        }
+
+
+    })
+    .catch(error => {
+        console.error('Error al añadir nota:', error);
+        showFlashMessage('error', `Error al añadir nota: ${error.message || 'Error desconocido'}`);
+    })
+    .finally(() => {
+        // Restaurar el botón
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar';
+    });
+}
+
+// Helper para escapar HTML si es necesario (previene XSS si muestras HTML directamente)
+function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe
+         .replace(/&/g, "&")
+         .replace(/</g, "<")
+         .replace(/>/g, ">")
+         .replace(/"/g, '\\"')
+         .replace(/'/g, "'");
+}
         // Abrir modal de feedback semanal
 function openWeeklyFeedback(sprintId, userId, sprintName, userName) {
     const modal = document.getElementById('weeklyFeedbackModal');
@@ -1985,6 +2216,7 @@ function submitMonthlyEvaluation() {
             window.location.href = window.location.pathname;
         }
 
+        
     </script>
     <script defer src="/static/js/navbar.js"></script> <%# Asumiendo que este maneja la navbar %>
 

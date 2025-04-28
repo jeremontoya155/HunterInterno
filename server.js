@@ -2188,6 +2188,67 @@ app.delete('/closers/:id', isAuthenticated, async (req, res) => {
 
         // --- RUTAS PARA SPRINTS ---
 
+        // --- RUTA PARA AÑADIR NOTAS A TAREAS ---
+app.post('/tasks/:taskId/notes', isAuthenticated, async (req, res) => {
+    const { taskId } = req.params;
+    const { note_text } = req.body;
+    const userId = req.session.user.id; // Usuario que está escribiendo la nota
+
+    if (!note_text || note_text.trim() === '') {
+        return res.status(400).json({ success: false, error: 'El texto de la nota no puede estar vacío.' });
+    }
+
+    try {
+        // **Verificación de Permiso (Importante):** Asegurarse que el usuario puede comentar en esta tarea
+        // (Es admin O es el usuario asignado al sprint al que pertenece la tarea)
+        const permCheckQuery = `
+            SELECT s.id as sprint_id, s.asignado_a, s.cerrado
+            FROM sprint_tasks st
+            JOIN sprints s ON st.sprint_id = s.id
+            WHERE st.id = $1
+        `;
+        const permCheckResult = await pool.query(permCheckQuery, [taskId]);
+
+        if (permCheckResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Tarea no encontrada.' });
+        }
+
+        const sprintInfo = permCheckResult.rows[0];
+
+        // No permitir notas si el sprint está cerrado
+        if (sprintInfo.cerrado) {
+             return res.status(403).json({ success: false, error: 'No se pueden añadir notas a tareas de un sprint cerrado.' });
+        }
+
+        // Permitir si es admin O si es el usuario asignado al sprint
+        if (req.session.user.role !== 'admin' && userId !== sprintInfo.asignado_a) {
+            return res.status(403).json({ success: false, error: 'No tienes permiso para añadir notas a esta tarea.' });
+        }
+        // --- Fin Verificación ---
+
+
+        // Insertar la nota
+        const insertQuery = `
+            INSERT INTO task_notes (task_id, user_id, note_text)
+            VALUES ($1, $2, $3)
+            RETURNING id, task_id, user_id, note_text, created_at
+        `;
+        const insertResult = await pool.query(insertQuery, [taskId, userId, note_text.trim()]);
+
+        // Devolver la nota creada (con el username para la UI)
+        const newNote = insertResult.rows[0];
+        const noteWithUser = {
+            ...newNote,
+            user_username: req.session.user.username // Añadimos el username del usuario actual
+        };
+
+        res.status(201).json({ success: true, note: noteWithUser });
+
+    } catch (error) {
+        console.error(`Error en POST /tasks/${taskId}/notes:`, error);
+        res.status(500).json({ success: false, error: 'Error al guardar la nota.' });
+    }
+});
         // GET /sprints - Vista principal de sprints
         // --- SPRINTS MODIFICADOS ---
 // POST /sprints/:id/tasks - Crear nueva tarea (solo admin)
@@ -2568,140 +2629,198 @@ app.post('/sprints/:id/evaluar', isAuthenticated, async (req, res) => {
         // GET /sprints - Vista principal modificada
         // --- GET /sprints - Vista principal con filtros ---
         // GET /sprints - Vista principal con filtros y tareas
+// GET /sprints - Vista principal con filtros, tareas y notas de tareas
+// GET /sprints - Vista principal con filtros (Título, Fechas, Asignado a, Rol), Tareas y Notas de Tareas
 app.get('/sprints', isAuthenticated, async (req, res) => {
     try {
-        // Obtener parámetros de filtro
-        const { titulo, fecha_inicio, fecha_fin, asignado_a } = req.query;
-        
-        // Construir consulta base
+        // --- 1. OBTENER PARÁMETROS DE FILTRO Y PREPARAR CONSULTA ---
+        const { titulo, fecha_inicio, fecha_fin, asignado_a, role } = req.query; // Añadido 'role'
         let sprintsQuery;
         let queryParams = [];
         let whereClauses = [];
-        
-        // Filtro por rol (no admin solo ve sus sprints asignados)
+
+        // --- 2. APLICAR FILTROS BASADOS EN EL ROL DEL USUARIO LOGUEADO ---
+        // Si no es admin, solo puede ver los sprints asignados a él mismo
         if (req.session.user.role !== 'admin') {
             whereClauses.push(`s.asignado_a = $${queryParams.length + 1}`);
             queryParams.push(req.session.user.id);
         }
-        
-        // Aplicar filtros
+
+        // --- 3. APLICAR FILTROS OPCIONALES DE LA QUERY STRING ---
         if (titulo) {
             whereClauses.push(`s.nombre ILIKE $${queryParams.length + 1}`);
             queryParams.push(`%${titulo}%`);
         }
-        
         if (fecha_inicio) {
             whereClauses.push(`s.fecha_inicio >= $${queryParams.length + 1}`);
             queryParams.push(fecha_inicio);
         }
-        
         if (fecha_fin) {
             whereClauses.push(`s.fecha_fin <= $${queryParams.length + 1}`);
             queryParams.push(fecha_fin);
         }
-        
-        if (asignado_a && req.session.user.role === 'admin') {
-            whereClauses.push(`s.asignado_a = $${queryParams.length + 1}`);
-            queryParams.push(asignado_a);
+
+        // Filtros que solo puede usar el Admin
+        if (req.session.user.role === 'admin') {
+            // Filtrar por usuario específico asignado
+            if (asignado_a) {
+                whereClauses.push(`s.asignado_a = $${queryParams.length + 1}`);
+                queryParams.push(asignado_a);
+            }
+            // Filtrar por Rol/Área del usuario asignado
+            if (role) {
+                // La condición se aplica sobre la tabla unida 'ua' (users asignados)
+                whereClauses.push(`ua.role = $${queryParams.length + 1}`);
+                queryParams.push(role);
+            }
         }
-        
-        // Construir consulta final
+
+        // --- 4. CONSTRUIR Y EJECUTAR LA CONSULTA PRINCIPAL DE SPRINTS ---
         sprintsQuery = `
-            SELECT 
-                s.*, 
-                u.username as created_by_username, 
+            SELECT
+                s.id,
+                s.nombre,
+                s.descripcion,
+                s.fecha_inicio,
+                s.fecha_fin,
+                s.cerrado,
+                s.created_at,
+                s.updated_at,
+                s.created_by,
+                s.asignado_a,
+                s.porcentaje_cumplimiento, -- Columna añadida previamente
+                s.comentarios_cierre,     -- Columna añadida previamente
+                s.evaluaciones_usuario,   -- Columna existente para evals de usuarios
+                u.username as created_by_username,
                 ua.username as asignado_a_username,
+                ua.role as asignado_a_role, -- Rol del usuario asignado (para filtros y visualización)
+                wf.feedback as weekly_feedback, -- Feedback semanal del admin para este sprint/usuario
                 (
-                    SELECT COUNT(*) 
-                    FROM sprint_tasks st 
+                    SELECT COUNT(*)
+                    FROM sprint_tasks st
                     WHERE st.sprint_id = s.id
                 ) as total_tasks,
                 (
-                    SELECT COUNT(*) 
-                    FROM sprint_tasks st 
+                    SELECT COUNT(*)
+                    FROM sprint_tasks st
                     WHERE st.sprint_id = s.id AND st.is_completed = TRUE
                 ) as completed_tasks
             FROM sprints s
             LEFT JOIN users u ON s.created_by = u.id
-            LEFT JOIN users ua ON s.asignado_a = ua.id
+            LEFT JOIN users ua ON s.asignado_a = ua.id -- JOIN para obtener info del usuario asignado (username, role)
+            LEFT JOIN weekly_feedbacks wf ON s.id = wf.sprint_id AND wf.user_id = s.asignado_a -- JOIN para feedback semanal
             ${whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : ''}
-            ORDER BY s.fecha_inicio DESC
+            ORDER BY s.cerrado ASC, s.fecha_inicio DESC, s.created_at DESC -- Ordenar: Abiertos primero, luego por fecha
         `;
-        
+
         const sprintsResult = await pool.query(sprintsQuery, queryParams);
-        
-        // Consultas para obtener detalles adicionales
+
+        // --- 5. OBTENER DETALLES ADICIONALES (DEVOLUCIONES, TAREAS, NOTAS) PARA CADA SPRINT ---
+        // Consultas SQL para los detalles (reutilizables)
         const devolucionesQuery = `
-            SELECT d.*, u.username as user_username 
+            SELECT d.*, u.username as user_username
             FROM devoluciones d
             LEFT JOIN users u ON d.user_id = u.id
             WHERE d.sprint_id = $1
             ORDER BY d.fecha_creacion DESC
         `;
-        
+
         const tasksQuery = `
-            SELECT 
-                st.*, 
+            SELECT
+                st.*,
                 uc.username as created_by_username,
-                u.username as completed_by_username
+                ucomp.username as completed_by_username
             FROM sprint_tasks st
             LEFT JOIN users uc ON st.created_by = uc.id
-            LEFT JOIN users u ON st.completed_by = u.id
+            LEFT JOIN users ucomp ON st.completed_by = ucomp.id
             WHERE st.sprint_id = $1
-            ORDER BY 
-                st.is_completed ASC,
-                st.created_at DESC
+            ORDER BY
+                st.is_completed ASC, -- Pendientes primero
+                st.created_at DESC   -- Luego las más recientes
         `;
-        
-        // Obtener todos los datos adicionales para cada sprint
+
+        const notesQuery = `
+            SELECT tn.*, u.username as user_username
+            FROM task_notes tn
+            JOIN users u ON tn.user_id = u.id
+            WHERE tn.task_id = $1
+            ORDER BY tn.created_at ASC -- Notas en orden cronológico
+        `;
+
+        // Mapear los resultados de sprints y enriquecerlos con los detalles
         const sprintsWithDetails = await Promise.all(
-            sprintsResult.rows.map(async sprint => {
-                const [devoluciones, tasks] = await Promise.all([
+            sprintsResult.rows.map(async (sprint) => {
+                // Obtener devoluciones y tareas básicas para este sprint
+                const [devolucionesResult, tasksResult] = await Promise.all([
                     pool.query(devolucionesQuery, [sprint.id]),
-                    pool.query(tasksQuery, [sprint.id])
+                    pool.query(tasksQuery, [sprint.id]),
                 ]);
-                
-                // Calcular progreso
-                const progress = sprint.total_tasks > 0 
-                    ? Math.round((sprint.completed_tasks / sprint.total_tasks) * 100)
-                    : 0;
-                
-                return { 
-                    ...sprint, 
-                    devoluciones: devoluciones.rows,
-                    tasks: tasks.rows,
-                    progress
+
+                // Para cada tarea, obtener sus notas
+                const tasksWithNotes = await Promise.all(
+                    tasksResult.rows.map(async (task) => {
+                        const notesResult = await pool.query(notesQuery, [task.id]);
+                        return {
+                            ...task, // Datos de la tarea
+                            notes: notesResult.rows, // Array de notas de la tarea
+                        };
+                    })
+                );
+
+                // Calcular el progreso del sprint basado en tareas completadas/totales
+                const progress =
+                    sprint.total_tasks > 0
+                        ? Math.round(
+                              (sprint.completed_tasks / sprint.total_tasks) * 100
+                          )
+                        : 0; // Evitar división por cero si no hay tareas
+
+                // Devolver el objeto sprint completo
+                return {
+                    ...sprint, // Todos los campos originales del sprint
+                    devoluciones: devolucionesResult.rows, // Array de devoluciones
+                    tasks: tasksWithNotes, // Array de tareas (cada una con su array de notas)
+                    progress, // Porcentaje de progreso calculado
                 };
             })
         );
 
-        // Obtener usuarios para filtro (solo admin)
-        let users = [];
+        // --- 6. OBTENER LISTA DE USUARIOS PARA LOS FILTROS (SOLO SI ES ADMIN) ---
+        let users = []; // Inicializar array vacío
         if (req.session.user.role === 'admin') {
-            const usersResult = await pool.query(`
-                SELECT id, username, role 
-                FROM users 
-                WHERE role IN ('auditoria', 'ventas', 'fulfillment')
-                ORDER BY username ASC
-            `);
-            users = usersResult.rows;
+            try {
+                const usersResult = await pool.query(`
+                    SELECT id, username, role
+                    FROM users
+                    WHERE role <> 'admin' -- Excluir administradores de la lista de asignables/filtrables
+                    ORDER BY username ASC
+                `);
+                users = usersResult.rows;
+            } catch (userQueryError) {
+                console.error("Error al obtener lista de usuarios para filtros:", userQueryError);
+                // Continuar sin la lista de usuarios si falla, pero registrar el error
+            }
         }
 
-        res.render('devoluciones', {
-            user: req.session.user,
-            sprints: sprintsWithDetails,
-            users,
-            success: req.query.success,
-            error: req.query.error,
-            req: req // Pasamos req para acceder a los query params en la vista
+        // --- 7. RENDERIZAR LA VISTA CON TODOS LOS DATOS ---
+        res.render('devoluciones', { // Asegúrate que 'devoluciones' es el nombre correcto de tu archivo EJS
+            user: req.session.user, // Datos del usuario logueado (para navbar, permisos)
+            sprints: sprintsWithDetails, // Array de sprints con todos sus detalles anidados
+            users: users, // Lista de usuarios para los filtros (vacío si no es admin)
+            success: req.query.success, // Mensaje de éxito (si viene de una redirección)
+            error: req.query.error,   // Mensaje de error (si viene de una redirección)
+            req: req, // Pasar el objeto request completo (útil para acceder a req.query en EJS)
         });
 
     } catch (error) {
-        console.error("Error en GET /sprints:", error);
-        res.status(500).render('error', {
-            message: 'Error al cargar los sprints',
-            error: error,
-            user: req.session.user
+        // --- MANEJO DE ERRORES GENERALES ---
+        console.error("Error grave en GET /sprints:", error);
+        // Idealmente, renderizar una página de error amigable
+        res.status(500).render('error', { // Necesitas una plantilla 'error.ejs'
+            message: 'Ocurrió un error inesperado al cargar la página de sprints.',
+            // No exponer detalles del error al usuario en producción
+            error: process.env.NODE_ENV === 'development' ? error : {},
+            user: req.session.user // Para que la navbar funcione en la página de error
         });
     }
 });
